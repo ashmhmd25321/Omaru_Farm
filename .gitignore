@@ -20,3 +20,7 @@
 
 # Build / misc
 **/.parcel-cache/
+
+# Source image folders (keep web-ready copies in frontend/public/)
+Image Farm/
+Farm_images/
