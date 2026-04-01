@@ -151,15 +151,6 @@ export function StayPage() {
                           </span>
                         ))}
                       </div>
-
-                      <div className="mt-7 flex flex-wrap gap-3">
-                        <Button asChild className="px-6 py-2.5">
-                          <a href="#book">Request Dates</a>
-                        </Button>
-                        <Button variant="outline" asChild className="px-6 py-2.5">
-                          <a href="#experience">View Experiences</a>
-                        </Button>
-                      </div>
                     </div>
                   </motion.article>
                 )

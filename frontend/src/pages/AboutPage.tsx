@@ -44,6 +44,7 @@ export function AboutPage() {
 
   const [stackStart, setStackStart] = useState(0)
   const [fanOpen, setFanOpen] = useState(false)
+  const [rosieOpen, setRosieOpen] = useState(false)
   const stack = useMemo(() => {
     const n = imagePool.length
     return [0, 1, 2].map((k) => imagePool[(stackStart + k) % n])
@@ -418,36 +419,119 @@ export function AboutPage() {
         {/* Artisans */}
         <section className="border-t border-gold/10 bg-[#0b0b0b] pt-16 pb-16 md:pt-20 md:pb-20">
           <div className="mx-auto max-w-[92vw] px-5">
-            <h2 className="font-heading text-4xl text-[#f5efe2] md:text-5xl">Meet the Artisans</h2>
+            <h2 className="font-heading text-4xl text-[#f5efe2] md:text-5xl">Meet the Artisan</h2>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70 md:text-base">
-              A small team of growers, makers, and hosts — bringing a premium farm experience to life with quiet attention to detail.
+              There’s one heart behind the entire Omaru Farm experience — guiding the land, the hospitality, and every detail with care.
             </p>
 
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 0.45, delay: i * 0.05 }}
-                >
-                  <div className="overflow-hidden rounded-2xl border border-gold/15 bg-[#141416]/70 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur">
-                    <div className="grid aspect-[4/3] place-items-center bg-black/25">
-                      <div className="grid place-items-center rounded-2xl border border-gold/18 bg-black/20 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.45)]">
-                        <UserRound className="h-14 w-14 text-gold/85" />
-                      </div>
+            <div className="mt-10">
+              <motion.article
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.55 }}
+                className="relative overflow-hidden rounded-2xl border border-gold/15 bg-[#141416]/70 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur"
+              >
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,rgba(205,163,73,0.10),transparent_55%),radial-gradient(circle_at_80%_80%,rgba(99,73,42,0.16),transparent_60%)]" />
+
+                <div className="relative grid gap-6 p-6 md:grid-cols-12 md:items-center md:gap-10 md:p-10">
+                  <button
+                    type="button"
+                    onClick={() => setRosieOpen(true)}
+                    className="group relative overflow-hidden rounded-2xl border border-gold/15 bg-black/30 shadow-[0_22px_70px_rgba(0,0,0,0.55)] md:col-span-5"
+                    aria-label="Open Rosie Maurer photo"
+                  >
+                    <img
+                      src="/images/farm/rosie-maurer.jpg"
+                      alt="Rosie Maurer at Omaru Farm"
+                      className="h-[320px] w-full object-cover [filter:contrast(1.08)_saturate(1.06)_brightness(1.02)] transition duration-700 group-hover:scale-[1.04] md:h-[420px]"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                    <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-gold/20 bg-black/45 px-3 py-1 text-xs text-white/80 backdrop-blur">
+                      <span className="grid h-5 w-5 place-items-center rounded-full border border-gold/20 bg-black/25 text-gold/85">
+                        <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
+                      </span>
+                      Founder
                     </div>
-                    <div className="p-5">
-                      <p className="font-heading text-2xl text-[#f5efe2]">Name</p>
-                      <p className="mt-1 text-sm text-white/60">Position</p>
+                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3">
+                      <p className="text-xs uppercase tracking-[0.28em] text-white/70">Tap to enlarge</p>
+                      <span className="rounded-full border border-gold/20 bg-black/35 px-3 py-1 text-xs text-gold/90">
+                        View photo
+                      </span>
+                    </div>
+                  </button>
+
+                  <div className="md:col-span-7">
+                    <p className="text-xs uppercase tracking-[0.28em] text-gold/70">Omaru Farm</p>
+                    <h3 className="mt-3 font-heading text-4xl text-[#f5efe2] md:text-5xl">Rosie Maurer</h3>
+                    <p className="mt-2 text-sm text-white/65 md:text-base">Founder &amp; Host</p>
+
+                    <p className="mt-5 text-sm leading-relaxed text-white/70 md:text-base">
+                      From the farm gates to the table, Rosie shapes the Omaru experience end-to-end — growing, welcoming, and crafting the
+                      calm premium feel guests remember.
+                    </p>
+
+                    <div className="mt-6 flex flex-wrap gap-2 text-xs text-white/65">
+                      {[
+                        { icon: <Leaf className="h-4 w-4 text-gold/85" />, text: 'Farm-to-table focus' },
+                        { icon: <Wheat className="h-4 w-4 text-gold/85" />, text: 'Seasonal produce' },
+                        { icon: <Sparkles className="h-4 w-4 text-gold/85" />, text: 'Quiet premium hospitality' },
+                      ].map((b) => (
+                        <span key={b.text} className="inline-flex items-center gap-2 rounded-full border border-gold/15 bg-white/[0.03] px-3 py-1.5">
+                          {b.icon}
+                          {b.text}
+                        </span>
+                      ))}
                     </div>
                   </div>
-                </motion.div>
-              ))}
+                </div>
+              </motion.article>
             </div>
           </div>
         </section>
+
+        {/* Rosie lightbox */}
+        {rosieOpen && (
+          <div
+            className="fixed inset-0 z-[80] grid place-items-center bg-black/80 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Rosie Maurer photo"
+            onClick={() => setRosieOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              className="w-full max-w-4xl overflow-hidden rounded-2xl border border-gold/25 bg-[#0b0b0b]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between gap-3 border-b border-gold/15 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-[#f5efe2]">Rosie Maurer</p>
+                  <p className="text-xs text-white/55">Founder &amp; Host</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRosieOpen(false)}
+                  className="rounded-full border border-gold/20 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70 hover:bg-white/[0.06]"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="relative">
+                <img
+                  src="/images/farm/rosie-maurer.jpg"
+                  alt="Rosie Maurer at Omaru Farm"
+                  className="max-h-[78vh] w-full object-contain bg-black [filter:contrast(1.08)_saturate(1.06)_brightness(1.02)]"
+                />
+                <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-gold/15" />
+              </div>
+            </motion.div>
+          </div>
+        )}
       </main>
     </>
   )
