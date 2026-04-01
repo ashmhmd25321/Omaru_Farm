@@ -170,7 +170,12 @@ export function StayPage() {
             <div className="mt-10 grid gap-6 md:grid-cols-12">
               <div className="md:col-span-6">
                 <div className="relative overflow-hidden rounded-2xl border border-gold/15 bg-black/30">
-                  <div className="aspect-[4/5] w-full bg-[radial-gradient(circle_at_30%_20%,rgba(205,163,73,0.12),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(99,73,42,0.16),transparent_60%)]" />
+                  <img
+                    src="/images/farm/IMG_4141.jpg"
+                    alt="A quiet moment at Omaru Farm"
+                    className="aspect-[4/5] w-full object-cover opacity-90"
+                    loading="lazy"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
                   <div className="absolute bottom-5 left-5 right-5">
                     <p className="text-xs uppercase tracking-[0.28em] text-gold/75">Featured</p>
@@ -182,17 +187,48 @@ export function StayPage() {
 
               <div className="grid gap-6 md:col-span-6 md:grid-cols-2">
                 {[
-                  { title: 'Farm-to-Table', desc: 'Seasonal breakfast, garden produce, and pantry treats.', icon: <Leaf className="h-5 w-5" /> },
-                  { title: 'Slow Walks', desc: 'Quiet tracks across fields and coastal views.', icon: <MapPin className="h-5 w-5" /> },
-                  { title: 'Tea Ritual', desc: 'Afternoon tea moments, warm and unhurried.', icon: <Sparkles className="h-5 w-5" /> },
-                  { title: 'Local Discoveries', desc: 'Curated recommendations beyond the farm gate.', icon: <Gem className="h-5 w-5" /> },
+                  {
+                    title: 'Farm-to-Table',
+                    desc: 'Seasonal breakfast, garden produce, and pantry treats.',
+                    icon: <Leaf className="h-5 w-5" />,
+                    image: '/images/farm/IMG_4256.jpg',
+                  },
+                  {
+                    title: 'Slow Walks',
+                    desc: 'Quiet tracks across fields and coastal views.',
+                    icon: <MapPin className="h-5 w-5" />,
+                    image: '/images/farm/IMG_4638.jpg',
+                  },
+                  {
+                    title: 'Tea Ritual',
+                    desc: 'Afternoon tea moments, warm and unhurried.',
+                    icon: <Sparkles className="h-5 w-5" />,
+                    image: '/images/farm/IMG_4547.jpg',
+                  },
+                  {
+                    title: 'Local Discoveries',
+                    desc: 'Curated recommendations beyond the farm gate.',
+                    icon: <Gem className="h-5 w-5" />,
+                    image: '/images/farm/IMG_7307.jpg',
+                  },
                 ].map((x) => (
-                  <div key={x.title} className="rounded-2xl border border-gold/15 bg-black/30 p-6">
-                    <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gold/15 bg-black/25 text-gold/85">
-                      {x.icon}
+                  <div key={x.title} className="overflow-hidden rounded-2xl border border-gold/15 bg-black/30">
+                    <div className="relative">
+                      <img
+                        src={x.image}
+                        alt={x.title}
+                        className="h-28 w-full object-cover opacity-85 transition duration-700 hover:scale-[1.03]"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                      <div className="absolute left-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gold/15 bg-black/30 text-gold/85 backdrop-blur">
+                        {x.icon}
+                      </div>
                     </div>
-                    <p className="mt-4 font-heading text-2xl text-[#f5efe2]">{x.title}</p>
-                    <p className="mt-2 text-sm text-white/65">{x.desc}</p>
+                    <div className="p-6">
+                      <p className="font-heading text-2xl text-[#f5efe2]">{x.title}</p>
+                      <p className="mt-2 text-sm text-white/65">{x.desc}</p>
+                    </div>
                   </div>
                 ))}
               </div>
