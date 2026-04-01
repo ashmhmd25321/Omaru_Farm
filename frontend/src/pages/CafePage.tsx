@@ -49,23 +49,8 @@ export function CafePage() {
     el.click()
   }
 
-  const selectedDateObj = useMemo(() => {
-    const [y, m, d] = selectedDate.split('-').map((v) => Number(v))
-    if (!y || !m || !d) return new Date()
-    return new Date(y, m - 1, d)
-  }, [selectedDate])
-
   const periods = useMemo(() => ['Breakfast', 'Lunch', 'Tea'] as const, [])
   const [period, setPeriod] = useState<(typeof periods)[number]>('Lunch')
-
-  const timesByPeriod = useMemo(
-    () => ({
-      Breakfast: ['09:00', '09:30', '10:00', '10:30', '11:00'],
-      Lunch: ['11:30', '12:00', '12:30', '13:00', '13:30', '14:00'],
-      Tea: ['14:00', '14:30', '15:00', '15:30', '16:00'],
-    }),
-    [],
-  )
 
   const defaultsByPeriod = useMemo(
     () => ({
