@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarDays, CheckCircle2, ChevronRight, Clock3, Minus, Plus, Users } from 'lucide-react'
+import { CalendarDays, CheckCircle2, ChevronRight, Clock3, Image as ImageIcon, Minus, Plus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -31,6 +31,23 @@ export function CafePage() {
     d.setDate(d.getDate() + 1)
     return toISODate(d)
   })
+  const dateInputRef = useRef<HTMLInputElement | null>(null)
+  const timeFromInputRef = useRef<HTMLInputElement | null>(null)
+  const timeUntilInputRef = useRef<HTMLInputElement | null>(null)
+
+  const openNativePicker = (el: HTMLInputElement | null) => {
+    if (!el) return
+    el.focus({ preventScroll: true })
+    // Prefer showPicker where supported.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyEl = el as any
+    if (typeof anyEl.showPicker === 'function') {
+      anyEl.showPicker()
+      return
+    }
+    // Fallback: click typically opens the native UI.
+    el.click()
+  }
 
   const selectedDateObj = useMemo(() => {
     const [y, m, d] = selectedDate.split('-').map((v) => Number(v))
@@ -235,11 +252,21 @@ export function CafePage() {
                     <CardContent className="space-y-5">
                       {col.items.map((item) => (
                         <div key={item.name} className="border-b border-gold/15 pb-4 last:border-b-0 last:pb-0">
-                          <div className="flex items-start justify-between gap-4">
-                            <p className="text-sm font-medium text-[#f5efe2]">{item.name}</p>
-                            <p className="text-sm font-semibold text-gold">{item.price}</p>
+                          <div className="flex items-start gap-4">
+                            <div className="mt-0.5 h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-gold/15 bg-black/30">
+                              <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_20%,rgba(205,163,73,0.14),transparent_55%)]">
+                                <ImageIcon className="h-4 w-4 text-gold/70" aria-hidden="true" />
+                              </div>
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-4">
+                                <p className="truncate text-sm font-medium text-[#f5efe2]">{item.name}</p>
+                                <p className="shrink-0 text-sm font-semibold text-gold">{item.price}</p>
+                              </div>
+                              <p className="mt-1 line-clamp-2 text-sm text-white/65">{item.desc}</p>
+                            </div>
                           </div>
-                          <p className="mt-1 text-sm text-white/65">{item.desc}</p>
                         </div>
                       ))}
                     </CardContent>
@@ -319,11 +346,23 @@ export function CafePage() {
                           <input
                             className="field w-full bg-black/20 pr-10"
                             type="date"
+                            ref={dateInputRef}
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
                             aria-label="Select date"
                           />
-                          <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/70" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              openNativePicker(dateInputRef.current)
+                            }}
+                            className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border border-gold/15 bg-black/20 text-gold/80 transition hover:border-gold/30 hover:text-gold"
+                            aria-label="Open date picker"
+                          >
+                            <CalendarDays className="h-4 w-4" />
+                          </button>
                         </div>
                       </label>
                     </div>
@@ -349,6 +388,7 @@ export function CafePage() {
                             className="field w-full bg-black/20 pr-10"
                             type="time"
                             step={300}
+                            ref={timeFromInputRef}
                             value={timeFrom}
                             onChange={(e) => {
                               const n = normalizeTime(e.target.value)
@@ -356,7 +396,18 @@ export function CafePage() {
                             }}
                             aria-label="From time"
                           />
-                          <Clock3 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/70" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              openNativePicker(timeFromInputRef.current)
+                            }}
+                            className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border border-gold/15 bg-black/20 text-gold/80 transition hover:border-gold/30 hover:text-gold"
+                            aria-label="Open from-time picker"
+                          >
+                            <Clock3 className="h-4 w-4" />
+                          </button>
                         </div>
                       </label>
                       <label className="space-y-2">
@@ -366,6 +417,7 @@ export function CafePage() {
                             className="field w-full bg-black/20 pr-10"
                             type="time"
                             step={300}
+                            ref={timeUntilInputRef}
                             value={timeUntil}
                             onChange={(e) => {
                               const n = normalizeTime(e.target.value)
@@ -373,7 +425,18 @@ export function CafePage() {
                             }}
                             aria-label="Until time"
                           />
-                          <Clock3 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/70" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              openNativePicker(timeUntilInputRef.current)
+                            }}
+                            className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border border-gold/15 bg-black/20 text-gold/80 transition hover:border-gold/30 hover:text-gold"
+                            aria-label="Open until-time picker"
+                          >
+                            <Clock3 className="h-4 w-4" />
+                          </button>
                         </div>
                       </label>
                     </div>
