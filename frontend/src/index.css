@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-heading: "Cormorant Garamond", serif;
+  --font-body: "Manrope", sans-serif;
+  --color-obsidian: #080808;
+  --color-gold: #cda349;
+}
+
+@layer base {
+  * {
+    @apply border-gold/20;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  ::selection {
+    background: rgba(205, 163, 73, 0.35);
+    color: #fff;
+  }
+
+  /* Hide native scrollbar (keep scrolling enabled) */
+  html,
+  body {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge legacy */
+  }
+
+  ::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+
+  body {
+    @apply bg-obsidian font-body text-white antialiased;
+    margin: 0;
+    background-image:
+      radial-gradient(circle at 12% 10%, rgba(205, 163, 73, 0.16), transparent 30%),
+      radial-gradient(circle at 88% 0%, rgba(99, 73, 42, 0.2), transparent 22%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .field {
+    @apply w-full rounded-md border border-gold/30 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/20;
+  }
+}
