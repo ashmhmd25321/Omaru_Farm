@@ -173,7 +173,7 @@ export function StayPage() {
                   <img
                     src="/images/farm/IMG_4141.jpg"
                     alt="A quiet moment at Omaru Farm"
-                    className="aspect-[4/5] w-full object-cover opacity-90"
+                    className="aspect-[4/5] w-full object-cover object-center opacity-90"
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
@@ -212,22 +212,28 @@ export function StayPage() {
                     image: '/images/farm/IMG_7307.jpg',
                   },
                 ].map((x) => (
-                  <div key={x.title} className="overflow-hidden rounded-2xl border border-gold/15 bg-black/30">
-                    <div className="relative">
-                      <img
-                        src={x.image}
-                        alt={x.title}
-                        className="h-28 w-full object-cover opacity-85 transition duration-700 hover:scale-[1.03]"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                      <div className="absolute left-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gold/15 bg-black/30 text-gold/85 backdrop-blur">
+                  <div
+                    key={x.title}
+                    className="group relative min-h-[260px] overflow-hidden rounded-2xl border border-gold/15 bg-black/30"
+                  >
+                    <img
+                      src={x.image}
+                      alt={x.title}
+                      className="absolute inset-0 h-full w-full object-cover object-center opacity-85 transition duration-700 group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                    <div className="absolute inset-0 ring-1 ring-inset ring-gold/10" />
+
+                    <div className="relative flex h-full flex-col justify-between p-6">
+                      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gold/15 bg-black/30 text-gold/85 backdrop-blur">
                         {x.icon}
                       </div>
-                    </div>
-                    <div className="p-6">
-                      <p className="font-heading text-2xl text-[#f5efe2]">{x.title}</p>
-                      <p className="mt-2 text-sm text-white/65">{x.desc}</p>
+
+                      <div>
+                        <p className="font-heading text-2xl text-[#f5efe2]">{x.title}</p>
+                        <p className="mt-2 text-sm text-white/70">{x.desc}</p>
+                      </div>
                     </div>
                   </div>
                 ))}
