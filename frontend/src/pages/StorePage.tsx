@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { motion } from 'framer-motion'
-import { CircleX, PackageSearch } from 'lucide-react'
+import { CircleX, Leaf, PackageSearch, ShoppingBag, Sparkles, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { productCatalog } from '@/data/productCatalog'
@@ -88,11 +88,108 @@ export function StorePage() {
         <meta name="description" content="Browse Omaru Farm Store products by category, search, and price." />
       </Helmet>
 
-      <main className="mx-auto max-w-[86vw] px-5 py-10">
-        <h1 className="font-heading text-4xl text-gold md:text-5xl">Farm Store</h1>
-        <p className="mt-2 text-white/75">Browse the complete 2026 collection by category, name, and price.</p>
+      <main>
+        {/* Hero */}
+        <section className="relative overflow-hidden border-b border-gold/20">
+          <img
+            src="/images/products/20260311_130334.jpg"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover object-center opacity-45"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/70 to-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/20" />
+          <div className="pointer-events-none absolute -right-24 top-1/4 h-72 w-72 rounded-full bg-gold/10 blur-3xl" />
+          <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-[#63492a]/25 blur-3xl" />
 
-        <section className="mt-8 grid gap-4 rounded-xl border border-gold/25 bg-black/35 p-4 md:grid-cols-2">
+          <div className="relative mx-auto grid min-h-[58vh] max-w-[92vw] items-center gap-8 px-5 py-14 md:min-h-[52vh] md:grid-cols-12 md:py-16">
+            <motion.div
+              className="md:col-span-8 lg:col-span-7"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55 }}
+            >
+              <p className="text-xs uppercase tracking-[0.32em] text-gold/85">Omaru Farm Store</p>
+              <h1 className="mt-4 font-heading text-5xl leading-[0.95] text-[#f5efe2] md:text-6xl lg:text-7xl">
+                The Farm
+                <br />
+                <span className="italic text-gold/95">Pantry</span>
+              </h1>
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-white/78 md:text-lg">
+                Small-batch oils, honeys, preserves, and pantry staples — curated from the land and ready for your table. Browse the full 2026
+                collection below.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-2 text-xs text-white/60">
+                {[
+                  { icon: <ShoppingBag className="h-4 w-4 text-gold/90" />, text: '2026 collection' },
+                  { icon: <Leaf className="h-4 w-4 text-gold/90" />, text: 'Farm-inspired quality' },
+                  { icon: <Truck className="h-4 w-4 text-gold/90" />, text: 'Pickup & delivery info on request' },
+                ].map((b) => (
+                  <span
+                    key={b.text}
+                    className="inline-flex items-center gap-2 rounded-full border border-gold/15 bg-black/35 px-3 py-1.5 backdrop-blur-sm"
+                  >
+                    {b.icon}
+                    {b.text}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button asChild className="px-6 py-2.5">
+                  <a href="#store-browse">Browse products</a>
+                </Button>
+                <Button variant="outline" asChild className="px-6 py-2.5">
+                  <a href="/contact">Enquire</a>
+                </Button>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="hidden md:col-span-4 lg:col-span-5 md:block"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.55, delay: 0.08 }}
+            >
+              <div className="relative ml-auto max-w-sm rounded-2xl border border-gold/20 bg-black/40 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.55)] backdrop-blur-md">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-gold/20 bg-gold/10 text-gold">
+                    <Sparkles className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-gold/75">This season</p>
+                    <p className="mt-1 font-heading text-2xl text-[#f5efe2]">Taste the harvest</p>
+                    <p className="mt-2 text-sm leading-relaxed text-white/65">
+                      Filter by category, search by name, or sort by price — tap any product for full details.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {['20260311_130456.jpg', '20260311_130712.jpg', '20260311_130805.jpg'].map((src) => (
+                    <div key={src} className="overflow-hidden rounded-xl border border-gold/15">
+                      <img
+                        src={`/images/products/${src}`}
+                        alt=""
+                        aria-hidden="true"
+                        className="aspect-square w-full object-cover opacity-90 transition duration-500 hover:scale-105"
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        <div id="store-browse" className="mx-auto max-w-[86vw] scroll-mt-24 px-5 py-12 md:py-14">
+          <p className="font-heading text-2xl text-[#f5efe2] md:text-3xl">Shop the collection</p>
+          <p className="mt-2 max-w-2xl text-sm text-white/70 md:text-base">
+            Browse the complete 2026 range by category, name, and price.
+          </p>
+
+          <section className="mt-8 grid gap-4 rounded-xl border border-gold/25 bg-black/35 p-4 md:grid-cols-2">
           <input value={query} onChange={(e) => setQuery(e.target.value)} className="field" placeholder="Search products..." />
           <select
             value={sortBy}
@@ -121,11 +218,11 @@ export function StorePage() {
               ))}
             </div>
           </div>
-        </section>
+          </section>
 
-        <p className="mt-5 text-sm text-white/65">Showing {filteredProducts.length} products</p>
+          <p className="mt-5 text-sm text-white/65">Showing {filteredProducts.length} products</p>
 
-        <section className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <section className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {paginatedProducts.map((product, index) => (
             <motion.div
               key={`${product.name}-${index}`}
@@ -157,9 +254,9 @@ export function StorePage() {
               </Card>
             </motion.div>
           ))}
-        </section>
+          </section>
 
-        <section className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/20 bg-black/30 p-3">
+          <section className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/20 bg-black/30 p-3">
           <p className="text-sm text-white/70">Page {currentPage} of {totalPages}</p>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
@@ -187,7 +284,8 @@ export function StorePage() {
               Next
             </Button>
           </div>
-        </section>
+          </section>
+        </div>
       </main>
 
       {selectedProduct && (

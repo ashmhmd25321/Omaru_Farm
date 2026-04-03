@@ -1,11 +1,13 @@
 import { Outlet } from 'react-router-dom'
 import { MessageCircle } from 'lucide-react'
+import { ScrollToTop } from '@/components/site/ScrollToTop'
 import { SiteFooter } from '@/components/site/SiteFooter'
 import { SiteHeader } from '@/components/site/SiteHeader'
 
 export function SiteLayout() {
   return (
     <div className="min-h-screen bg-obsidian text-white">
+      <ScrollToTop />
       <SiteHeader />
       <Outlet />
       <SiteFooter />
