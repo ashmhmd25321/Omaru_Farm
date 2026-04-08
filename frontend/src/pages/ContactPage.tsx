@@ -1,29 +1,69 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { motion } from 'framer-motion'
 import { AtSign, Clock3, Heart, Mail, MapPin, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-
-const mapSearchUrl =
-  'https://www.google.com/maps/search/?api=1&query=482+Heritage+Road+Willow+Valley+NSW+2577+Australia'
-
-/** Embedded preview (no API key). Opens full Google Maps in a new tab from the button below. */
-const mapEmbedUrl =
-  'https://www.google.com/maps?q=' +
-  encodeURIComponent('482 Heritage Road, Willow Valley NSW 2577, Australia') +
-  '&z=13&hl=en&output=embed'
+import { staticUrl } from '@/utils/staticUrl'
 
 export function ContactPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [inquiry, setInquiry] = useState('')
-  const [journalEmail, setJournalEmail] = useState('')
+  const [contactDetails, setContactDetails] = useState({
+    farmName: 'Omaru Farm',
+    addressLine1: '482 Heritage Road',
+    addressLine2: 'Willow Valley, NSW 2577',
+    email: 'hello@omarufarm.com.au',
+    whatsapp: 'https://wa.me/61000000000',
+    instagram: 'https://instagram.com',
+    mapQuery: '482 Heritage Road, Willow Valley NSW 2577, Australia',
+    hoursCafe: 'Thu-Sun · 9:00 - 16:00',
+    hoursStore: 'Daily · 10:00 - 17:00',
+    hoursTours: 'By appointment',
+  })
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/content/contact`, { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data: unknown) => {
+        if (!data || typeof data !== 'object') return
+        const value = data as Record<string, unknown>
+        setContactDetails((prev) => ({
+          farmName: String(value.farmName ?? prev.farmName),
+          addressLine1: String(value.addressLine1 ?? prev.addressLine1),
+          addressLine2: String(value.addressLine2 ?? prev.addressLine2),
+          email: String(value.email ?? prev.email),
+          whatsapp: String(value.whatsapp ?? prev.whatsapp),
+          instagram: String(value.instagram ?? prev.instagram),
+          mapQuery: String(value.mapQuery ?? prev.mapQuery),
+          hoursCafe: String(value.hoursCafe ?? prev.hoursCafe),
+          hoursStore: String(value.hoursStore ?? prev.hoursStore),
+          hoursTours: String(value.hoursTours ?? prev.hoursTours),
+        }))
+      })
+      .catch(() => {
+        // keep local fallback
+      })
+    return () => controller.abort()
+  }, [])
+
+  const mapSearchUrl = useMemo(
+    () => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactDetails.mapQuery)}`,
+    [contactDetails.mapQuery],
+  )
+
+  /** Embedded preview (no API key). Opens full Google Maps in a new tab from the button below. */
+  const mapEmbedUrl = useMemo(
+    () => `https://www.google.com/maps?q=${encodeURIComponent(contactDetails.mapQuery)}&z=13&hl=en&output=embed`,
+    [contactDetails.mapQuery],
+  )
 
   return (
     <>
       <Helmet>
         <title>Contact | Omaru Farm</title>
-        <meta name="description" content="Reach out to Omaru Farm — visits, cafe, store, stays, and journal updates." />
+        <meta name="description" content="Reach out to Omaru Farm — visits, cafe, store, and stays." />
       </Helmet>
 
       <main>
@@ -48,8 +88,8 @@ export function ContactPage() {
             >
               <div className="overflow-hidden rounded-2xl border border-gold/20 shadow-[0_28px_90px_rgba(0,0,0,0.55)]">
                 <img
-                  src="/images/farm/pexels-tomfisk-10685076.jpg"
-                  alt="Golden fields at Omaru Farm"
+                  src={staticUrl('/images/farm/IMG_0623.jpg')}
+                  alt="Breakfast and hospitality at Omaru Farm"
                   className="aspect-[4/3] w-full object-cover object-center md:aspect-[5/4] lg:min-h-[320px]"
                   loading="eager"
                 />
@@ -126,11 +166,11 @@ export function ContactPage() {
                 <div>
                   <h3 className="text-xs uppercase tracking-[0.28em] text-gold/70">Visit the farm</h3>
                   <address className="mt-4 not-italic font-body text-lg leading-relaxed text-[#f5efe2] md:text-xl">
-                    Omaru Farm
+                    {contactDetails.farmName}
                     <br />
-                    482 Heritage Road
+                    {contactDetails.addressLine1}
                     <br />
-                    Willow Valley, NSW 2577
+                    {contactDetails.addressLine2}
                   </address>
                 </div>
 
@@ -142,15 +182,15 @@ export function ContactPage() {
                   <ul className="mt-5 space-y-4 text-sm text-white/75">
                     <li className="flex justify-between gap-4 border-b border-gold/10 pb-3">
                       <span className="text-white/90">Café &amp; bakery</span>
-                      <span className="shrink-0 text-white/60">Thu–Sun · 9:00 – 16:00</span>
+                      <span className="shrink-0 text-white/60">{contactDetails.hoursCafe}</span>
                     </li>
                     <li className="flex justify-between gap-4 border-b border-gold/10 pb-3">
                       <span className="text-white/90">Farm store</span>
-                      <span className="shrink-0 text-white/60">Daily · 10:00 – 17:00</span>
+                      <span className="shrink-0 text-white/60">{contactDetails.hoursStore}</span>
                     </li>
                     <li className="flex justify-between gap-4 pb-1">
                       <span className="text-white/90">Garden tours</span>
-                      <span className="shrink-0 text-white/60">By appointment</span>
+                      <span className="shrink-0 text-white/60">{contactDetails.hoursTours}</span>
                     </li>
                   </ul>
                 </div>
@@ -166,7 +206,7 @@ export function ContactPage() {
                     <MapPin className="h-4 w-4" />
                   </a>
                   <a
-                    href="https://instagram.com"
+                    href={contactDetails.instagram}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gold/25 bg-white/[0.04] text-gold transition hover:border-gold/50 hover:bg-white/[0.07]"
@@ -175,7 +215,7 @@ export function ContactPage() {
                     <AtSign className="h-4 w-4" />
                   </a>
                   <a
-                    href="mailto:hello@omarufarm.com.au"
+                    href={`mailto:${contactDetails.email}`}
                     className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gold/25 bg-white/[0.04] text-gold transition hover:border-gold/50 hover:bg-white/[0.07]"
                     aria-label="Email"
                   >
@@ -222,48 +262,12 @@ export function ContactPage() {
                 <div className="rounded-xl border border-gold/15 bg-black/25 p-5">
                   <p className="text-sm text-white/70">Prefer a quick reply?</p>
                   <Button variant="outline" asChild className="mt-3 w-full sm:w-auto">
-                    <a href="https://wa.me/61000000000" target="_blank" rel="noreferrer">
+                    <a href={contactDetails.whatsapp} target="_blank" rel="noreferrer">
                       Chat on WhatsApp
                     </a>
                   </Button>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Newsletter */}
-        <section className="bg-[#080808] py-16 md:py-20">
-          <div className="mx-auto max-w-[92vw] px-5">
-            <div className="mx-auto max-w-2xl text-center">
-              <p className="text-xs uppercase tracking-[0.32em] text-gold/80">The slow read</p>
-              <h2 className="mt-4 font-heading text-4xl text-[#f5efe2] md:text-5xl">Join our journal</h2>
-              <p className="mt-4 text-sm leading-relaxed text-white/60 md:text-base">
-                Seasonal notes, harvest windows, and quiet stories from the farm — no noise, just substance.
-              </p>
-
-              <form
-                className="mx-auto mt-10 max-w-md"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                }}
-              >
-                <label htmlFor="journal-email" className="sr-only">
-                  Email for journal
-                </label>
-                <input
-                  id="journal-email"
-                  type="email"
-                  value={journalEmail}
-                  onChange={(e) => setJournalEmail(e.target.value)}
-                  autoComplete="email"
-                  className="w-full border-0 border-b border-white/25 bg-transparent py-3 text-center text-[#f5efe2] outline-none transition placeholder:text-white/35 focus:border-gold/70 md:text-left"
-                  placeholder="Your email address"
-                />
-                <Button type="submit" className="mt-8 w-full rounded-none bg-gold px-8 py-6 text-xs uppercase tracking-[0.22em] text-black hover:bg-gold/90 md:w-auto">
-                  Subscribe
-                </Button>
-              </form>
             </div>
           </div>
         </section>

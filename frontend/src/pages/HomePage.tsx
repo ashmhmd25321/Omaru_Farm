@@ -6,6 +6,8 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { featuredProducts } from '@/data/content'
+import { productImageUrl } from '@/utils/productImage'
+import { staticUrl } from '@/utils/staticUrl'
 
 type Product = {
   id?: number
@@ -13,6 +15,14 @@ type Product = {
   size: string
   price: string
   image: string
+  featured?: boolean
+}
+type Review = {
+  name: string
+  location: string
+  date: string
+  rating: number
+  comment: string
 }
 
 export function HomePage() {
@@ -23,7 +33,7 @@ export function HomePage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [reviewLimit, setReviewLimit] = useState(6)
 
-  const reviews = useMemo(
+  const fallbackReviews = useMemo(
     () => [
       { name: 'Emily R.', location: 'Adelaide, SA', date: 'Mar 2026', rating: 5, comment: 'Beautiful location, elegant atmosphere, and one of the best farm store selections we have visited.' },
       { name: 'Daniel S.', location: 'Port Lincoln, SA', date: 'Feb 2026', rating: 5, comment: 'The cafe food felt fresh and thoughtful. You can really taste the local ingredients.' },
@@ -37,6 +47,7 @@ export function HomePage() {
     ],
     [],
   )
+  const [reviews, setReviews] = useState<Review[]>(fallbackReviews)
 
   const visibleReviews = useMemo(() => {
     return reviews.slice(0, reviewLimit)
@@ -44,10 +55,10 @@ export function HomePage() {
 
   const sliderImages = useMemo(
     () => [
-      '/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG',
-      '/images/farm/IMG_3924.jpg',
-      '/images/farm/20210606_172356.jpg',
-      '/images/farm/20210602_130149.jpg',
+      staticUrl('/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG'),
+      staticUrl('/images/farm/IMG_3924.jpg'),
+      staticUrl('/images/farm/20210606_172356.jpg'),
+      staticUrl('/images/farm/20210602_130149.jpg'),
     ],
     [],
   )
@@ -72,15 +83,17 @@ export function HomePage() {
       .then((res) => res.json())
       .then((rows) => {
         if (!Array.isArray(rows) || rows.length === 0) return
-        setProducts(
-          rows.slice(0, 6).map((item: Record<string, unknown>) => ({
-            id: Number(item.id ?? 0),
-            name: String(item.name ?? ''),
-            size: String(item.size ?? ''),
-            price: `$${Number(item.price).toFixed(2)}`,
-            image: String(item.image ?? ''),
-          })),
-        )
+        const mapped = rows.map((item: Record<string, unknown>) => ({
+          id: Number(item.id ?? 0),
+          name: String(item.name ?? ''),
+          size: String(item.size ?? ''),
+          price: `$${Number(item.price).toFixed(2)}`,
+          image: String(item.image ?? ''),
+          featured: Boolean(item.featured),
+        }))
+        const featuredOnly = mapped.filter((x) => x.featured)
+        const list = featuredOnly.length > 0 ? featuredOnly.slice(0, 6) : mapped.slice(0, 6)
+        setProducts(list)
       })
       .catch(() => {
         // keep local fallback
@@ -88,6 +101,34 @@ export function HomePage() {
 
     return () => controller.abort()
   }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/testimonials`, {
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((rows: unknown) => {
+        if (!Array.isArray(rows) || rows.length === 0) return
+        setReviews(
+          rows.map((item) => {
+            const row = item as Record<string, unknown>
+            return {
+              name: String(row.guestName ?? 'Guest'),
+              location: String(row.location ?? ''),
+              date: String(row.visitDate ?? ''),
+              rating: Number(row.rating ?? 5),
+              comment: String(row.comment ?? ''),
+            }
+          }),
+        )
+      })
+      .catch(() => {
+        setReviews(fallbackReviews)
+      })
+
+    return () => controller.abort()
+  }, [fallbackReviews])
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -264,7 +305,7 @@ export function HomePage() {
           <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {products.map((product, index) => (
               <motion.div
-                key={product.name}
+                key={product.id ?? product.name}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
@@ -277,7 +318,7 @@ export function HomePage() {
                   <CardHeader>
                     <div className="group/image relative overflow-hidden rounded-md">
                       <img
-                        src={`/images/products/${product.image}`}
+                        src={productImageUrl(product.image)}
                         alt={product.name}
                         className="h-44 w-full rounded-md object-cover transition duration-700 group-hover/image:scale-110 group-hover/image:rotate-[1deg]"
                         loading={index > 3 ? 'lazy' : 'eager'}
@@ -589,7 +630,7 @@ export function HomePage() {
             <div className="grid gap-5 md:grid-cols-2">
               <div className="flex min-h-72 items-center justify-center overflow-hidden rounded-xl border border-gold/30 bg-black/40 p-2">
                 <img
-                  src={`/images/products/${selectedProduct.image}`}
+                  src={productImageUrl(selectedProduct.image)}
                   alt={selectedProduct.name}
                   className="max-h-[420px] w-full rounded-md object-contain"
                 />

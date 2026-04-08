@@ -4,6 +4,29 @@ import { motion } from 'framer-motion'
 import { CalendarDays, CheckCircle2, ChevronRight, Clock3, Image as ImageIcon, Minus, Plus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { staticUrl } from '@/utils/staticUrl'
+
+type MenuItem = {
+  id?: number
+  section: string
+  itemName: string
+  description: string
+  price: number
+  image: string
+  sortOrder?: number
+}
+
+const fallbackMenuItems: MenuItem[] = [
+  { section: 'Breakfast', itemName: 'Heritage Oats Porridge', description: 'House spiced oat porridge, seasonal fruit, honey drizzle', price: 16, image: '' },
+  { section: 'Breakfast', itemName: 'Truffle Farm Eggs', description: 'Two eggs, greens, toast, cold-pressed oil', price: 18, image: '' },
+  { section: 'Breakfast', itemName: 'Smashed Garden Greens', description: 'Avocado, herbs, lemon, seeds, sourdough', price: 17, image: '' },
+  { section: 'Lunch', itemName: 'Roasted Root Medley', description: 'Seasonal roasted vegetables, feta, herb dressing', price: 22, image: '' },
+  { section: 'Lunch', itemName: 'Omaru Lamb Ragu', description: 'Slow-cooked ragu, pasta, parmesan, garden herbs', price: 28, image: '' },
+  { section: 'Lunch', itemName: 'Wild Mushroom Risotto', description: 'Creamy risotto, mushrooms, thyme oil', price: 26, image: '' },
+  { section: 'Afternoon Tea', itemName: 'Devonshire Scones', description: 'Fresh cream, farm jam, seasonal berries', price: 14, image: '' },
+  { section: 'Afternoon Tea', itemName: 'Lavender Lemon Tart', description: 'Bright citrus tart with lavender sugar', price: 12, image: '' },
+  { section: 'Afternoon Tea', itemName: 'The Omaru Tea Set', description: 'Tea selection with small sweet bites', price: 19, image: '' },
+]
 
 export function CafePage() {
   const pad2 = (n: number) => `${n}`.padStart(2, '0')
@@ -67,6 +90,12 @@ export function CafePage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [notes, setNotes] = useState('')
+  const [reserveState, setReserveState] = useState<{ loading: boolean; message: string; error: string }>({
+    loading: false,
+    message: '',
+    error: '',
+  })
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(fallbackMenuItems)
 
   const prettyDate = useMemo(() => {
     // selectedDate is ISO yyyy-mm-dd; convert safely to local date.
@@ -89,6 +118,42 @@ export function CafePage() {
     }
   }, [timeFrom, timeUntil])
 
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/menu`, { signal: controller.signal })
+      .then((res) => res.json())
+      .then((rows: unknown) => {
+        if (!Array.isArray(rows) || rows.length === 0) return
+        setMenuItems(
+          rows.map((item) => {
+            const row = item as Record<string, unknown>
+            return {
+              id: Number(row.id ?? 0),
+              section: String(row.section ?? 'Menu'),
+              itemName: String(row.itemName ?? ''),
+              description: String(row.description ?? ''),
+              price: Number(row.price ?? 0),
+              image: String(row.image ?? ''),
+              sortOrder: Number(row.sortOrder ?? 0),
+            }
+          }),
+        )
+      })
+      .catch(() => {
+        setMenuItems(fallbackMenuItems)
+      })
+    return () => controller.abort()
+  }, [])
+
+  const menuColumns = useMemo(() => {
+    const sectionOrder = ['Breakfast', 'Lunch', 'Afternoon Tea']
+    return sectionOrder.map((section, index) => ({
+      key: section,
+      title: `${String(index + 1).padStart(2, '0')}. ${section}`,
+      items: menuItems.filter((x) => x.section === section).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    }))
+  }, [menuItems])
+
   return (
     <>
       <Helmet>
@@ -100,7 +165,7 @@ export function CafePage() {
         {/* Hero */}
         <section className="relative overflow-hidden border-b border-gold/20">
           <img
-            src="/images/farm/20211027_195611.jpg"
+            src={staticUrl('/images/farm/20211027_195611.jpg')}
             alt="Farm-to-table dining at Omaru Cafe"
             className="absolute inset-0 h-full w-full object-cover opacity-35"
           />
@@ -141,31 +206,32 @@ export function CafePage() {
         </section>
 
         {/* Ingredients */}
-        <section className="relative -mt-16 border-b border-gold/20 bg-[#0b0b0b] py-16 md:-mt-20">
+        <section className="relative -mt-12 overflow-x-clip border-b border-gold/20 bg-[#0b0b0b] py-12 sm:-mt-16 sm:py-14 md:-mt-20 md:py-16">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/0 to-[#0b0b0b]" />
-          <div className="relative z-10 mx-auto grid max-w-[92vw] gap-10 px-5 md:grid-cols-12">
-            <div className="md:col-span-7">
-              <div className="relative mx-auto max-w-2xl space-y-4 md:mx-0 md:h-[22rem] md:space-y-0">
-                <div className="z-10 w-full overflow-hidden rounded-2xl border border-gold/20 bg-black/30 shadow-[0_18px_60px_rgba(0,0,0,0.45)] md:absolute md:left-0 md:top-0 md:w-[58%]">
+          <div className="relative z-10 mx-auto grid max-w-[92vw] gap-10 px-4 sm:px-5 md:grid-cols-12 md:gap-12">
+            <div className="min-w-0 md:col-span-7">
+              {/* Mobile: aspect-ratio framing + overlap; md+: absolute collage (unchanged) */}
+              <div className="relative mx-auto max-w-lg pb-2 pt-1 md:mx-0 md:h-[22rem] md:max-w-none md:pb-0 md:pt-0">
+                <div className="relative z-10 mx-auto w-[min(100%,20rem)] overflow-hidden rounded-2xl border border-gold/20 bg-black/30 shadow-[0_18px_60px_rgba(0,0,0,0.45)] sm:w-[min(100%,22rem)] md:absolute md:left-0 md:top-0 md:mx-0 md:w-[58%] md:max-w-none">
                   <img
-                    src="/images/farm/PXL_20210512_061750528.PORTRAIT.jpg"
+                    src={staticUrl('/images/farm/PXL_20210512_061750528.PORTRAIT.jpg')}
                     alt="Fresh produce and farm ingredients"
-                    className="h-72 w-full object-cover transition duration-700 hover:scale-105"
+                    className="aspect-[3/4] w-full object-cover object-center transition duration-700 hover:scale-105 md:aspect-auto md:h-72 md:min-h-[18rem]"
                     loading="lazy"
                   />
                 </div>
-                <div className="w-full overflow-hidden rounded-2xl border border-gold/20 bg-black/30 shadow-[0_22px_70px_rgba(0,0,0,0.5)] md:absolute md:right-0 md:top-16 md:w-[62%]">
+                <div className="relative z-20 -mt-10 ml-auto mr-0 w-[min(100%,19rem)] overflow-hidden rounded-2xl border border-gold/20 bg-black/30 shadow-[0_22px_70px_rgba(0,0,0,0.5)] sm:-mt-11 sm:w-[min(100%,21rem)] md:absolute md:right-0 md:top-16 md:mt-0 md:w-[62%] md:max-w-none">
                   <img
-                    src="/images/farm/20210907_144206.jpg"
+                    src={staticUrl('/images/farm/20210907_144206.jpg')}
                     alt="Fresh farm eggs"
-                    className="h-72 w-full object-cover transition duration-700 hover:scale-105"
+                    className="aspect-[5/4] w-full object-cover object-center transition duration-700 hover:scale-105 md:aspect-auto md:h-72 md:min-h-[18rem]"
                     loading="lazy"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="md:col-span-5 md:pl-2">
+            <div className="min-w-0 md:col-span-5 md:pl-2">
               <p className="text-xs uppercase tracking-[0.28em] text-gold/75">Our Ingredients</p>
               <h2 className="mt-3 font-heading text-3xl text-[#f5efe2] md:text-4xl">Naturally premium.</h2>
               <p className="mt-4 text-sm leading-relaxed text-white/70">
@@ -197,34 +263,9 @@ export function CafePage() {
             </div>
 
             <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {[
-                {
-                  title: '01. Breakfast',
-                  items: [
-                    { name: 'Heritage Oats Porridge', desc: 'House spiced oat porridge, seasonal fruit, honey drizzle', price: '$16' },
-                    { name: 'Truffle Farm Eggs', desc: 'Two eggs, greens, toast, cold-pressed oil', price: '$18' },
-                    { name: 'Smashed Garden Greens', desc: 'Avocado, herbs, lemon, seeds, sourdough', price: '$17' },
-                  ],
-                },
-                {
-                  title: '02. Lunch',
-                  items: [
-                    { name: 'Roasted Root Medley', desc: 'Seasonal roasted vegetables, feta, herb dressing', price: '$22' },
-                    { name: 'Omaru Lamb Ragu', desc: 'Slow-cooked ragu, pasta, parmesan, garden herbs', price: '$28' },
-                    { name: 'Wild Mushroom Risotto', desc: 'Creamy risotto, mushrooms, thyme oil', price: '$26' },
-                  ],
-                },
-                {
-                  title: '03. Afternoon Tea',
-                  items: [
-                    { name: 'Devonshire Scones', desc: 'Fresh cream, farm jam, seasonal berries', price: '$14' },
-                    { name: 'Lavender Lemon Tart', desc: 'Bright citrus tart with lavender sugar', price: '$12' },
-                    { name: 'The Omaru Tea Set', desc: 'Tea selection with small sweet bites', price: '$19' },
-                  ],
-                },
-              ].map((col, index) => (
+              {menuColumns.map((col, index) => (
                 <motion.div
-                  key={col.title}
+                  key={col.key}
                   initial={{ opacity: 0, y: 18 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.2 }}
@@ -236,20 +277,24 @@ export function CafePage() {
                     </CardHeader>
                     <CardContent className="space-y-5">
                       {col.items.map((item) => (
-                        <div key={item.name} className="border-b border-gold/15 pb-4 last:border-b-0 last:pb-0">
+                        <div key={`${col.key}-${item.itemName}`} className="border-b border-gold/15 pb-4 last:border-b-0 last:pb-0">
                           <div className="flex items-start gap-4">
                             <div className="mt-0.5 h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-gold/15 bg-black/30">
-                              <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_20%,rgba(205,163,73,0.14),transparent_55%)]">
-                                <ImageIcon className="h-4 w-4 text-gold/70" aria-hidden="true" />
-                              </div>
+                              {item.image ? (
+                                <img src={item.image} alt={item.itemName} className="h-full w-full object-cover" loading="lazy" />
+                              ) : (
+                                <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_20%,rgba(205,163,73,0.14),transparent_55%)]">
+                                  <ImageIcon className="h-4 w-4 text-gold/70" aria-hidden="true" />
+                                </div>
+                              )}
                             </div>
 
                             <div className="min-w-0 flex-1">
                               <div className="flex items-start justify-between gap-4">
-                                <p className="truncate text-sm font-medium text-[#f5efe2]">{item.name}</p>
-                                <p className="shrink-0 text-sm font-semibold text-gold">{item.price}</p>
+                                <p className="truncate text-sm font-medium text-[#f5efe2]">{item.itemName}</p>
+                                <p className="shrink-0 text-sm font-semibold text-gold">${Number(item.price).toFixed(0)}</p>
                               </div>
-                              <p className="mt-1 line-clamp-2 text-sm text-white/65">{item.desc}</p>
+                              <p className="mt-1 line-clamp-2 text-sm text-white/65">{item.description}</p>
                             </div>
                           </div>
                         </div>
@@ -285,8 +330,41 @@ export function CafePage() {
 
               <form
                 className="mt-7 grid gap-4 text-left md:grid-cols-12"
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault()
+                  setReserveState({ loading: true, message: '', error: '' })
+                  try {
+                    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/bookings`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        fullName: name,
+                        email,
+                        bookingDate: selectedDate,
+                        source: 'cafe',
+                        guestCount: guests,
+                        timeFrom,
+                        timeUntil,
+                        message: notes
+                          ? `Period: ${period}. Notes: ${notes}`
+                          : `Period: ${period}. Preferred window: ${timeFrom}-${timeUntil}.`,
+                      }),
+                    })
+                    if (!res.ok) {
+                      const payload = await res.json().catch(() => null)
+                      throw new Error(payload?.message ?? 'Could not submit booking request')
+                    }
+                    setReserveState({ loading: false, message: 'Booking request submitted. We will contact you shortly.', error: '' })
+                    setName('')
+                    setEmail('')
+                    setNotes('')
+                  } catch (err) {
+                    setReserveState({
+                      loading: false,
+                      message: '',
+                      error: err instanceof Error ? err.message : 'Could not submit booking request',
+                    })
+                  }
                 }}
               >
                 {/* Period */}
@@ -463,7 +541,7 @@ export function CafePage() {
                 {/* Name / Email */}
                 <div className="md:col-span-4">
                   <p className="text-xs uppercase tracking-[0.22em] text-white/55">Full name</p>
-                  <input className="field mt-2" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
+                  <input className="field mt-2" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
                 <div className="md:col-span-4">
                   <p className="text-xs uppercase tracking-[0.22em] text-white/55">Email</p>
@@ -473,6 +551,7 @@ export function CafePage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    required
                   />
                 </div>
 
@@ -489,10 +568,12 @@ export function CafePage() {
 
                 {/* Submit */}
                 <div className="md:col-span-12">
-                  <Button type="submit" className="w-full">
-                    Book Now
+                  <Button type="submit" className="w-full" disabled={reserveState.loading}>
+                    {reserveState.loading ? 'Submitting...' : 'Book Now'}
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
+                  {reserveState.message ? <p className="mt-3 text-center text-sm text-emerald-300">{reserveState.message}</p> : null}
+                  {reserveState.error ? <p className="mt-3 text-center text-sm text-red-300">{reserveState.error}</p> : null}
                   <p className="mt-3 text-center text-xs text-white/45">
                     Selected: <span className="text-gold/85">{selectedDate}</span> • <span className="text-gold/85">{timeFrom}</span>–{' '}
                     <span className="text-gold/85">{timeUntil}</span> •{' '}

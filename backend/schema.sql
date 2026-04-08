@@ -8,7 +8,16 @@ CREATE TABLE IF NOT EXISTS products (
   size VARCHAR(60),
   price DECIMAL(8, 2) NOT NULL,
   image VARCHAR(255),
+  is_featured TINYINT(1) NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS product_categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_product_category_name (name)
 );
 
 CREATE TABLE IF NOT EXISTS bookings (

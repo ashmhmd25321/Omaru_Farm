@@ -41,6 +41,69 @@ mysql -u root -p < backend/schema.sql
 
 Backend API base URL: `http://localhost:4000`
 
+## Docker (Frontend + Backend + MySQL)
+
+This project is dockerized with:
+- `frontend` (Vite build served by Nginx)
+- `backend` (Express API)
+- `db` (MySQL 8)
+- shared uploads volume (`/images/uploads/*`)
+
+### 1) Create Docker env file
+
+```bash
+cp .env.docker.example .env
+```
+
+Edit `.env` values (especially `ADMIN_PASSWORD`, `ADMIN_JWT_SECRET`).
+
+### 2) Build and start
+
+```bash
+docker compose up --build -d
+```
+
+### 3) Open app
+
+- Website/Admin: `http://localhost:5173`
+- API health: `http://localhost:4000/api/health`
+
+### 4) Stop
+
+```bash
+docker compose down
+```
+
+To remove DB/upload volumes too:
+
+```bash
+docker compose down -v
+```
+
+## Free Hosting Options
+
+### Option A (recommended for full-stack + Docker): Oracle Cloud Always Free VM
+
+Why:
+- Truly free long-term VM tier
+- Full Docker Compose support (frontend + backend + MySQL in one host)
+- Best match for your current architecture
+
+High-level:
+1. Push this repo to GitHub.
+2. Create an Oracle Always Free Ubuntu VM.
+3. Install Docker + Docker Compose plugin.
+4. Clone repo on VM, create `.env`, run `docker compose up -d --build`.
+5. Point your domain/subdomain to the VM public IP.
+
+### Option B (frontend only): GitHub Pages
+
+Good for design-only preview, but **not** for your current full backend/admin/database flow.
+
+### Option C (split services): Render/Railway/etc
+
+Possible, but free tiers usually sleep or have limits. Also MySQL free plans are less predictable than running MySQL in your own free VM.
+
 ## Included API Endpoints
 
 - `GET /api/health`

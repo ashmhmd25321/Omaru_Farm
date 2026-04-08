@@ -1,26 +1,35 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { motion } from 'framer-motion'
 import { Leaf, Sparkles, UserRound, Wheat } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { staticUrl } from '@/utils/staticUrl'
 
 export function AboutPage() {
+  const [aboutContent, setAboutContent] = useState({
+    legacyTitle: 'Our Legacy',
+    legacyDescription:
+      'Built on patient craft and deep respect for the land, Omaru has grown into a place where guests can taste the seasons, meet the makers, and take home pantry essentials made with intention.',
+    foundationTitle: 'The Living Earth of Omaru',
+    foundationDescription:
+      'Our work is guided by sustainability, quality, and heritage. Every harvest, meal, and product is shaped by patience, restraint, and a quiet respect for the land.',
+  })
   const imagePool = useMemo(
     () => [
-      { src: '/images/farm/image-farm/7CD1DA41BA7E970B38EA4E75B43CD7CD.JPG', alt: 'Aerial view of Omaru Farm market gardens', label: 'Market Gardens', caption: 'Our solar-powered growing hub viewed from above' },
-      { src: '/images/farm/image-farm/DC543FC904F0A78254E08248B5D588EC.JPG', alt: 'Aerial view of Omaru Farm outdoor dining and grounds', label: 'Farm Grounds', caption: 'Sweeping grounds with outdoor picnic seating' },
-      { src: '/images/farm/image-farm/IMG_4637.jpg', alt: 'Fresh produce box and artisan pantry inside the farm store', label: 'Farm Store', caption: 'Seasonal produce and artisan pantry goods, ready to take home' },
-      { src: '/images/farm/image-farm/IMG_4672.JPG', alt: 'Guests celebrating at sunset on the Omaru Farm lawn', label: 'Sunset Gathering', caption: 'Friends and family gathered at golden hour on the lawn' },
-      { src: '/images/farm/image-farm/IMG_4682.jpg', alt: 'Group dining together inside Café Omaru at night', label: 'Café Dinner', caption: 'A warm evening feast shared around the table' },
-      { src: '/images/farm/image-farm/IMG_4724.jpg', alt: 'Guests enjoying lunch inside Café Omaru', label: 'Café Lunch', caption: 'Good food, good company — a typical afternoon at Café Omaru' },
-      { src: '/images/farm/image-farm/IMG_4737.jpg', alt: 'Two people holding sunflowers in the Omaru Farm garden', label: 'Garden Life', caption: 'Sunflower season in full bloom at our kitchen garden' },
-      { src: '/images/farm/image-farm/IMG_4757.jpg', alt: 'Café Omaru entrance with a horse rider in the foreground', label: 'Café Entrance', caption: 'Guests arrive by foot — or by horse — at Café Omaru' },
-      { src: '/images/farm/image-farm/IMG_4976.JPG', alt: 'Farmer feeding a large flock of free-range chickens', label: 'Free Range', caption: 'Morning feed for our free-range flock' },
-      { src: '/images/farm/image-farm/IMG_6051.jpg', alt: 'Café Omaru bar with wine bottles and glasses', label: 'The Bar', caption: 'A curated selection of local wines and spirits' },
-      { src: '/images/farm/image-farm/IMG_7318.jpg', alt: 'Café Omaru interior dining room set for service', label: 'Café Interior', caption: 'Warm lighting and welcoming tables, ready for guests' },
-      { src: '/images/farm/image-farm/IMG_7807.jpg', alt: 'Three-tier afternoon tea stand with cakes and pastries', label: 'Afternoon Tea', caption: 'House-made treats on our signature afternoon tea stand' },
-      { src: '/images/farm/image-farm/IMG_8196.jpg', alt: 'Children feeding baby goats on Omaru Farm', label: 'Farm Animals', caption: 'Little hands, big smiles — meeting the baby goats' },
+      { src: staticUrl('/images/farm/image-farm/7CD1DA41BA7E970B38EA4E75B43CD7CD.JPG'), alt: 'Aerial view of Omaru Farm market gardens', label: 'Market Gardens', caption: 'Our solar-powered growing hub viewed from above' },
+      { src: staticUrl('/images/farm/image-farm/DC543FC904F0A78254E08248B5D588EC.JPG'), alt: 'Aerial view of Omaru Farm outdoor dining and grounds', label: 'Farm Grounds', caption: 'Sweeping grounds with outdoor picnic seating' },
+      { src: staticUrl('/images/farm/image-farm/IMG_4637.jpg'), alt: 'Fresh produce box and artisan pantry inside the farm store', label: 'Farm Store', caption: 'Seasonal produce and artisan pantry goods, ready to take home' },
+      { src: staticUrl('/images/farm/image-farm/IMG_4672.JPG'), alt: 'Guests celebrating at sunset on the Omaru Farm lawn', label: 'Sunset Gathering', caption: 'Friends and family gathered at golden hour on the lawn' },
+      { src: staticUrl('/images/farm/image-farm/IMG_4682.jpg'), alt: 'Group dining together inside Café Omaru at night', label: 'Café Dinner', caption: 'A warm evening feast shared around the table' },
+      { src: staticUrl('/images/farm/image-farm/IMG_4724.jpg'), alt: 'Guests enjoying lunch inside Café Omaru', label: 'Café Lunch', caption: 'Good food, good company — a typical afternoon at Café Omaru' },
+      { src: staticUrl('/images/farm/image-farm/IMG_4737.jpg'), alt: 'Two people holding sunflowers in the Omaru Farm garden', label: 'Garden Life', caption: 'Sunflower season in full bloom at our kitchen garden' },
+      { src: staticUrl('/images/farm/image-farm/IMG_4757.jpg'), alt: 'Café Omaru entrance with a horse rider in the foreground', label: 'Café Entrance', caption: 'Guests arrive by foot — or by horse — at Café Omaru' },
+      { src: staticUrl('/images/farm/image-farm/IMG_4976.JPG'), alt: 'Farmer feeding a large flock of free-range chickens', label: 'Free Range', caption: 'Morning feed for our free-range flock' },
+      { src: staticUrl('/images/farm/image-farm/IMG_6051.jpg'), alt: 'Café Omaru bar with wine bottles and glasses', label: 'The Bar', caption: 'A curated selection of local wines and spirits' },
+      { src: staticUrl('/images/farm/image-farm/IMG_7318.jpg'), alt: 'Café Omaru interior dining room set for service', label: 'Café Interior', caption: 'Warm lighting and welcoming tables, ready for guests' },
+      { src: staticUrl('/images/farm/image-farm/IMG_7807.jpg'), alt: 'Three-tier afternoon tea stand with cakes and pastries', label: 'Afternoon Tea', caption: 'House-made treats on our signature afternoon tea stand' },
+      { src: staticUrl('/images/farm/image-farm/IMG_8196.jpg'), alt: 'Children feeding baby goats on Omaru Farm', label: 'Farm Animals', caption: 'Little hands, big smiles — meeting the baby goats' },
     ],
     [],
   )
@@ -41,6 +50,56 @@ export function AboutPage() {
     ],
     [],
   )
+  /** Tighter motion on narrow viewports so cards stay in-bounds (no horizontal scroll). */
+  const transformsMobile = useMemo(
+    () => [
+      { rot: -5, x: -14, y: 18 },
+      { rot: 4, x: 12, y: 8 },
+      { rot: -1, x: 0, y: -10 },
+    ],
+    [],
+  )
+  const fanTransformsMobile = useMemo(
+    () => [
+      { rot: -8, x: -22, y: 28 },
+      { rot: 8, x: 20, y: 16 },
+      { rot: 0, x: 0, y: -20 },
+    ],
+    [],
+  )
+
+  const [mdUp, setMdUp] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    const sync = () => setMdUp(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/content/about`, {
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((data: unknown) => {
+        if (!data || typeof data !== 'object') return
+        const value = data as Record<string, unknown>
+        setAboutContent((prev) => ({
+          legacyTitle: String(value.legacyTitle ?? prev.legacyTitle),
+          legacyDescription: String(value.legacyDescription ?? prev.legacyDescription),
+          foundationTitle: String(value.foundationTitle ?? prev.foundationTitle),
+          foundationDescription: String(value.foundationDescription ?? prev.foundationDescription),
+        }))
+      })
+      .catch(() => {
+        // keep local fallback text
+      })
+    return () => controller.abort()
+  }, [])
 
   const [stackStart, setStackStart] = useState(0)
   const [fanOpen, setFanOpen] = useState(false)
@@ -147,10 +206,9 @@ export function AboutPage() {
               viewport={{ once: true, amount: 0.35 }}
               transition={{ duration: 0.5 }}
             >
-              <h2 className="font-heading text-4xl leading-[1] text-[#f5efe2] md:text-5xl">Our Legacy</h2>
+              <h2 className="font-heading text-4xl leading-[1] text-[#f5efe2] md:text-5xl">{aboutContent.legacyTitle}</h2>
               <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/70 md:text-base">
-                Built on patient craft and deep respect for the land, Omaru has grown into a place where guests can taste the seasons, meet the
-                makers, and take home pantry essentials made with intention.
+                {aboutContent.legacyDescription}
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <a
@@ -172,28 +230,31 @@ export function AboutPage() {
         </section>
 
         {/* Pillars + Living earth (merged) */}
-        <section id="pillars" className="border-t border-gold/10 bg-[#0b0b0b]">
-          <div className="mx-auto max-w-[92vw] px-5 py-16 md:py-20">
-            <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-gold/15" />
-              <p className="text-xs uppercase tracking-[0.28em] text-gold/70">Our Foundations</p>
-              <div className="h-px flex-1 bg-gold/15" />
+        <section id="pillars" className="overflow-x-clip border-t border-gold/10 bg-[#0b0b0b]">
+          <div className="mx-auto max-w-[92vw] px-4 py-12 sm:px-5 md:py-20">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="h-px min-w-8 flex-1 bg-gold/15" />
+              <p className="shrink-0 px-1 text-center text-[10px] uppercase tracking-[0.2em] text-gold/70 sm:text-xs sm:tracking-[0.28em]">
+                Our Foundations
+              </p>
+              <div className="h-px min-w-8 flex-1 bg-gold/15" />
             </div>
 
-            <div className="mt-6 grid gap-6 md:min-h-[860px] md:grid-cols-2 md:gap-5">
+            <div className="mt-6 grid min-w-0 gap-6 md:min-h-[860px] md:grid-cols-2 md:gap-5">
               <motion.div
-                className="grid h-full gap-5 md:grid-rows-[auto_1fr]"
+                className="grid min-w-0 gap-5 md:grid-rows-[auto_1fr]"
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.35 }}
                 transition={{ duration: 0.45 }}
               >
-                <div className="rounded-[28px] border border-gold/15 bg-[#111113] p-7 shadow-[0_30px_90px_rgba(0,0,0,0.48)]">
+                <div className="rounded-[28px] border border-gold/15 bg-[#111113] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:p-6 md:p-7">
                   <p className="text-xs uppercase tracking-[0.24em] text-gold/70">Living Earth</p>
-                  <h2 className="mt-3 font-heading text-4xl leading-[0.96] text-[#f5efe2] md:text-5xl">The Living Earth of Omaru</h2>
+                  <h2 className="mt-3 font-heading text-3xl leading-[0.98] text-[#f5efe2] sm:text-4xl sm:leading-[0.96] md:text-5xl">
+                    {aboutContent.foundationTitle}
+                  </h2>
                   <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/70 md:text-base">
-                    Our work is guided by sustainability, quality, and heritage. Every harvest, meal, and product is shaped by patience, restraint,
-                    and a quiet respect for the land.
+                    {aboutContent.foundationDescription}
                   </p>
 
                   <div className="mt-6 flex flex-wrap gap-2.5">
@@ -208,7 +269,7 @@ export function AboutPage() {
                   </div>
                 </div>
 
-                <div className="grid h-full gap-4 rounded-[28px] border border-gold/15 bg-[#111113] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.48)] md:grid-rows-3">
+                <div className="grid h-full gap-3 rounded-[28px] border border-gold/15 bg-[#111113] p-4 shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:gap-4 sm:p-5 md:grid-rows-3">
                   {[
                     {
                       title: 'Sustainability',
@@ -232,13 +293,13 @@ export function AboutPage() {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.25 }}
                       transition={{ duration: 0.45, delay: i * 0.05 }}
-                      className="flex h-full items-start gap-4 rounded-2xl border border-gold/12 bg-black/25 p-5"
+                      className="flex h-full flex-col items-start gap-3 rounded-2xl border border-gold/12 bg-black/25 p-4 sm:flex-row sm:gap-4 sm:p-5"
                     >
-                      <span className="grid h-11 w-11 flex-none place-items-center rounded-xl border border-gold/15 bg-black/35 text-gold">
+                      <span className="grid h-10 w-10 flex-none place-items-center rounded-xl border border-gold/15 bg-black/35 text-gold sm:h-11 sm:w-11">
                         <item.icon className="h-5 w-5" />
                       </span>
-                      <div>
-                        <h3 className="font-heading text-2xl text-[#f5efe2]">{item.title}</h3>
+                      <div className="min-w-0">
+                        <h3 className="font-heading text-xl text-[#f5efe2] sm:text-2xl">{item.title}</h3>
                         <p className="mt-1 text-sm leading-relaxed text-white/68">{item.body}</p>
                       </div>
                     </motion.div>
@@ -247,18 +308,18 @@ export function AboutPage() {
               </motion.div>
 
               <motion.div
-                className="h-full"
+                className="min-w-0"
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.25 }}
                 transition={{ duration: 0.45, delay: 0.05 }}
               >
-                <div className="relative h-full min-h-[520px] overflow-visible rounded-[28px] border border-gold/15 bg-black/10 p-5 shadow-[0_30px_90px_rgba(0,0,0,0.45)] md:min-h-[740px]">
-                  <div className="absolute left-6 top-6 rounded-full border border-gold/20 bg-black/30 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-gold/80 backdrop-blur">
+                <div className="relative h-full min-h-[min(420px,78svh)] overflow-hidden rounded-[28px] border border-gold/15 bg-black/10 p-3 shadow-[0_30px_90px_rgba(0,0,0,0.45)] sm:p-5 md:min-h-[740px] md:overflow-visible">
+                  <div className="absolute left-3 top-3 z-[5] max-w-[calc(100%-1.5rem)] rounded-full border border-gold/20 bg-black/30 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-gold/80 backdrop-blur sm:left-6 sm:top-6 sm:max-w-none sm:px-3 sm:text-[11px] sm:tracking-[0.22em]">
                     Moments from Omaru
                   </div>
 
-                  <div className="relative mx-auto mt-14 h-[440px] w-full max-w-[560px] md:mt-16 md:h-[600px]">
+                  <div className="relative mx-auto mt-12 h-[clamp(240px,56vw,360px)] w-full min-w-0 max-w-[560px] sm:mt-14 sm:h-[400px] md:mt-16 md:h-[600px]">
                     <motion.div
                       aria-hidden="true"
                       className="pointer-events-none absolute inset-0 -z-10"
@@ -266,14 +327,22 @@ export function AboutPage() {
                       animate={{ x: [0, 10, -10, 0], y: [0, -8, 8, 0] }}
                       transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
                     >
-                      <div className="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(205,163,73,0.22),transparent_60%)] blur-2xl md:h-[680px] md:w-[680px]" />
-                      <div className="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_55%)] blur-3xl md:h-[680px] md:w-[680px]" />
+                      <div className="absolute left-1/2 top-1/2 h-[min(92vw,380px)] w-[min(92vw,380px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(205,163,73,0.22),transparent_60%)] blur-2xl md:h-[680px] md:w-[680px]" />
+                      <div className="absolute left-1/2 top-1/2 h-[min(92vw,380px)] w-[min(92vw,380px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_55%)] blur-3xl md:h-[680px] md:w-[680px]" />
                     </motion.div>
 
                     {stack.map((img, idx) => {
                       const isTop = idx === topCard
                       const z = isTop ? 20 : 10 + idx
-                      const t = (fanOpen ? fanTransforms : transforms)[idx]
+                      const t = (
+                        fanOpen
+                          ? mdUp
+                            ? fanTransforms
+                            : fanTransformsMobile
+                          : mdUp
+                            ? transforms
+                            : transformsMobile
+                      )[idx]
                       return (
                       <motion.button
                         key={img.src}
@@ -288,8 +357,8 @@ export function AboutPage() {
                           scale: isTop ? 1.015 : 0.985,
                         }}
                         transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                        whileHover={{ y: t.y - 14, rotate: 0, scale: 1.02 }}
-                        whileTap={{ y: t.y - 18, rotate: 0, scale: 1.03 }}
+                        whileHover={mdUp ? { y: t.y - 14, rotate: 0, scale: 1.02 } : { y: t.y - 6, rotate: 0, scale: 1.01 }}
+                        whileTap={{ y: t.y - (mdUp ? 18 : 10), rotate: 0, scale: mdUp ? 1.03 : 1.02 }}
                         drag={isTop ? 'x' : false}
                         dragConstraints={{ left: 0, right: 0 }}
                         dragElastic={0.2}
@@ -323,13 +392,15 @@ export function AboutPage() {
                               <img
                                 src={img.src}
                                 alt={img.alt}
-                                className="h-64 w-full object-cover md:h-80"
+                                className="h-48 w-full object-cover sm:h-56 md:h-80"
                                 loading="lazy"
                               />
                             </div>
                             <div className="px-1 pb-1 pt-3">
                               <p className="text-[11px] uppercase tracking-[0.24em] text-black/55">Omaru • {img.label}</p>
-                              <p className="mt-1 font-heading text-xl text-black/85">{img.caption}</p>
+                              <p className="mt-1 font-heading text-base leading-snug text-black/85 sm:text-lg md:text-xl">
+                                {img.caption}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -337,15 +408,15 @@ export function AboutPage() {
                     )})}
                   </div>
 
-                  <div className="mt-5">
-                    <div className="flex items-center justify-between gap-3">
+                  <div className="mt-4 sm:mt-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                       <div className="flex items-center gap-3">
                         <p className="text-xs uppercase tracking-[0.22em] text-white/55">Gallery</p>
                         <p className="text-xs text-white/45">
                           <span className="text-gold/85">{selectedIndex + 1}</span> / {imagePool.length}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => setFanOpen((v) => !v)}

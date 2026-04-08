@@ -1,0 +1,65 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: omaru_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-omaru_farm}
+      MYSQL_USER: ${DB_USER:-omaru}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-omaru_password}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: ./backend
+    container_name: omaru_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-omaru}
+      DB_PASSWORD: ${DB_PASSWORD:-omaru_password}
+      DB_NAME: ${DB_NAME:-omaru_farm}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change_this_admin_password}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-change_me_in_production}
+      ADMIN_JWT_EXPIRES: ${ADMIN_JWT_EXPIRES:-8h}
+      ADMIN_LOGIN_WINDOW_MS: ${ADMIN_LOGIN_WINDOW_MS:-600000}
+      ADMIN_LOGIN_MAX_ATTEMPTS: ${ADMIN_LOGIN_MAX_ATTEMPTS:-8}
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads
+    ports:
+      - "4000:4000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: omaru_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - uploads_data:/app/uploads:ro
+    ports:
+      - "5173:80"
+
+volumes:
+  db_data:
+  uploads_data:

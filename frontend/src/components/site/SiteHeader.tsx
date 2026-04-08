@@ -2,21 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-
-type NavItem = {
-  to: string
-  label: string
-  end?: boolean
-}
-
-const navItems: NavItem[] = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/about', label: 'About' },
-  { to: '/cafe', label: 'Cafe' },
-  { to: '/stay', label: 'Stay' },
-  { to: '/store', label: 'Store' },
-  { to: '/contact', label: 'Contact' },
-]
+import { mainNavItems } from '@/constants/siteNav'
+import { staticUrl } from '@/utils/staticUrl'
 
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -35,15 +22,15 @@ export function SiteHeader() {
       <nav className="mx-auto flex w-full max-w-[92vw] items-center justify-between px-5 py-4">
         <Link to="/" className="flex items-center gap-3">
           <img
-            src="/images/farm/logo.webp"
+            src={staticUrl('/images/farm/omaru-logo.png')}
             alt="Omaru Farm logo"
-            className="h-10 w-10 rounded-full border border-gold/30 bg-white/5 p-1"
+            className="h-11 w-11 drop-shadow-[0_0_6px_rgba(205,163,73,0.35)]"
           />
           <p className="font-heading text-xl text-gold">Omaru Farm</p>
         </Link>
 
         <div className="hidden gap-6 text-sm text-white/85 md:flex">
-          {navItems.map((item) => (
+          {mainNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -88,7 +75,7 @@ export function SiteHeader() {
           <div className="relative z-30 border-t border-gold/15 bg-[#0b0b0b]/95 backdrop-blur">
             <div className="mx-auto max-w-[92vw] px-5 py-4">
               <div className="grid gap-1">
-                {navItems.map((item) => (
+                {mainNavItems.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}

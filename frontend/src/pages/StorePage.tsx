@@ -2,60 +2,126 @@ import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { motion } from 'framer-motion'
 import { CircleX, Leaf, PackageSearch, ShoppingBag, Sparkles, Truck } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { productCatalog } from '@/data/productCatalog'
+import { productImageUrl } from '@/utils/productImage'
+import { staticUrl } from '@/utils/staticUrl'
 
-const productImagePool = [
-  '20260311_130334.jpg',
-  '20260311_130456.jpg',
-  '20260311_130712.jpg',
-  '20260311_130805.jpg',
-  '20260311_130831.jpg',
-  '20260311_130909.jpg',
-  '20260311_130929.jpg',
-  '20260311_130944.jpg',
-  '20260311_130957.jpg',
-  '20260311_131012.jpg',
-  '20260311_131023.jpg',
-  '20260311_131037.jpg',
-  '20260311_131115.jpg',
-  '20260311_131121.jpg',
-  '20260311_131126.jpg',
-  '20260311_131151.jpg',
-  '20260311_131257.jpg',
-  '20260311_131331.jpg',
-  '20260311_131358.jpg',
-  '20260311_131523.jpg',
-  '20260311_131542.jpg',
-  '20260311_131619.jpg',
-  '20260311_131655.jpg',
-  '20260311_131702.jpg',
-  '20260311_131721.jpg',
-  '20260311_131758.jpg',
-  '20260311_131810.jpg',
-  '20260311_131846.jpg',
-  '20260311_131852.jpg',
-  '20260311_131913.jpg',
-  '20260311_131920.jpg',
-  '20260311_131930.jpg',
-  '20260311_131936.jpg',
-  '20260311_132043.jpg',
-  '20260311_132107.jpg',
-  '20260311_132126.jpg',
-]
+type PageToken = number | 'ellipsis'
+type Product = {
+  id?: number
+  name: string
+  size: string
+  price: number
+  image: string
+  category: string
+}
+
+/** Compact page list with ellipses so long ranges stay usable on small screens. */
+function paginationItems(total: number, current: number, siblingCount: number): PageToken[] {
+  if (total <= 0) return []
+  if (total === 1) return [1]
+
+  const set = new Set<number>()
+  set.add(1)
+  set.add(total)
+  for (let i = current - siblingCount; i <= current + siblingCount; i++) {
+    if (i >= 1 && i <= total) set.add(i)
+  }
+
+  const sorted = [...set].sort((a, b) => a - b)
+  const out: PageToken[] = []
+  for (let i = 0; i < sorted.length; i++) {
+    const p = sorted[i]!
+    if (i > 0 && p - sorted[i - 1]! > 1) out.push('ellipsis')
+    out.push(p)
+  }
+  return out
+}
 
 export function StorePage() {
-  const categories = useMemo(() => ['All', ...Array.from(new Set(productCatalog.map((p) => p.category)))], [])
+  const [searchParams, setSearchParams] = useSearchParams()
+  const productPreviewId = searchParams.get('product')
+
+  const [products, setProducts] = useState<Product[]>(
+    productCatalog.map((p) => ({
+      ...p,
+      image: '',
+    })),
+  )
+  const [managedCategoryNames, setManagedCategoryNames] = useState<string[]>([])
+
+  const categories = useMemo(() => {
+    const fromProducts = Array.from(new Set(products.map((p) => p.category).filter(Boolean)))
+    const ordered = managedCategoryNames.filter((c) => fromProducts.includes(c))
+    const rest = fromProducts.filter((c) => !managedCategoryNames.includes(c)).sort((a, b) => a.localeCompare(b))
+    return ['All', ...ordered, ...rest]
+  }, [managedCategoryNames, products])
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All')
   const [sortBy, setSortBy] = useState<'name' | 'price-low' | 'price-high'>('name')
   const [currentPage, setCurrentPage] = useState(1)
-  const [selectedProduct, setSelectedProduct] = useState<(typeof productCatalog)[number] | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const pageSize = 12
 
+  useEffect(() => {
+    const controller = new AbortController()
+    const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'
+    fetch(`${base}/api/product-categories`, { signal: controller.signal })
+      .then((res) => res.json())
+      .then((rows: unknown) => {
+        if (!Array.isArray(rows)) return
+        setManagedCategoryNames(
+          rows
+            .map((r) => String((r as { name?: string }).name ?? '').trim())
+            .filter(Boolean),
+        )
+      })
+      .catch(() => {
+        // filters still work from product-derived categories
+      })
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/products`, { signal: controller.signal })
+      .then((res) => res.json())
+      .then((rows: unknown) => {
+        if (!Array.isArray(rows) || rows.length === 0) return
+        setProducts(
+          rows.map((item) => {
+            const row = item as Record<string, unknown>
+            return {
+              id: Number(row.id ?? 0),
+              name: String(row.name ?? ''),
+              size: String(row.size ?? ''),
+              price: Number(row.price ?? 0),
+              image: String(row.image ?? ''),
+              category: String(row.category ?? 'Other'),
+            }
+          }),
+        )
+      })
+      .catch(() => {
+        // keep local fallback catalog
+      })
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    const id = Number(productPreviewId || 0)
+    if (!id || products.length === 0) return
+    const found = products.find((x) => x.id === id)
+    if (!found) return
+    setSelectedProduct(found)
+    window.setTimeout(() => document.getElementById('store-browse')?.scrollIntoView({ behavior: 'smooth' }), 120)
+  }, [productPreviewId, products])
+
   const filteredProducts = useMemo(() => {
-    const byFilter = productCatalog.filter((product) => {
+    const byFilter = products.filter((product) => {
       const searchTarget = `${product.name} ${product.size}`.toLowerCase()
       const queryMatch = searchTarget.includes(query.toLowerCase())
       const categoryMatch = category === 'All' || product.category === category
@@ -65,7 +131,7 @@ export function StorePage() {
     if (sortBy === 'price-low') return [...byFilter].sort((a, b) => a.price - b.price)
     if (sortBy === 'price-high') return [...byFilter].sort((a, b) => b.price - a.price)
     return [...byFilter].sort((a, b) => a.name.localeCompare(b.name))
-  }, [category, query, sortBy])
+  }, [category, products, query, sortBy])
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize))
   const paginatedProducts = useMemo(
@@ -80,6 +146,22 @@ export function StorePage() {
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages)
   }, [currentPage, totalPages])
+
+  const [smUp, setSmUp] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)')
+    const sync = () => setSmUp(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  const pageTokens = useMemo(
+    () => paginationItems(totalPages, currentPage, smUp ? 2 : 1),
+    [totalPages, currentPage, smUp],
+  )
 
   return (
     <>
@@ -169,7 +251,7 @@ export function StorePage() {
                   {['20260311_130456.jpg', '20260311_130712.jpg', '20260311_130805.jpg'].map((src) => (
                     <div key={src} className="overflow-hidden rounded-xl border border-gold/15">
                       <img
-                        src={`/images/products/${src}`}
+                        src={staticUrl(`/images/products/${src}`)}
                         alt=""
                         aria-hidden="true"
                         className="aspect-square w-full object-cover opacity-90 transition duration-500 hover:scale-105"
@@ -225,7 +307,7 @@ export function StorePage() {
           <section className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {paginatedProducts.map((product, index) => (
             <motion.div
-              key={`${product.name}-${index}`}
+              key={product.id ?? `${product.name}-${index}`}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: (index % 12) * 0.03 }}
@@ -237,7 +319,7 @@ export function StorePage() {
                 <CardHeader>
                   <div className="group/image relative overflow-hidden rounded-md">
                     <img
-                      src={`/images/products/${productImagePool[index % productImagePool.length]}`}
+                      src={productImageUrl(product.image)}
                       alt={product.name}
                       className="h-44 w-full object-cover transition duration-700 group-hover/image:scale-110"
                       loading="lazy"
@@ -256,34 +338,67 @@ export function StorePage() {
           ))}
           </section>
 
-          <section className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/20 bg-black/30 p-3">
-          <p className="text-sm text-white/70">Page {currentPage} of {totalPages}</p>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
-              Previous
-            </Button>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: totalPages }).slice(0, 7).map((_, idx) => {
-                const pageNumber = idx + 1
-                return (
-                  <button
-                    key={pageNumber}
-                    onClick={() => setCurrentPage(pageNumber)}
-                    className={`h-8 w-8 rounded-full text-xs transition ${
-                      pageNumber === currentPage
-                        ? 'bg-gold text-black'
-                        : 'border border-white/30 text-white/75 hover:border-gold hover:text-gold'
-                    }`}
-                  >
-                    {pageNumber}
-                  </button>
-                )
-              })}
+          <section
+            className="mt-8 rounded-xl border border-gold/20 bg-black/30 p-3 sm:p-4"
+            aria-label="Product pagination"
+          >
+            <p className="text-center text-sm text-white/70 sm:text-left">
+              Page {currentPage} of {totalPages}
+            </p>
+
+            <div className="mt-3 flex items-stretch gap-2 sm:mt-4 sm:items-center sm:gap-3">
+              <Button
+                variant="outline"
+                className="min-h-11 shrink-0 px-3 sm:px-4"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <span className="sm:hidden">Prev</span>
+                <span className="hidden sm:inline">Previous</span>
+              </Button>
+
+              <div
+                className="flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto overscroll-x-contain px-0.5 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                role="navigation"
+                aria-label="Page numbers"
+              >
+                {pageTokens.map((token, idx) =>
+                  token === 'ellipsis' ? (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="inline-flex min-w-8 shrink-0 items-center justify-center pb-1 text-sm leading-none text-white/40 select-none"
+                      aria-hidden="true"
+                    >
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={token}
+                      type="button"
+                      onClick={() => setCurrentPage(token)}
+                      aria-label={`Go to page ${token}`}
+                      aria-current={token === currentPage ? 'page' : undefined}
+                      className={`grid h-11 min-w-11 shrink-0 place-items-center rounded-full text-sm font-medium transition ${
+                        token === currentPage
+                          ? 'bg-gold text-black'
+                          : 'border border-white/30 text-white/80 hover:border-gold hover:text-gold'
+                      }`}
+                    >
+                      {token}
+                    </button>
+                  ),
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                className="min-h-11 shrink-0 px-3 sm:px-4"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
             </div>
-            <Button variant="outline" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-              Next
-            </Button>
-          </div>
           </section>
         </div>
       </main>
@@ -296,7 +411,14 @@ export function StorePage() {
             className="relative w-full max-w-2xl rounded-2xl border border-gold/35 bg-[#0d0d0d] p-5 shadow-[0_25px_80px_rgba(0,0,0,0.55)]"
           >
             <button
-              onClick={() => setSelectedProduct(null)}
+              onClick={() => {
+                setSelectedProduct(null)
+                if (searchParams.get('product')) {
+                  const next = new URLSearchParams(searchParams)
+                  next.delete('product')
+                  setSearchParams(next, { replace: true })
+                }
+              }}
               className="absolute right-3 top-3 text-white/70 transition hover:text-gold"
               aria-label="Close details popup"
             >
@@ -306,7 +428,7 @@ export function StorePage() {
             <div className="grid gap-5 md:grid-cols-2">
               <div className="flex min-h-72 items-center justify-center overflow-hidden rounded-xl border border-gold/30 bg-black/40 p-2">
                 <img
-                  src={`/images/products/${productImagePool[(filteredProducts.indexOf(selectedProduct) + productImagePool.length) % productImagePool.length]}`}
+                  src={productImageUrl(selectedProduct.image)}
                   alt={selectedProduct.name}
                   className="max-h-[420px] w-full rounded-md object-contain"
                 />
@@ -326,7 +448,18 @@ export function StorePage() {
                   </p>
                 </div>
                 <div className="mt-5 flex gap-2">
-                  <Button onClick={() => setSelectedProduct(null)}>Close</Button>
+                  <Button
+                    onClick={() => {
+                      setSelectedProduct(null)
+                      if (searchParams.get('product')) {
+                        const next = new URLSearchParams(searchParams)
+                        next.delete('product')
+                        setSearchParams(next, { replace: true })
+                      }
+                    }}
+                  >
+                    Close
+                  </Button>
                 </div>
               </div>
             </div>

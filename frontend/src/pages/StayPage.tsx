@@ -2,6 +2,7 @@ import { Helmet } from 'react-helmet-async'
 import { motion } from 'framer-motion'
 import { CalendarDays, ChevronRight, Gem, Leaf, MapPin, Sparkles, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { staticUrl } from '@/utils/staticUrl'
 
 export function StayPage() {
   return (
@@ -87,7 +88,7 @@ export function StayPage() {
                   title: 'The Garden Walkway',
                   desc:
                     'A calm, open-air arrival—flower-lined paths, fresh coastal air, and a retreat that begins the moment you step onto the grounds.',
-                  image: '/images/farm/IMG_9130.jpg',
+                  image: staticUrl('/images/farm/IMG_9130.jpg'),
                   meta: [
                     { icon: <MapPin className="h-4 w-4" />, label: 'On-site café' },
                     { icon: <Leaf className="h-4 w-4" />, label: 'Seasonal planters' },
@@ -100,7 +101,7 @@ export function StayPage() {
                   title: 'Breakfast & Barista Corner',
                   desc:
                     'Unhurried mornings with barista coffee, farm milk, and a simple breakfast station—set beside wide windows and soft light.',
-                  image: '/images/farm/IMG_0622.jpg',
+                  image: staticUrl('/images/farm/IMG_0622.jpg'),
                   meta: [
                     { icon: <Gem className="h-4 w-4" />, label: 'Barista coffee' },
                     { icon: <Leaf className="h-4 w-4" />, label: 'Farm milk & pantry' },
@@ -171,7 +172,7 @@ export function StayPage() {
               <div className="md:col-span-6">
                 <div className="relative overflow-hidden rounded-2xl border border-gold/15 bg-black/30">
                   <img
-                    src="/images/farm/IMG_4141.jpg"
+                    src={staticUrl('/images/farm/IMG_4141.jpg')}
                     alt="A quiet moment at Omaru Farm"
                     className="aspect-[4/5] w-full object-cover object-center opacity-90"
                     loading="lazy"
@@ -191,25 +192,25 @@ export function StayPage() {
                     title: 'Farm-to-Table',
                     desc: 'Seasonal breakfast, garden produce, and pantry treats.',
                     icon: <Leaf className="h-5 w-5" />,
-                    image: '/images/farm/IMG_4256.jpg',
+                    image: staticUrl('/images/farm/IMG_4256.jpg'),
                   },
                   {
                     title: 'Slow Walks',
                     desc: 'Quiet tracks across fields and coastal views.',
                     icon: <MapPin className="h-5 w-5" />,
-                    image: '/images/farm/IMG_4638.jpg',
+                    image: staticUrl('/images/farm/IMG_4638.jpg'),
                   },
                   {
                     title: 'Tea Ritual',
                     desc: 'Afternoon tea moments, warm and unhurried.',
                     icon: <Sparkles className="h-5 w-5" />,
-                    image: '/images/farm/IMG_4547.jpg',
+                    image: staticUrl('/images/farm/IMG_4547.jpg'),
                   },
                   {
                     title: 'Local Discoveries',
                     desc: 'Curated recommendations beyond the farm gate.',
                     icon: <Gem className="h-5 w-5" />,
-                    image: '/images/farm/IMG_7307.jpg',
+                    image: staticUrl('/images/farm/IMG_7307.jpg'),
                   },
                 ].map((x) => (
                   <div
