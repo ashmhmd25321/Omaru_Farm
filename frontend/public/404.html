@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0b0b" />
+    <title>Omaru Farm</title>
+    <script>
+      // SPA redirect trick for GitHub Pages sub-path hosting.
+      // When GH Pages can't find a file it serves this 404.html.
+      // We encode the full path as a query param and redirect to the
+      // base index.html, which will restore it via history.replaceState.
+      var base = '/Omaru_Farm';
+      var l = window.location;
+      var path = l.pathname.slice(base.length) || '/';
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        base + '/?p=' + encodeURIComponent(path + l.search) + (l.hash || '')
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
