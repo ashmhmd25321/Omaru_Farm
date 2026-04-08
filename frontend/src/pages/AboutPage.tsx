@@ -123,7 +123,7 @@ export function AboutPage() {
         <section className="relative overflow-hidden border-b border-gold/15">
           <div className="absolute inset-0">
             <img
-              src="/images/farm/IMG_0623.jpg"
+              src={staticUrl('/images/farm/IMG_0623.jpg')}
               alt=""
               className="h-full w-full object-cover opacity-55"
               loading="lazy"
@@ -186,7 +186,7 @@ export function AboutPage() {
               <div className="overflow-hidden rounded-2xl border border-gold/15 bg-black/30 shadow-[0_30px_90px_rgba(0,0,0,0.55)]">
                 <div className="aspect-[4/3]">
                   <img
-                    src="/images/farm/IMG_6144.jpg"
+                    src={staticUrl('/images/farm/IMG_6144.jpg')}
                     alt="Omaru Farm legacy"
                     className="h-full w-full object-cover opacity-95"
                     loading="lazy"
@@ -513,7 +513,7 @@ export function AboutPage() {
                     aria-label="Open Rosie Maurer photo"
                   >
                     <img
-                      src="/images/farm/rosie-maurer.jpg"
+                      src={staticUrl('/images/farm/rosie-maurer.jpg')}
                       alt="Rosie Maurer at Omaru Farm"
                       className="h-[320px] w-full object-cover [filter:contrast(1.08)_saturate(1.06)_brightness(1.02)] transition duration-700 group-hover:scale-[1.04] md:h-[420px]"
                       loading="lazy"
@@ -594,7 +594,7 @@ export function AboutPage() {
               </div>
               <div className="relative">
                 <img
-                  src="/images/farm/rosie-maurer.jpg"
+                  src={staticUrl('/images/farm/rosie-maurer.jpg')}
                   alt="Rosie Maurer at Omaru Farm"
                   className="max-h-[78vh] w-full object-contain bg-black [filter:contrast(1.08)_saturate(1.06)_brightness(1.02)]"
                 />

@@ -16,7 +16,7 @@ export function StayPage() {
         {/* Hero */}
         <section className="relative overflow-hidden border-b border-gold/20">
           <img
-            src="/images/farm/2025-01-12-8.jpg"
+            src={staticUrl('/images/farm/2025-01-12-8.jpg')}
             alt="A peaceful retreat stay at Omaru Farm"
             className="absolute inset-0 h-full w-full object-cover opacity-40"
           />

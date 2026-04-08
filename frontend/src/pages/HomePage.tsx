@@ -262,7 +262,7 @@ export function HomePage() {
               <div className="relative mx-auto max-w-xl md:mx-0">
                 <div className="overflow-hidden rounded-2xl border border-gold/20 bg-black/30 shadow-[0_28px_90px_rgba(0,0,0,0.55)]">
                   <img
-                    src="/images/farm/20211017_191630.jpg"
+                    src={staticUrl('/images/farm/20211017_191630.jpg')}
                     alt="Omaru Farm story"
                     className="h-[560px] w-full object-cover opacity-95 transition duration-700 hover:scale-105"
                     loading="lazy"
@@ -380,7 +380,7 @@ export function HomePage() {
               >
                 <div className="overflow-hidden rounded-2xl border border-gold/20 bg-black/25 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
                   <img
-                    src="/images/farm/20210522_100834.jpg"
+                    src={staticUrl('/images/farm/20210522_100834.jpg')}
                     alt="The Heirloom Plate"
                     className="aspect-square w-full object-cover transition duration-700 hover:scale-105"
                     loading="lazy"
@@ -401,7 +401,7 @@ export function HomePage() {
               >
                 <div className="overflow-hidden rounded-2xl border border-gold/20 bg-black/25 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
                   <img
-                    src="/images/farm/IMG_7268.jpg"
+                    src={staticUrl('/images/farm/IMG_7268.jpg')}
                     alt="Sanctuary of Taste"
                     className="aspect-[4/5] w-full object-cover transition duration-700 hover:scale-105"
                     loading="lazy"
@@ -422,7 +422,7 @@ export function HomePage() {
               >
                 <div className="overflow-hidden rounded-2xl border border-gold/20 bg-black/25 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
                   <img
-                    src="/images/farm/20210910_180301.jpg"
+                    src={staticUrl('/images/farm/20210910_180301.jpg')}
                     alt="Morning Ritual"
                     className="aspect-square w-full object-cover transition duration-700 hover:scale-105"
                     loading="lazy"
@@ -553,7 +553,7 @@ export function HomePage() {
             >
               <div className="relative overflow-hidden rounded-2xl border border-gold/20 bg-black/30 shadow-[0_30px_100px_rgba(0,0,0,0.55)]">
                 <img
-                  src="/images/farm/20211027_195611.jpg"
+                  src={staticUrl('/images/farm/20211027_195611.jpg')}
                   alt="Omaru Farm accommodation"
                   className="h-[360px] w-full object-cover opacity-95 md:h-[420px]"
                   loading="lazy"

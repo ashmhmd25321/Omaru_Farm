@@ -174,7 +174,7 @@ export function StorePage() {
         {/* Hero */}
         <section className="relative overflow-hidden border-b border-gold/20">
           <img
-            src="/images/products/20260311_130334.jpg"
+            src={staticUrl('/images/products/20260311_130334.jpg')}
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover object-center opacity-45"
