@@ -118,9 +118,9 @@ export function AboutPage() {
         <meta name="description" content="Learn about Omaru Farm’s story, values, and sustainable approach." />
       </Helmet>
 
-      <main className="bg-[#0b0b0b]">
+      <main className="bg-cream">
         {/* Hero */}
-        <section className="relative overflow-hidden border-b border-gold/15">
+        <section className="relative overflow-hidden border-b border-parchment">
           <div className="absolute inset-0">
             <img
               src={staticUrl('/images/farm/IMG_0623.jpg')}
@@ -128,7 +128,7 @@ export function AboutPage() {
               className="h-full w-full object-cover opacity-55"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/45 to-[#0b0b0b]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-charcoal/60 via-charcoal/30 to-transparent" />
           </div>
 
           <div className="relative mx-auto max-w-[92vw] px-5 py-20 md:py-28">
@@ -144,7 +144,7 @@ export function AboutPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.05 }}
-              className="mt-4 max-w-3xl font-heading text-5xl leading-[0.98] text-[#f5efe2] md:text-6xl"
+              className="mt-4 max-w-3xl font-heading text-5xl leading-[0.98] text-charcoal md:text-6xl"
             >
               Nurturing the land for a century.
             </motion.h1>
@@ -152,7 +152,7 @@ export function AboutPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="mt-5 max-w-2xl text-sm leading-relaxed text-white/75 md:text-base"
+              className="mt-5 max-w-2xl text-sm leading-relaxed text-stone md:text-base"
             >
               Omaru Farm is a premium yet earthy destination — where seasonal produce, thoughtful hospitality, and small-batch pantry goods come
               together in a calm, luxurious farm-to-table experience.
@@ -174,7 +174,7 @@ export function AboutPage() {
         </section>
 
         {/* Legacy feature */}
-        <section className="border-b border-gold/10 bg-[#0b0b0b]">
+        <section className="border-b border-gold/10 bg-cream">
           <div className="mx-auto grid max-w-[92vw] gap-8 px-5 py-16 md:grid-cols-12 md:items-center md:py-20">
             <motion.div
               className="md:col-span-5"
@@ -183,7 +183,7 @@ export function AboutPage() {
               viewport={{ once: true, amount: 0.35 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="overflow-hidden rounded-2xl border border-gold/15 bg-black/30 shadow-[0_30px_90px_rgba(0,0,0,0.55)]">
+              <div className="overflow-hidden rounded-2xl border border-parchment bg-sand shadow-[0_30px_90px_rgba(0,0,0,0.55)]">
                 <div className="aspect-[4/3]">
                   <img
                     src={staticUrl('/images/farm/IMG_6144.jpg')}
@@ -194,7 +194,7 @@ export function AboutPage() {
                 </div>
                 <div className="p-5">
                   <p className="text-xs uppercase tracking-[0.26em] text-gold/70">Omaru Farm</p>
-                  <p className="mt-1 font-heading text-2xl text-[#f5efe2]">Our Legacy</p>
+                  <p className="mt-1 font-heading text-2xl text-charcoal">Our Legacy</p>
                 </div>
               </div>
             </motion.div>
@@ -206,21 +206,21 @@ export function AboutPage() {
               viewport={{ once: true, amount: 0.35 }}
               transition={{ duration: 0.5 }}
             >
-              <h2 className="font-heading text-4xl leading-[1] text-[#f5efe2] md:text-5xl">{aboutContent.legacyTitle}</h2>
-              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/70 md:text-base">
+              <h2 className="font-heading text-4xl leading-[1] text-charcoal md:text-5xl">{aboutContent.legacyTitle}</h2>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-stone md:text-base">
                 {aboutContent.legacyDescription}
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <a
                   href="#pillars"
-                  className="text-sm font-semibold text-white/80 underline decoration-white/20 underline-offset-4 hover:text-gold hover:decoration-gold/50"
+                  className="text-sm font-semibold text-bark underline decoration-white/20 underline-offset-4 hover:text-gold hover:decoration-gold/50"
                 >
                   See our pillars
                 </a>
                 <span className="text-white/25">•</span>
                 <Link
                   to="/contact"
-                  className="text-sm font-semibold text-white/80 underline decoration-white/20 underline-offset-4 hover:text-gold hover:decoration-gold/50"
+                  className="text-sm font-semibold text-bark underline decoration-white/20 underline-offset-4 hover:text-gold hover:decoration-gold/50"
                 >
                   Talk to us
                 </Link>
@@ -230,7 +230,7 @@ export function AboutPage() {
         </section>
 
         {/* Pillars + Living earth (merged) */}
-        <section id="pillars" className="overflow-x-clip border-t border-gold/10 bg-[#0b0b0b]">
+        <section id="pillars" className="overflow-x-clip border-t border-gold/10 bg-cream">
           <div className="mx-auto max-w-[92vw] px-4 py-12 sm:px-5 md:py-20">
             <div className="flex items-center gap-2 sm:gap-4">
               <div className="h-px min-w-8 flex-1 bg-gold/15" />
@@ -248,12 +248,12 @@ export function AboutPage() {
                 viewport={{ once: true, amount: 0.35 }}
                 transition={{ duration: 0.45 }}
               >
-                <div className="rounded-[28px] border border-gold/15 bg-[#111113] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:p-6 md:p-7">
+                <div className="rounded-[28px] border border-parchment bg-sand p-5 shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:p-6 md:p-7">
                   <p className="text-xs uppercase tracking-[0.24em] text-gold/70">Living Earth</p>
-                  <h2 className="mt-3 font-heading text-3xl leading-[0.98] text-[#f5efe2] sm:text-4xl sm:leading-[0.96] md:text-5xl">
+                  <h2 className="mt-3 font-heading text-3xl leading-[0.98] text-charcoal sm:text-4xl sm:leading-[0.96] md:text-5xl">
                     {aboutContent.foundationTitle}
                   </h2>
-                  <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/70 md:text-base">
+                  <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone md:text-base">
                     {aboutContent.foundationDescription}
                   </p>
 
@@ -261,7 +261,7 @@ export function AboutPage() {
                     {['Seasonal harvests', 'Small-batch craft', 'Natural ingredients'].map((t) => (
                       <span
                         key={t}
-                        className="rounded-full border border-gold/15 bg-black/25 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-white/65"
+                        className="rounded-full border border-parchment bg-sand/70 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-stone"
                       >
                         {t}
                       </span>
@@ -269,7 +269,7 @@ export function AboutPage() {
                   </div>
                 </div>
 
-                <div className="grid h-full gap-3 rounded-[28px] border border-gold/15 bg-[#111113] p-4 shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:gap-4 sm:p-5 md:grid-rows-3">
+                <div className="grid h-full gap-3 rounded-[28px] border border-parchment bg-sand p-4 shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:gap-4 sm:p-5 md:grid-rows-3">
                   {[
                     {
                       title: 'Sustainability',
@@ -293,13 +293,13 @@ export function AboutPage() {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.25 }}
                       transition={{ duration: 0.45, delay: i * 0.05 }}
-                      className="flex h-full flex-col items-start gap-3 rounded-2xl border border-gold/12 bg-black/25 p-4 sm:flex-row sm:gap-4 sm:p-5"
+                      className="flex h-full flex-col items-start gap-3 rounded-2xl border border-gold/12 bg-sand/70 p-4 sm:flex-row sm:gap-4 sm:p-5"
                     >
-                      <span className="grid h-10 w-10 flex-none place-items-center rounded-xl border border-gold/15 bg-black/35 text-gold sm:h-11 sm:w-11">
+                      <span className="grid h-10 w-10 flex-none place-items-center rounded-xl border border-parchment bg-black/35 text-gold sm:h-11 sm:w-11">
                         <item.icon className="h-5 w-5" />
                       </span>
                       <div className="min-w-0">
-                        <h3 className="font-heading text-xl text-[#f5efe2] sm:text-2xl">{item.title}</h3>
+                        <h3 className="font-heading text-xl text-charcoal sm:text-2xl">{item.title}</h3>
                         <p className="mt-1 text-sm leading-relaxed text-white/68">{item.body}</p>
                       </div>
                     </motion.div>
@@ -314,8 +314,8 @@ export function AboutPage() {
                 viewport={{ once: true, amount: 0.25 }}
                 transition={{ duration: 0.45, delay: 0.05 }}
               >
-                <div className="relative h-full min-h-[min(420px,78svh)] overflow-hidden rounded-[28px] border border-gold/15 bg-black/10 p-3 shadow-[0_30px_90px_rgba(0,0,0,0.45)] sm:p-5 md:min-h-[740px] md:overflow-visible">
-                  <div className="absolute left-3 top-3 z-[5] max-w-[calc(100%-1.5rem)] rounded-full border border-gold/20 bg-black/30 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-gold/80 backdrop-blur sm:left-6 sm:top-6 sm:max-w-none sm:px-3 sm:text-[11px] sm:tracking-[0.22em]">
+                <div className="relative h-full min-h-[min(420px,78svh)] overflow-hidden rounded-[28px] border border-parchment bg-black/10 p-3 shadow-[0_30px_90px_rgba(0,0,0,0.45)] sm:p-5 md:min-h-[740px] md:overflow-visible">
+                  <div className="absolute left-3 top-3 z-[5] max-w-[calc(100%-1.5rem)] rounded-full border border-gold/20 bg-sand px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-gold/80 backdrop-blur sm:left-6 sm:top-6 sm:max-w-none sm:px-3 sm:text-[11px] sm:tracking-[0.22em]">
                     Moments from Omaru
                   </div>
 
@@ -377,7 +377,7 @@ export function AboutPage() {
                       >
                         <div
                           className={[
-                            'relative overflow-hidden rounded-[26px] border bg-[#0f0f10] shadow-[0_30px_90px_rgba(0,0,0,0.65)]',
+                            'relative overflow-hidden rounded-[26px] border bg-cream shadow-[0_30px_90px_rgba(0,0,0,0.65)]',
                             isTop ? 'border-gold/30' : 'border-gold/22',
                           ].join(' ')}
                         >
@@ -411,7 +411,7 @@ export function AboutPage() {
                   <div className="mt-4 sm:mt-5">
                     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                       <div className="flex items-center gap-3">
-                        <p className="text-xs uppercase tracking-[0.22em] text-white/55">Gallery</p>
+                        <p className="text-xs uppercase tracking-[0.22em] text-stone">Gallery</p>
                         <p className="text-xs text-white/45">
                           <span className="text-gold/85">{selectedIndex + 1}</span> / {imagePool.length}
                         </p>
@@ -420,7 +420,7 @@ export function AboutPage() {
                         <button
                           type="button"
                           onClick={() => setFanOpen((v) => !v)}
-                          className="rounded-full border border-gold/20 bg-black/25 px-3 py-1.5 text-xs text-white/75 transition hover:border-gold/40 hover:text-gold"
+                          className="rounded-full border border-gold/20 bg-sand/70 px-3 py-1.5 text-xs text-stone transition hover:border-gold/40 hover:text-gold"
                         >
                           {fanOpen ? 'Collapse' : 'Fan out'}
                         </button>
@@ -430,7 +430,7 @@ export function AboutPage() {
                             setStackStart((s) => (s - 1 + imagePool.length) % imagePool.length)
                             setTopCard(2)
                           }}
-                          className="rounded-full border border-gold/20 bg-black/25 px-3 py-1.5 text-xs text-white/75 transition hover:border-gold/40 hover:text-gold"
+                          className="rounded-full border border-gold/20 bg-sand/70 px-3 py-1.5 text-xs text-stone transition hover:border-gold/40 hover:text-gold"
                         >
                           Prev
                         </button>
@@ -440,14 +440,14 @@ export function AboutPage() {
                             setStackStart((s) => (s + 1) % imagePool.length)
                             setTopCard(2)
                           }}
-                          className="rounded-full border border-gold/20 bg-black/25 px-3 py-1.5 text-xs text-white/75 transition hover:border-gold/40 hover:text-gold"
+                          className="rounded-full border border-gold/20 bg-sand/70 px-3 py-1.5 text-xs text-stone transition hover:border-gold/40 hover:text-gold"
                         >
                           Next
                         </button>
                       </div>
                     </div>
 
-                    <div className="mt-3 h-1.5 overflow-hidden rounded-full border border-gold/15 bg-black/25">
+                    <div className="mt-3 h-1.5 overflow-hidden rounded-full border border-parchment bg-sand/70">
                       <div
                         className="h-full bg-gold/80"
                         style={{ width: `${((selectedIndex + 1) / imagePool.length) * 100}%` }}
@@ -466,7 +466,7 @@ export function AboutPage() {
                               setTopCard(2)
                             }}
                             className={`relative h-12 w-16 flex-none overflow-hidden rounded-xl border transition ${
-                              active ? 'border-gold/60' : 'border-gold/15 hover:border-gold/35'
+                              active ? 'border-gold/60' : 'border-parchment hover:border-gold/35'
                             }`}
                             aria-label={`Show ${p.label}`}
                           >
@@ -478,7 +478,7 @@ export function AboutPage() {
                     </div>
                   </div>
 
-                  <p className="mt-4 text-center text-xs text-white/55">
+                  <p className="mt-4 text-center text-xs text-stone">
                     Hover or tap a card to lift it.
                   </p>
                 </div>
@@ -488,10 +488,10 @@ export function AboutPage() {
         </section>
 
         {/* Artisans */}
-        <section className="border-t border-gold/10 bg-[#0b0b0b] pt-16 pb-16 md:pt-20 md:pb-20">
+        <section className="border-t border-gold/10 bg-cream pt-16 pb-16 md:pt-20 md:pb-20">
           <div className="mx-auto max-w-[92vw] px-5">
-            <h2 className="font-heading text-4xl text-[#f5efe2] md:text-5xl">Meet the Artisan</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70 md:text-base">
+            <h2 className="font-heading text-4xl text-charcoal md:text-5xl">Meet the Artisan</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone md:text-base">
               There’s one heart behind the entire Omaru Farm experience — guiding the land, the hospitality, and every detail with care.
             </p>
 
@@ -501,7 +501,7 @@ export function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.25 }}
                 transition={{ duration: 0.55 }}
-                className="relative overflow-hidden rounded-2xl border border-gold/15 bg-[#141416]/70 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur"
+                className="relative overflow-hidden rounded-2xl border border-parchment bg-white/90 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur"
               >
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,rgba(205,163,73,0.10),transparent_55%),radial-gradient(circle_at_80%_80%,rgba(99,73,42,0.16),transparent_60%)]" />
 
@@ -509,7 +509,7 @@ export function AboutPage() {
                   <button
                     type="button"
                     onClick={() => setRosieOpen(true)}
-                    className="group relative overflow-hidden rounded-2xl border border-gold/15 bg-black/30 shadow-[0_22px_70px_rgba(0,0,0,0.55)] md:col-span-5"
+                    className="group relative overflow-hidden rounded-2xl border border-parchment bg-sand shadow-[0_22px_70px_rgba(0,0,0,0.55)] md:col-span-5"
                     aria-label="Open Rosie Maurer photo"
                   >
                     <img
@@ -519,14 +519,14 @@ export function AboutPage() {
                       loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-                    <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-gold/20 bg-black/45 px-3 py-1 text-xs text-white/80 backdrop-blur">
-                      <span className="grid h-5 w-5 place-items-center rounded-full border border-gold/20 bg-black/25 text-gold/85">
+                    <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-gold/20 bg-black/45 px-3 py-1 text-xs text-bark backdrop-blur">
+                      <span className="grid h-5 w-5 place-items-center rounded-full border border-gold/20 bg-sand/70 text-gold/85">
                         <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
                       </span>
                       Founder
                     </div>
                     <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3">
-                      <p className="text-xs uppercase tracking-[0.28em] text-white/70">Tap to enlarge</p>
+                      <p className="text-xs uppercase tracking-[0.28em] text-stone">Tap to enlarge</p>
                       <span className="rounded-full border border-gold/20 bg-black/35 px-3 py-1 text-xs text-gold/90">
                         View photo
                       </span>
@@ -535,21 +535,21 @@ export function AboutPage() {
 
                   <div className="md:col-span-7">
                     <p className="text-xs uppercase tracking-[0.28em] text-gold/70">Omaru Farm</p>
-                    <h3 className="mt-3 font-heading text-4xl text-[#f5efe2] md:text-5xl">Rosie Maurer</h3>
-                    <p className="mt-2 text-sm text-white/65 md:text-base">Founder &amp; Host</p>
+                    <h3 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">Rosie Maurer</h3>
+                    <p className="mt-2 text-sm text-stone md:text-base">Founder &amp; Host</p>
 
-                    <p className="mt-5 text-sm leading-relaxed text-white/70 md:text-base">
+                    <p className="mt-5 text-sm leading-relaxed text-stone md:text-base">
                       From the farm gates to the table, Rosie shapes the Omaru experience end-to-end — growing, welcoming, and crafting the
                       calm premium feel guests remember.
                     </p>
 
-                    <div className="mt-6 flex flex-wrap gap-2 text-xs text-white/65">
+                    <div className="mt-6 flex flex-wrap gap-2 text-xs text-stone">
                       {[
                         { icon: <Leaf className="h-4 w-4 text-gold/85" />, text: 'Farm-to-table focus' },
                         { icon: <Wheat className="h-4 w-4 text-gold/85" />, text: 'Seasonal produce' },
                         { icon: <Sparkles className="h-4 w-4 text-gold/85" />, text: 'Quiet premium hospitality' },
                       ].map((b) => (
-                        <span key={b.text} className="inline-flex items-center gap-2 rounded-full border border-gold/15 bg-white/[0.03] px-3 py-1.5">
+                        <span key={b.text} className="inline-flex items-center gap-2 rounded-full border border-parchment bg-white px-3 py-1.5">
                           {b.icon}
                           {b.text}
                         </span>
@@ -576,18 +576,18 @@ export function AboutPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.18 }}
-              className="w-full max-w-4xl overflow-hidden rounded-2xl border border-gold/25 bg-[#0b0b0b]"
+              className="w-full max-w-4xl overflow-hidden rounded-2xl border border-gold/25 bg-cream"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between gap-3 border-b border-gold/15 px-4 py-3">
+              <div className="flex items-center justify-between gap-3 border-b border-parchment px-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-[#f5efe2]">Rosie Maurer</p>
-                  <p className="text-xs text-white/55">Founder &amp; Host</p>
+                  <p className="truncate text-sm font-medium text-charcoal">Rosie Maurer</p>
+                  <p className="text-xs text-stone">Founder &amp; Host</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setRosieOpen(false)}
-                  className="rounded-full border border-gold/20 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70 hover:bg-white/[0.06]"
+                  className="rounded-full border border-gold/20 bg-white px-3 py-1.5 text-xs text-stone hover:bg-white/[0.06]"
                 >
                   Close
                 </button>

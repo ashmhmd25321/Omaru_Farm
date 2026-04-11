@@ -23,7 +23,7 @@ export function BookPage() {
 
       <main className="mx-auto max-w-[92vw] px-5 py-12">
         <h1 className="font-heading text-4xl text-gold md:text-5xl">Book Now</h1>
-        <p className="mt-3 max-w-3xl text-white/75">
+        <p className="mt-3 max-w-3xl text-stone">
           Submit your preferred date and details. We’ll follow up to confirm your booking request.
         </p>
 
@@ -84,12 +84,12 @@ export function BookPage() {
             <CardHeader>
               <CardTitle>Direct Contact</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-white/80">
+            <CardContent className="space-y-3 text-bark">
               <p>Prefer messaging? Use WhatsApp for instant chat.</p>
               <Button variant="outline" asChild className="w-full">
                 <a href="https://wa.me/61000000000" target="_blank" rel="noreferrer">Chat on WhatsApp</a>
               </Button>
-              <p className="text-sm text-white/60">Website: https://omarufarms.com.au</p>
+              <p className="text-sm text-stone">Website: https://omarufarms.com.au</p>
             </CardContent>
           </Card>
         </div>

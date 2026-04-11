@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { motion } from 'framer-motion'
-import { ArrowDown, BedDouble, CircleX, Leaf, PackageSearch, Sparkles, Star } from 'lucide-react'
+import {
+  ArrowRight, BedDouble, ChevronRight, CircleX, Clock3, Dog,
+  Leaf, MapPin, PackageSearch, Salad, Star, Sun, Waves,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { featuredProducts } from '@/data/content'
 import { productImageUrl } from '@/utils/productImage'
 import { staticUrl } from '@/utils/staticUrl'
@@ -25,35 +27,35 @@ type Review = {
   comment: string
 }
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 22 },
+  show: (delay = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.55, delay } }),
+}
+
 export function HomePage() {
   const [products, setProducts] = useState<Product[]>(featuredProducts.slice(0, 6))
-  const [activeSection, setActiveSection] = useState('home')
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [showScrollCue, setShowScrollCue] = useState(true)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [reviewLimit, setReviewLimit] = useState(6)
 
-  const fallbackReviews = useMemo(
+  const fallbackReviews = useMemo<Review[]>(
     () => [
-      { name: 'Emily R.', location: 'Adelaide, SA', date: 'Mar 2026', rating: 5, comment: 'Beautiful location, elegant atmosphere, and one of the best farm store selections we have visited.' },
-      { name: 'Daniel S.', location: 'Port Lincoln, SA', date: 'Feb 2026', rating: 5, comment: 'The cafe food felt fresh and thoughtful. You can really taste the local ingredients.' },
-      { name: 'Priya K.', location: 'Melbourne, VIC', date: 'Jan 2026', rating: 5, comment: 'A premium countryside experience with warm hospitality and excellent products.' },
-      { name: 'Ava M.', location: 'Whyalla, SA', date: 'Mar 2026', rating: 5, comment: 'Calm atmosphere, beautiful plating, and genuinely seasonal flavours. We will be back.' },
-      { name: 'Noah T.', location: 'Sydney, NSW', date: 'Dec 2025', rating: 5, comment: 'Quiet, comfortable, and beautifully maintained. Perfect for a reset weekend.' },
-      { name: 'Sophia L.', location: 'Perth, WA', date: 'Feb 2026', rating: 5, comment: 'The oils and seasonings are exceptional. Premium quality and great gifting options.' },
-      { name: 'James H.', location: 'Hobart, TAS', date: 'Jan 2026', rating: 5, comment: 'Great coffee and warm service. Loved the farm-to-table concept and the setting.' },
-      { name: 'Mia C.', location: 'Brisbane, QLD', date: 'Dec 2025', rating: 5, comment: 'Packed with unique flavours. The pickles and chutneys were our favourites.' },
-      { name: 'Ethan P.', location: 'Canberra, ACT', date: 'Nov 2025', rating: 5, comment: 'Beautiful views and a peaceful vibe. The perfect countryside escape.' },
+      { name: 'Emily R.', location: 'Adelaide, SA', date: 'Mar 2026', rating: 5, comment: 'The views are absolutely breathtaking — we could not believe how beautiful Phillip Island is from the farm. The lunch was incredible.' },
+      { name: 'Daniel S.', location: 'Melbourne, VIC', date: 'Feb 2026', rating: 5, comment: 'Farm-to-table done right. The olive oil, the eggs, the herbs — you can taste that everything is grown right here.' },
+      { name: 'Priya K.', location: 'Sydney, NSW', date: 'Jan 2026', rating: 5, comment: 'A premium countryside experience. The animals roaming around made it magical for our kids.' },
+      { name: 'Ava M.', location: 'Whyalla, SA', date: 'Mar 2026', rating: 5, comment: 'Gorgeous sunset dinner, local wine, and the most peaceful atmosphere. The rolling paddocks are stunning.' },
+      { name: 'Noah T.', location: 'Brisbane, QLD', date: 'Dec 2025', rating: 5, comment: 'Perfect base for Phillip Island — so close to the Penguin Parade but worlds away from the crowds.' },
+      { name: 'Sophia L.', location: 'Perth, WA', date: 'Feb 2026', rating: 5, comment: 'The cabin was beautiful and the views from the window were worth the whole trip.' },
+      { name: 'James H.', location: 'Hobart, TAS', date: 'Jan 2026', rating: 5, comment: 'Brought our dog and the cafe welcomed him like family. Outstanding local produce.' },
+      { name: 'Mia C.', location: 'Canberra, ACT', date: 'Dec 2025', rating: 5, comment: 'The store products are exceptional. The olive oil from their own groves is something else.' },
+      { name: 'Ethan P.', location: 'Port Lincoln, SA', date: 'Nov 2025', rating: 5, comment: 'Wallabies in the paddock at dusk. Lambs saying hello at breakfast. Pure magic.' },
     ],
     [],
   )
   const [reviews, setReviews] = useState<Review[]>(fallbackReviews)
+  const visibleReviews = useMemo(() => reviews.slice(0, reviewLimit), [reviewLimit, reviews])
 
-  const visibleReviews = useMemo(() => {
-    return reviews.slice(0, reviewLimit)
-  }, [reviewLimit, reviews])
-
-  const sliderImages = useMemo(
+  const heroImages = useMemo(
     () => [
       staticUrl('/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG'),
       staticUrl('/images/farm/IMG_3924.jpg'),
@@ -63,24 +65,35 @@ export function HomePage() {
     [],
   )
 
-  const sections = useMemo(
+  const animals = useMemo(
     () => [
-      { id: 'home', label: 'Home' },
-      { id: 'story', label: 'Story' },
-      { id: 'store', label: 'Store' },
-      { id: 'cafe', label: 'Cafe' },
-      { id: 'stay', label: 'Stay' },
-      { id: 'contact', label: 'Contact' },
+      { name: 'Ponies', emoji: '🐴', desc: 'Our gentle ponies roam the paddocks and love a visit.' },
+      { name: 'Cows & Calves', emoji: '🐄', desc: 'Dairy cows and newborn calves are a daily highlight.' },
+      { name: 'Sheep & Lambs', emoji: '🐑', desc: 'Fluffy white faces greet you at the fence.' },
+      { name: 'Goats', emoji: '🐐', desc: 'Cheeky and curious — always ready for a pat.' },
+      { name: 'Chooks', emoji: '🐔', desc: 'Our free-range hens lay the eggs used in the cafe kitchen.' },
+      { name: 'Cats & Dogs', emoji: '🐾', desc: 'Farm companions who will find you before you find them.' },
+      { name: 'Wallabies', emoji: '🦘', desc: 'Wild wallabies bound across the property at dusk.' },
+    ],
+    [],
+  )
+
+  const attractions = useMemo(
+    () => [
+      { name: 'Penguin Parade', dist: '5 min', icon: '🐧', desc: 'Watch the world-famous fairy penguin colony at sunset.' },
+      { name: 'Nobbies Boardwalk', dist: '8 min', icon: '🌊', desc: 'Dramatic coastal views and fur seal colonies.' },
+      { name: 'Grand Prix Circuit', dist: '10 min', icon: '🏎️', desc: 'Iconic motorsport venue and visitor experience.' },
+      { name: 'Swan Lake', dist: '10 min', icon: '🦢', desc: 'A tranquil nature reserve and birdwatching spot.' },
+      { name: 'Kitty Miller Bay', dist: '12 min', icon: '⚓', desc: 'Explore the historic Speke shipwreck and rockpools.' },
+      { name: 'Cowes', dist: '10 min', icon: '🛍️', desc: 'The heart of Phillip Island — shops, dining, and the beach.' },
     ],
     [],
   )
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/products`, {
-      signal: controller.signal,
-    })
-      .then((res) => res.json())
+    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/products`, { signal: controller.signal })
+      .then((r) => r.json())
       .then((rows) => {
         if (!Array.isArray(rows) || rows.length === 0) return
         const mapped = rows.map((item: Record<string, unknown>) => ({
@@ -92,571 +105,588 @@ export function HomePage() {
           featured: Boolean(item.featured),
         }))
         const featuredOnly = mapped.filter((x) => x.featured)
-        const list = featuredOnly.length > 0 ? featuredOnly.slice(0, 6) : mapped.slice(0, 6)
-        setProducts(list)
+        setProducts(featuredOnly.length > 0 ? featuredOnly.slice(0, 6) : mapped.slice(0, 6))
       })
-      .catch(() => {
-        // keep local fallback
-      })
-
+      .catch(() => {})
     return () => controller.abort()
   }, [])
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/testimonials`, {
-      signal: controller.signal,
-    })
-      .then((res) => res.json())
+    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/testimonials`, { signal: controller.signal })
+      .then((r) => r.json())
       .then((rows: unknown) => {
         if (!Array.isArray(rows) || rows.length === 0) return
-        setReviews(
-          rows.map((item) => {
-            const row = item as Record<string, unknown>
-            return {
-              name: String(row.guestName ?? 'Guest'),
-              location: String(row.location ?? ''),
-              date: String(row.visitDate ?? ''),
-              rating: Number(row.rating ?? 5),
-              comment: String(row.comment ?? ''),
-            }
-          }),
-        )
+        setReviews(rows.map((item) => {
+          const row = item as Record<string, unknown>
+          return { name: String(row.guestName ?? 'Guest'), location: String(row.location ?? ''), date: String(row.visitDate ?? ''), rating: Number(row.rating ?? 5), comment: String(row.comment ?? '') }
+        }))
       })
-      .catch(() => {
-        setReviews(fallbackReviews)
-      })
-
+      .catch(() => setReviews(fallbackReviews))
     return () => controller.abort()
   }, [fallbackReviews])
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % sliderImages.length)
-    }, 4200)
+    const timer = window.setInterval(() => setCurrentSlide((p) => (p + 1) % heroImages.length), 5000)
     return () => window.clearInterval(timer)
-  }, [sliderImages.length])
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActiveSection(entry.target.id)
-        })
-      },
-      { threshold: 0.45 },
-    )
-
-    sections.forEach((section) => {
-      const el = document.getElementById(section.id)
-      if (el) observer.observe(el)
-    })
-
-    return () => observer.disconnect()
-  }, [sections])
-
-  useEffect(() => {
-    const onScroll = () => setShowScrollCue(window.scrollY < 30)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  }, [heroImages.length])
 
   return (
     <>
       <Helmet>
-        <title>Omaru Farm | Store, Cafe and Accommodation</title>
-        <meta
-          name="description"
-          content="Discover Omaru Farm's premium store products, cafe dining, and accommodation in a natural farm-to-table setting."
-        />
+        <title>Omaru Farm | Farm-to-Table Dining, Stays & Store on Phillip Island</title>
+        <meta name="description" content="Omaru means 'a beautiful view' — experience breathtaking paddock and ocean vistas, farm-to-table lunch and dinner, self-contained cabin stays, and a premium farm store on Phillip Island, just 5 minutes from the Penguin Parade." />
       </Helmet>
 
-      <main className="snap-y snap-mandatory">
-        <section
-          id="home"
-          className="snap-start relative flex min-h-[92vh] items-center overflow-hidden border-b border-gold/20"
-        >
-          {sliderImages.map((img, idx) => (
+      <main>
+
+        {/* ── HERO ────────────────────────────────────────────── */}
+        <section className="relative flex min-h-[92vh] items-center overflow-hidden">
+          {heroImages.map((img, idx) => (
             <div
               key={img}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                idx === currentSlide ? 'opacity-100' : 'opacity-0'
-              }`}
+              className={`absolute inset-0 transition-opacity duration-1200 ${idx === currentSlide ? 'opacity-100' : 'opacity-0'}`}
               aria-hidden={idx !== currentSlide}
             >
               <img
                 src={img}
-                alt="Natural farm landscape at Omaru Farm"
-                className={`absolute inset-0 h-full w-full object-cover object-center transition-transform duration-[6000ms] ${
-                  idx === currentSlide ? 'scale-[1.06]' : 'scale-[1.01]'
-                }`}
+                alt="Breathtaking paddock and ocean views at Omaru Farm, Phillip Island"
+                className={`absolute inset-0 h-full w-full object-cover object-center transition-transform duration-[7000ms] ${idx === currentSlide ? 'scale-[1.05]' : 'scale-[1.01]'}`}
                 loading={idx === 0 ? 'eager' : 'lazy'}
               />
-              {/* Cinematic overlays for readability */}
-              <div className="absolute inset-0 bg-black/35" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/35 to-black/15" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+              {/* Warm light overlay — not dark */}
+              <div className="absolute inset-0 bg-gradient-to-r from-charcoal/65 via-charcoal/25 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-charcoal/50 via-transparent to-transparent" />
             </div>
           ))}
-          <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-gold/40 bg-black/45 px-3 py-1.5">
-            {sliderImages.map((_, idx) => (
+
+          {/* Slide dots */}
+          <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+            {heroImages.map((_, idx) => (
               <button
-                key={`slide-${idx}`}
+                key={`dot-${idx}`}
                 onClick={() => setCurrentSlide(idx)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  idx === currentSlide
-                    ? 'w-8 bg-gold shadow-[0_0_18px_rgba(205,163,73,0.45)]'
-                    : 'w-2 bg-white/45 hover:bg-white/70'
-                }`}
-                aria-label={`Go to image ${idx + 1}`}
+                className={`h-2 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-8 bg-gold' : 'w-2 bg-white/50 hover:bg-white/75'}`}
+                aria-label={`Slide ${idx + 1}`}
               />
             ))}
           </div>
 
-          <div className="relative mx-auto grid max-w-[92vw] gap-10 px-5 py-20 md:grid-cols-2">
-            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}>
-              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-gold/30 px-3 py-1 text-xs text-gold">
-                <Leaf className="h-3.5 w-3.5" />
-                Natural. Premium. Local.
-              </p>
-              <h1 className="font-heading text-4xl leading-tight md:text-6xl">
-                Omaru Farm Store, Cafe and Accommodation
-              </h1>
-              <p className="mt-4 max-w-xl text-white/80">
-                Experience a luxurious farm-to-table destination where fresh produce, artisan flavors, and countryside comfort come together.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button asChild>
-                  <a href="#store">Explore Featured</a>
+          <div className="relative z-10 mx-auto max-w-[92vw] px-5 py-24">
+            <motion.div initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1 } }}>
+              <motion.p
+                className="mb-4 inline-flex items-center gap-2 rounded-full border border-gold/50 bg-white/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-gold backdrop-blur-sm"
+                custom={0} variants={fadeUp}
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                Phillip Island, Victoria
+              </motion.p>
+              <motion.h1
+                className="max-w-3xl font-heading text-5xl leading-tight text-white md:text-7xl"
+                custom={0.1} variants={fadeUp}
+              >
+                Where Every View<br />
+                <span className="italic text-gold">Tells a Story</span>
+              </motion.h1>
+              <motion.p
+                className="mt-5 max-w-xl text-base leading-relaxed text-white/85 md:text-lg"
+                custom={0.2} variants={fadeUp}
+              >
+                <em>"Omaru"</em> means <strong>a beautiful view</strong> — and from our paddocks you'll see exactly why.
+                Farm-to-table dining, self-contained cabin stays, and a premium farm store, just 5 minutes from the Penguin Parade.
+              </motion.p>
+              <motion.div className="mt-8 flex flex-wrap gap-3" custom={0.3} variants={fadeUp}>
+                <Button asChild className="bg-gold text-white hover:bg-gold-deep">
+                  <Link to="/cafe">Dine With Us</Link>
                 </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/contact">Plan Your Visit</Link>
+                <Button asChild variant="outline" className="border-white/60 text-white hover:bg-white/10">
+                  <Link to="/stay">Book a Stay</Link>
                 </Button>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
 
-          {showScrollCue && (
-            <motion.a
-              href="#store"
-              className="absolute bottom-7 left-8 z-20 inline-flex items-center gap-2 text-xs tracking-[0.2em] text-gold/90 md:left-12"
-              animate={{ y: [0, 5, 0], opacity: [0.75, 1, 0.75] }}
-              transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1.8 }}
-            >
-              Scroll
-              <ArrowDown className="h-3.5 w-3.5" />
-            </motion.a>
-          )}
+          {/* Bottom address bar */}
+          <div className="absolute bottom-0 inset-x-0 z-10 border-t border-white/10 bg-charcoal/50 backdrop-blur-sm">
+            <div className="mx-auto flex max-w-[92vw] flex-wrap items-center justify-between gap-4 px-5 py-3 text-xs text-white/80">
+              <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-gold" />776 Ventnor Road, Ventnor, Phillip Island VIC 3922</span>
+              <span className="flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5 text-gold" />Café: Thu–Fri 10am–2pm & 5–8pm · Sat–Sun 10am–8pm</span>
+              <span className="flex items-center gap-1.5"><Leaf className="h-3.5 w-3.5 text-gold" />Farm Store: Mon–Sun 9am–5pm</span>
+            </div>
+          </div>
         </section>
 
-        <section id="story" className="snap-start flex min-h-[92vh] items-center border-b border-gold/15 bg-[#0f0f10] py-24">
-          <div className="mx-auto grid w-full max-w-[92vw] items-center gap-10 px-5 md:grid-cols-12">
-            <motion.div
-              className="md:col-span-6"
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="relative mx-auto max-w-xl md:mx-0">
-                <div className="overflow-hidden rounded-2xl border border-gold/20 bg-black/30 shadow-[0_28px_90px_rgba(0,0,0,0.55)]">
-                  <img
-                    src={staticUrl('/images/farm/20211017_191630.jpg')}
-                    alt="Omaru Farm story"
-                    className="h-[560px] w-full object-cover opacity-95 transition duration-700 hover:scale-105"
-                    loading="lazy"
-                  />
+        {/* ── "OMARU" MEANING ─────────────────────────────────── */}
+        <section className="bg-cream py-20 md:py-28">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <div className="grid items-center gap-12 md:grid-cols-2">
+              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">Our Name, Our Promise</p>
+                <h2 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">
+                  "Omaru" —<br /><span className="italic text-gold">A Beautiful View</span>
+                </h2>
+                <p className="mt-5 text-base leading-relaxed text-stone">
+                  Nestled in the rolling green hills of Phillip Island, Omaru Farm earns its name every single day.
+                  From our paddocks you can see sweeping ocean outlooks, endless skies, and the peaceful countryside
+                  that has made us one of the island's most loved destinations.
+                </p>
+                <p className="mt-4 text-base leading-relaxed text-stone">
+                  Whether you're here for a long lunch, a sunset dinner, or a weekend stay in one of our
+                  self-contained cabins — the view will stay with you long after you leave.
+                </p>
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <Button asChild className="bg-gold text-white hover:bg-gold-deep">
+                    <Link to="/about">Our Story</Link>
+                  </Button>
+                  <Button asChild variant="outline" className="border-parchment text-bark hover:bg-sand">
+                    <Link to="/stay">View Stays</Link>
+                  </Button>
                 </div>
-                <div className="absolute -bottom-5 right-6 h-28 w-36 rounded-2xl bg-gold/10 blur-[0.5px]" />
-              </div>
+              </motion.div>
+
+              <motion.div
+                className="grid grid-cols-2 gap-4"
+                initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }} custom={0.1} variants={fadeUp}
+              >
+                {[
+                  { img: staticUrl('/images/farm/IMG_3924.jpg'), label: 'Paddock Views' },
+                  { img: staticUrl('/images/farm/20210602_130149.jpg'), label: 'Rolling Hills' },
+                  { img: staticUrl('/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG'), label: 'Aerial Vista' },
+                  { img: staticUrl('/images/farm/20210606_172356.jpg'), label: 'Farm Grounds' },
+                ].map((item) => (
+                  <div key={item.label} className="group relative overflow-hidden rounded-2xl border border-parchment">
+                    <img
+                      src={item.img}
+                      alt={item.label}
+                      className="aspect-square w-full object-cover transition duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal/50 via-transparent to-transparent" />
+                    <p className="absolute bottom-2 left-3 text-xs font-medium text-white/90">{item.label}</p>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── FARM-TO-TABLE STORY ──────────────────────────────── */}
+        <section className="bg-sand py-20 md:py-28">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.div className="text-center" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">Genuinely Farm to Table</p>
+              <h2 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">From Our Grove to Your Plate</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-stone">
+                From grove to plate, Omaru Farm celebrates true farm-to-table dining with homegrown herbs, garden tomatoes,
+                fresh eggs from our chooks, and olive oil pressed from our very own olive trees.
+              </p>
             </motion.div>
 
-            <motion.div
-              className="md:col-span-6"
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.5, delay: 0.05 }}
-            >
-              <p className="text-xs uppercase tracking-[0.28em] text-gold/70">Est. 1924</p>
-              <h2 className="mt-4 font-heading text-4xl text-[#f5efe2] md:text-5xl">The Omaru Story</h2>
-              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/70 md:text-base">
-                Founded on a philosophy of radical simplicity and deep respect for the land, Omaru has spent generations cultivating not just crops,
-                but a way of life. Every harvest is a dialogue between tradition and innovation.
-              </p>
+            <div className="mt-14 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+              {[
+                { icon: '🫒', title: 'Our Olive Groves', desc: 'Cold-pressed extra virgin olive oil grown and harvested on the farm — used in every dish.' },
+                { icon: '🥚', title: 'Farm-Fresh Eggs', desc: 'Our free-range chooks produce the eggs that go directly from paddock to your plate.' },
+                { icon: '🍅', title: 'Garden Tomatoes', desc: 'Sun-ripened tomatoes grown in our kitchen garden, picked at their seasonal peak.' },
+                { icon: '🌿', title: 'Fresh Herbs', desc: 'Rosemary, thyme, basil and more — harvested fresh from our garden each morning.' },
+                { icon: '🌱', title: 'Seasonal Produce', desc: 'The menu follows what\'s growing — always seasonal, always local, always honest.' },
+              ].map((item, idx) => (
+                <motion.div
+                  key={item.title}
+                  className="rounded-2xl border border-parchment bg-white p-6 text-center shadow-sm"
+                  initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }} custom={idx * 0.07} variants={fadeUp}
+                >
+                  <span className="text-4xl">{item.icon}</span>
+                  <h3 className="mt-4 font-heading text-xl text-charcoal">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-stone">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
 
-              <Link
-                to="/about"
-                className="mt-7 inline-flex items-center gap-3 text-xs uppercase tracking-[0.24em] text-gold/80 transition hover:text-gold"
-              >
-                Our Provenance <span aria-hidden="true">→</span>
+            <motion.div className="mt-12 overflow-hidden rounded-2xl border border-parchment bg-white" initial="hidden" whileInView="show" viewport={{ once: true }} custom={0.3} variants={fadeUp}>
+              <div className="grid md:grid-cols-2">
+                <img
+                  src={staticUrl('/images/farm/20211017_191630.jpg')}
+                  alt="Farm-to-table dining at Omaru"
+                  className="h-64 w-full object-cover md:h-auto"
+                  loading="lazy"
+                />
+                <div className="flex flex-col justify-center p-8 md:p-12">
+                  <Salad className="h-8 w-8 text-gold" />
+                  <h3 className="mt-4 font-heading text-3xl text-charcoal">Café Omaru</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-stone">
+                    A premium farm-to-table lunch and sunset dining experience. Enjoy locally sourced lunches,
+                    farm-fresh dinners, barista coffee, and a fully licensed bar featuring Phillip Island wines.
+                  </p>
+                  <div className="mt-5 space-y-1 text-sm text-stone">
+                    <p><strong className="text-bark">Thu – Fri:</strong> 10am – 2pm &amp; 5pm – 8pm</p>
+                    <p><strong className="text-bark">Sat – Sun:</strong> 10am – 8pm</p>
+                  </div>
+                  <Button asChild className="mt-6 self-start bg-gold text-white hover:bg-gold-deep">
+                    <Link to="/cafe">View Menu</Link>
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── DOG FRIENDLY ─────────────────────────────────────── */}
+        <section className="bg-cream py-10">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.div
+              className="flex flex-wrap items-center gap-6 rounded-2xl border border-parchment bg-sand px-8 py-6"
+              initial="hidden" whileInView="show" viewport={{ once: true }} custom={0} variants={fadeUp}
+            >
+              <Dog className="h-10 w-10 shrink-0 text-gold" />
+              <div className="flex-1">
+                <h3 className="font-heading text-2xl text-charcoal">Dog Friendly Café</h3>
+                <p className="mt-1 text-sm leading-relaxed text-stone">
+                  Bring your furry friend along — Omaru Farm Café is dog friendly, so there's no need to leave your pet behind.
+                  Your four-legged companion is welcome on the outdoor dining area.
+                </p>
+              </div>
+              <Button asChild variant="outline" className="border-parchment text-bark hover:bg-white">
+                <Link to="/cafe">Learn More</Link>
+              </Button>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── FARM STORE ───────────────────────────────────────── */}
+        <section className="bg-cream py-20 md:py-28">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.div className="flex flex-wrap items-end justify-between gap-4" initial="hidden" whileInView="show" viewport={{ once: true }} custom={0} variants={fadeUp}>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">Farm Store</p>
+                <h2 className="mt-2 font-heading text-4xl text-charcoal md:text-5xl">Artisan Pantry Favourites</h2>
+                <p className="mt-3 max-w-xl text-sm text-stone">Olive oils, seasonings, preserves and more — all made or sourced from the farm and beyond.</p>
+              </div>
+              <Link to="/store" className="flex items-center gap-2 text-sm font-medium text-gold transition hover:text-gold-deep">
+                Browse Full Store <ArrowRight className="h-4 w-4" />
               </Link>
             </motion.div>
-          </div>
-        </section>
 
-        <section
-          id="store"
-          className="snap-start mx-auto flex min-h-[88vh] max-w-[86vw] flex-col justify-center px-5 py-16"
-        >
-          <h2 className="font-heading text-3xl text-gold md:text-4xl">Featured Farm Store Products</h2>
-          <p className="mt-2 text-white/75">Curated from your 2026 catalog, crafted for rich flavor and quality.</p>
-          <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {products.map((product, index) => (
-              <motion.div
-                key={product.id ?? product.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.45, delay: index * 0.04 }}
-              >
-                <Card
-                  className="h-full cursor-pointer transition hover:-translate-y-1 hover:border-gold/50"
-                  onClick={() => setSelectedProduct(product)}
-                >
-                  <CardHeader>
-                    <div className="group/image relative overflow-hidden rounded-md">
+            {products.length === 0 ? (
+              <div className="mt-14 flex flex-col items-center gap-4 py-16 text-center">
+                <PackageSearch className="h-12 w-12 text-parchment" />
+                <p className="text-stone">Products loading…</p>
+              </div>
+            ) : (
+              <div className="mt-10 grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+                {products.slice(0, 6).map((product, idx) => (
+                  <motion.button
+                    key={product.id ?? product.name}
+                    type="button"
+                    onClick={() => setSelectedProduct(product)}
+                    className="group overflow-hidden rounded-2xl border border-parchment bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                    initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.15 }} custom={idx * 0.06} variants={fadeUp}
+                  >
+                    <div className="overflow-hidden">
                       <img
                         src={productImageUrl(product.image)}
                         alt={product.name}
-                        className="h-44 w-full rounded-md object-cover transition duration-700 group-hover/image:scale-110 group-hover/image:rotate-[1deg]"
-                        loading={index > 3 ? 'lazy' : 'eager'}
+                        className="aspect-square w-full object-cover transition duration-500 group-hover:scale-105"
+                        loading="lazy"
                       />
-                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-0 transition duration-500 group-hover/image:opacity-100" />
                     </div>
-                    <CardTitle>{product.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-white/70">{product.size}</p>
-                    <p className="mt-2 text-lg font-semibold text-gold">{product.price}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-          <div className="mt-8">
-            <Button asChild>
-              <Link to="/store">Explore Store</Link>
-            </Button>
-          </div>
-        </section>
-
-        <section
-          id="cafe"
-          className="snap-start border-y border-gold/20 bg-[#0b0b0b] py-16 text-white"
-        >
-          <div className="mx-auto w-full max-w-[92vw] px-5">
-            <div className="grid items-end gap-8 md:grid-cols-12">
-              <div className="md:col-span-7">
-                <p className="text-xs uppercase tracking-[0.28em] text-gold/70">Gastronomy</p>
-                <h2 className="mt-3 font-heading text-5xl leading-[0.95] text-[#f5efe2] md:text-6xl">
-                  Farm to Table
-                </h2>
-                <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-white/70">
-                  The Omaru Cafe translates the day’s harvest into a sensory journey. We celebrate the
-                  ephemeral beauty of seasonal ingredients through refined, honest cooking.
-                </p>
+                    <div className="p-5">
+                      <h3 className="font-heading text-lg text-charcoal">{product.name}</h3>
+                      {product.size && <p className="mt-1 text-xs text-stone">{product.size}</p>}
+                      <p className="mt-2 font-semibold text-gold">{product.price}</p>
+                    </div>
+                  </motion.button>
+                ))}
               </div>
+            )}
 
-              <div className="md:col-span-5 md:flex md:justify-end">
-                <Link
-                  to="/cafe"
-                  className="inline-flex items-center gap-3 border-b border-gold/35 pb-1 text-xs uppercase tracking-[0.24em] text-gold/75 transition hover:border-gold hover:text-gold"
-                >
-                  View Menu
-                  <span aria-hidden="true">→</span>
-                </Link>
-              </div>
-            </div>
-
-            <div className="mt-10 grid gap-6 md:grid-cols-12">
-              <motion.article
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.45 }}
-                className="md:col-span-4"
-              >
-                <div className="overflow-hidden rounded-2xl border border-gold/20 bg-black/25 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
-                  <img
-                    src={staticUrl('/images/farm/20210522_100834.jpg')}
-                    alt="The Heirloom Plate"
-                    className="aspect-square w-full object-cover transition duration-700 hover:scale-105"
-                    loading="lazy"
-                  />
-                </div>
-                <h3 className="mt-5 font-heading text-2xl text-[#f5efe2]">The Heirloom Plate</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/65">
-                  Sourced entirely from our seasonal garden, featuring heritage ingredients and cold-pressed oils.
-                </p>
-              </motion.article>
-
-              <motion.article
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.45, delay: 0.05 }}
-                className="md:col-span-4"
-              >
-                <div className="overflow-hidden rounded-2xl border border-gold/20 bg-black/25 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
-                  <img
-                    src={staticUrl('/images/farm/IMG_7268.jpg')}
-                    alt="Sanctuary of Taste"
-                    className="aspect-[4/5] w-full object-cover transition duration-700 hover:scale-105"
-                    loading="lazy"
-                  />
-                </div>
-                <h3 className="mt-5 font-heading text-2xl text-[#f5efe2]">Sanctuary of Taste</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/65">
-                  A calm architectural space designed to dissolve the boundary between diner and landscape.
-                </p>
-              </motion.article>
-
-              <motion.article
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.45, delay: 0.1 }}
-                className="md:col-span-4"
-              >
-                <div className="overflow-hidden rounded-2xl border border-gold/20 bg-black/25 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
-                  <img
-                    src={staticUrl('/images/farm/20210910_180301.jpg')}
-                    alt="Morning Ritual"
-                    className="aspect-square w-full object-cover transition duration-700 hover:scale-105"
-                    loading="lazy"
-                  />
-                </div>
-                <h3 className="mt-5 font-heading text-2xl text-[#f5efe2]">Morning Ritual</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/65">
-                  Small-batch roasts paired with fresh cream and a menu that follows the seasons.
-                </p>
-              </motion.article>
-            </div>
-          </div>
-        </section>
-
-        <section id="stay" className="snap-start mx-auto flex min-h-[88vh] max-w-[92vw] flex-col justify-center px-5 py-16">
-          <div className="flex flex-wrap items-end justify-between gap-6">
-            <div>
-              <h2 className="font-heading text-3xl text-gold md:text-4xl">What Guests Say</h2>
-              <p className="mt-2 text-sm text-white/65">
-                <span className="text-gold">5.0</span> average • <span className="text-white/80">{reviews.length}</span> reviews
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            {visibleReviews.map((review, index) => (
-              <motion.div
-                key={`${review.name}-${review.date}`}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.45, delay: (index % 6) * 0.04 }}
-              >
-                <Card className="h-full">
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="grid h-10 w-10 place-items-center rounded-full border border-gold/25 bg-gold/10 text-sm font-semibold text-gold">
-                          {review.name
-                            .split(' ')
-                            .map((w) => w[0])
-                            .join('')
-                            .slice(0, 2)}
-                        </div>
-                        <div>
-                          <CardTitle className="text-[#f5efe2]">{review.name}</CardTitle>
-                          <p className="text-xs text-white/55">{review.location} • {review.date}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-1 text-gold">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'fill-gold' : ''}`} />
-                      ))}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-white/75">{review.comment}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          {reviewLimit < reviews.length && (
-            <div className="mt-8">
-              <Button
-                variant="outline"
-                onClick={() => setReviewLimit((n) => n + 6)}
-              >
-                Load more
+            <div className="mt-10 text-center">
+              <Button asChild variant="outline" className="border-parchment text-bark hover:bg-sand">
+                <Link to="/store">Shop All Products</Link>
               </Button>
             </div>
-          )}
+          </div>
         </section>
 
-        <section
-          id="contact"
-          className="snap-start flex min-h-[88vh] items-center border-t border-gold/20 bg-[#0b0b0b] py-16 md:py-24"
-        >
-          <div className="mx-auto grid w-full max-w-[92vw] items-center gap-10 px-5 md:grid-cols-12">
-            <motion.div
-              className="md:col-span-6"
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.45 }}
-            >
-              <div className="rounded-2xl border border-gold/15 bg-[#141416]/85 p-7 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur sm:p-9">
-                <p className="text-xs uppercase tracking-[0.28em] text-gold/70">Stay with us</p>
-                <h2 className="mt-4 font-heading text-5xl leading-[0.95] text-[#f5efe2] md:text-6xl">
-                  Luxury Retreats
-                </h2>
-                <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/70 md:text-base">
-                  Surrender to the rhythm of the seasons. Our guest stays offer quiet elegance and absolute stillness,
-                  nestled among the natural beauty of Omaru.
+        {/* ── FARM ANIMALS ─────────────────────────────────────── */}
+        <section className="bg-sand py-20 md:py-28">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.div className="grid items-center gap-12 md:grid-cols-2" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }}>
+              <motion.div custom={0} variants={fadeUp}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">The Full Farm Experience</p>
+                <h2 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">Meet the Animals</h2>
+                <p className="mt-4 text-base leading-relaxed text-stone">
+                  At Omaru, the farm is alive. Wander the grounds and you'll meet ponies, lambs, dairy cows, curious goats,
+                  and our beloved chooks — the same ones that lay the eggs for your lunch. As dusk falls, watch wild wallabies
+                  bound across the paddocks in one of Phillip Island's most magical sights.
                 </p>
+                <p className="mt-3 text-sm text-stone">A favourite experience for families, children, international guests, and anyone who loves farm life.</p>
+                <Button asChild className="mt-7 bg-gold text-white hover:bg-gold-deep">
+                  <Link to="/stay">Plan Your Visit</Link>
+                </Button>
+              </motion.div>
 
-                <div className="mt-8 space-y-4 text-sm text-white/75">
-                  <div className="flex items-center gap-3">
-                    <BedDouble className="h-5 w-5 text-gold" />
-                    <span>Bespoke interior comfort</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Sparkles className="h-5 w-5 text-gold" />
-                    <span>In-stay wellness rituals</span>
-                  </div>
-                </div>
-
-                <div className="mt-10 flex flex-wrap gap-3">
-                  <Button asChild className="px-7 py-2.5">
-                    <Link to="/stay">Book Your Stay</Link>
-                  </Button>
-                  <Button variant="outline" asChild className="px-7 py-2.5">
-                    <Link to="/contact">Contact</Link>
-                  </Button>
-                </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3">
+                {animals.map((animal, idx) => (
+                  <motion.div
+                    key={animal.name}
+                    className="rounded-2xl border border-parchment bg-white p-5 text-center"
+                    initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }} custom={idx * 0.06} variants={fadeUp}
+                  >
+                    <span className="text-3xl">{animal.emoji}</span>
+                    <p className="mt-2 font-medium text-charcoal text-sm">{animal.name}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-stone">{animal.desc}</p>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
 
-            <motion.div
-              className="md:col-span-6"
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.45, delay: 0.05 }}
-            >
-              <div className="relative overflow-hidden rounded-2xl border border-gold/20 bg-black/30 shadow-[0_30px_100px_rgba(0,0,0,0.55)]">
+            <motion.div className="mt-10 overflow-hidden rounded-2xl border border-parchment" initial="hidden" whileInView="show" viewport={{ once: true }} custom={0.2} variants={fadeUp}>
+              <div className="grid md:grid-cols-3">
+                <img src={staticUrl('/images/farm/image-farm/IMG_8196.jpg')} alt="Children feeding baby goats at Omaru Farm" className="h-56 w-full object-cover md:h-auto" loading="lazy" />
+                <img src={staticUrl('/images/farm/image-farm/IMG_4976.JPG')} alt="Free-range chickens at Omaru Farm" className="hidden h-56 w-full object-cover md:block md:h-auto" loading="lazy" />
+                <img src={staticUrl('/images/farm/image-farm/IMG_4637.jpg')} alt="Farm produce at Omaru Farm store" className="hidden h-56 w-full object-cover md:block md:h-auto" loading="lazy" />
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── VIEWS FEATURE ────────────────────────────────────── */}
+        <section className="relative overflow-hidden py-20 md:py-28">
+          <img
+            src={staticUrl('/images/farm/20210602_130149.jpg')}
+            alt="Breathtaking paddock and ocean views at Omaru Farm"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal/70 via-charcoal/35 to-transparent" />
+          <div className="relative mx-auto max-w-[92vw] px-5 text-white">
+            <motion.div className="max-w-xl" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
+              <Sun className="h-10 w-10 text-gold" />
+              <h2 className="mt-4 font-heading text-4xl md:text-5xl">Breathtaking Views, Every Direction</h2>
+              <p className="mt-4 text-base leading-relaxed text-white/90">
+                Rolling green paddocks, distant ocean outlooks, sweeping sunset skies. At Omaru, the landscape is part of the experience.
+                It's why guests drive hours to get here — and why they always come back.
+              </p>
+              <div className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {[
+                  { icon: <Waves className="h-5 w-5" />, label: 'Ocean Outlooks' },
+                  { icon: <Leaf className="h-5 w-5" />, label: 'Rolling Paddocks' },
+                  { icon: <Sun className="h-5 w-5" />, label: 'Sunset Dining' },
+                  { icon: <MapPin className="h-5 w-5" />, label: 'Phillip Island' },
+                ].map((f) => (
+                  <div key={f.label} className="flex items-center gap-2 text-sm text-white/90">
+                    <span className="text-gold">{f.icon}</span>
+                    {f.label}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── STAY ─────────────────────────────────────────────── */}
+        <section className="bg-cream py-20 md:py-28">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.div className="grid items-center gap-12 md:grid-cols-2" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }}>
+              <motion.div custom={0} variants={fadeUp}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">Stay With Us</p>
+                <h2 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">Luxury Farm Retreats</h2>
+                <p className="mt-4 text-base leading-relaxed text-stone">
+                  Wake up to paddock views from our self-contained cabins, nestled among the natural beauty of Omaru. Two on-farm cabins
+                  and two holiday homes give you the choice of total immersion — or a private retreat nearby.
+                </p>
+                <div className="mt-6 space-y-3">
+                  {[
+                    { icon: <BedDouble className="h-5 w-5 text-gold" />, label: '2 Self-Contained On-Farm Cabins' },
+                    { icon: <BedDouble className="h-5 w-5 text-gold" />, label: '2 Private Holiday Homes' },
+                  ].map((f) => (
+                    <div key={f.label} className="flex items-center gap-3 text-sm text-bark">
+                      {f.icon}
+                      <span>{f.label}</span>
+                    </div>
+                  ))}
+                </div>
+                <Button asChild className="mt-8 bg-gold text-white hover:bg-gold-deep">
+                  <Link to="/stay">Explore Accommodation</Link>
+                </Button>
+              </motion.div>
+
+              <motion.div
+                className="overflow-hidden rounded-2xl border border-parchment shadow-sm"
+                custom={0.1} variants={fadeUp}
+              >
                 <img
-                  src={staticUrl('/images/farm/20211027_195611.jpg')}
-                  alt="Omaru Farm accommodation"
-                  className="h-[360px] w-full object-cover opacity-95 md:h-[420px]"
+                  src={staticUrl('/images/farm/IMG_9130.jpg')}
+                  alt="Beautiful farm stay accommodation at Omaru Farm"
+                  className="h-[400px] w-full object-cover"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-l from-black/10 via-transparent to-black/25" />
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── NEARBY ATTRACTIONS ───────────────────────────────── */}
+        <section className="bg-sand py-20 md:py-28">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.div className="text-center" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">The Perfect Base</p>
+              <h2 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">At the Heart of Phillip Island</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-stone">
+                Stay at Omaru and you're perfectly positioned to explore everything Phillip Island has to offer —
+                then return to the calm of the farm.
+              </p>
+            </motion.div>
+
+            <div className="mt-14 grid gap-5 sm:grid-cols-2 md:grid-cols-3">
+              {attractions.map((a, idx) => (
+                <motion.div
+                  key={a.name}
+                  className="flex gap-4 rounded-2xl border border-parchment bg-white p-6"
+                  initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }} custom={idx * 0.07} variants={fadeUp}
+                >
+                  <span className="text-3xl shrink-0">{a.icon}</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-charcoal">{a.name}</h3>
+                      <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[11px] font-medium text-gold">{a.dist}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-stone">{a.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.div
+              className="mt-10 rounded-2xl border border-parchment bg-white p-6 md:p-10 text-center"
+              initial="hidden" whileInView="show" viewport={{ once: true }} custom={0.4} variants={fadeUp}
+            >
+              <MapPin className="mx-auto h-8 w-8 text-gold" />
+              <h3 className="mt-3 font-heading text-2xl text-charcoal">776 Ventnor Road, Ventnor, Phillip Island VIC 3922</h3>
+              <p className="mt-2 text-sm text-stone">Just 5 minutes from the Penguin Parade · 10 minutes to Cowes · Close to all major attractions</p>
+              <Button asChild className="mt-6 bg-gold text-white hover:bg-gold-deep">
+                <Link to="/contact">Get Directions</Link>
+              </Button>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── REVIEWS ──────────────────────────────────────────── */}
+        <section className="bg-cream py-20 md:py-28">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.div className="flex flex-wrap items-end justify-between gap-4" initial="hidden" whileInView="show" viewport={{ once: true }} custom={0} variants={fadeUp}>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">Guest Stories</p>
+                <h2 className="mt-2 font-heading text-4xl text-charcoal">What Our Guests Say</h2>
+                <p className="mt-2 text-sm text-stone">
+                  <span className="text-gold font-semibold">5.0</span> average · {reviews.length} reviews
+                </p>
+              </div>
+            </motion.div>
+
+            <div className="mt-10 grid gap-5 md:grid-cols-3">
+              {visibleReviews.map((review, idx) => (
+                <motion.div
+                  key={`${review.name}-${review.date}`}
+                  className="rounded-2xl border border-parchment bg-white p-6 shadow-sm"
+                  initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }} custom={(idx % 6) * 0.05} variants={fadeUp}
+                >
+                  <div className="flex items-center gap-1 text-gold">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="h-3.5 w-3.5 fill-current" />
+                    ))}
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-stone">"{review.comment}"</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <div className="grid h-9 w-9 place-items-center rounded-full bg-gold/10 text-sm font-semibold text-gold">
+                      {review.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-charcoal">{review.name}</p>
+                      {review.location && <p className="text-xs text-stone">{review.location}</p>}
+                    </div>
+                    {review.date && <span className="ml-auto text-xs text-stone">{review.date}</span>}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {reviewLimit < reviews.length && (
+              <div className="mt-8 text-center">
+                <Button variant="outline" onClick={() => setReviewLimit((p) => p + 3)} className="border-parchment text-bark hover:bg-sand">
+                  Show More Reviews
+                </Button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── FINAL CTA ────────────────────────────────────────── */}
+        <section className="relative overflow-hidden py-24 md:py-32">
+          <img
+            src={staticUrl('/images/farm/20210606_172356.jpg')}
+            alt="Omaru Farm at golden hour"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-charcoal/55" />
+          <div className="relative mx-auto max-w-[92vw] px-5 text-center text-white">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0} variants={fadeUp}>
+              <p className="text-sm uppercase tracking-[0.3em] text-gold/90">Phillip Island's Destination Farm</p>
+              <h2 className="mt-3 font-heading text-4xl md:text-6xl">Come for the View.<br />Stay for the Experience.</h2>
+              <p className="mx-auto mt-5 max-w-xl text-base text-white/85">
+                Book a table for lunch or dinner, reserve your cabin, or explore the farm store.
+                Omaru is waiting to share its beautiful view with you.
+              </p>
+              <div className="mt-8 flex flex-wrap justify-center gap-4">
+                <Button asChild className="bg-gold text-white hover:bg-gold-deep">
+                  <Link to="/book">Book Now</Link>
+                </Button>
+                <Button asChild variant="outline" className="border-white/60 text-white hover:bg-white/10">
+                  <Link to="/contact">
+                    <ChevronRight className="mr-1 h-4 w-4" />
+                    Get in Touch
+                  </Link>
+                </Button>
               </div>
             </motion.div>
           </div>
         </section>
 
-        <div className="fixed right-5 top-1/2 z-40 hidden -translate-y-1/2 lg:flex">
-          <div className="relative flex flex-col items-center gap-3">
-            <div className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center">
-              <svg
-                width="60"
-                height={Math.max(1, sections.length - 1) * 36 + 10}
-                viewBox={`0 0 60 ${Math.max(1, sections.length - 1) * 36 + 10}`}
-                className="opacity-70"
-                aria-hidden="true"
-              >
-                <path
-                  d={`M50 5 Q 6 ${(Math.max(1, sections.length - 1) * 36 + 10) / 2} 50 ${
-                    Math.max(1, sections.length - 1) * 36 + 5
-                  }`}
-                  fill="none"
-                  stroke="rgba(205,163,73,0.22)"
-                  strokeWidth="1.25"
-                />
-              </svg>
-            </div>
-            {sections.map((section, index) => (
-              <button
-                key={section.id}
-                onClick={() => document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth' })}
-                className="group relative flex h-6 w-6 items-center justify-center"
-                style={{
-                  transform: `translateX(${
-                    -Math.sin((index / Math.max(1, sections.length - 1)) * Math.PI) * 14
-                  }px)`,
-                }}
-                aria-label={`Go to ${section.label}`}
-              >
-                <span
-                  className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                    activeSection === section.id
-                      ? 'bg-gold shadow-[0_0_14px_rgba(205,163,73,0.65)]'
-                      : 'bg-white/35 group-hover:bg-gold/70'
-                  }`}
-                />
-                <span className="pointer-events-none absolute right-11 rounded-md border border-gold/35 bg-black/85 px-2 py-1 text-[10px] text-gold opacity-0 transition group-hover:opacity-100">
-                  {section.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
       </main>
 
+      {/* Product quick-view modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/50 p-4 backdrop-blur-sm"
+          onClick={() => setSelectedProduct(null)}
+        >
           <motion.div
-            initial={{ opacity: 0, y: 14, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="relative w-full max-w-2xl rounded-2xl border border-gold/35 bg-[#0d0d0d] p-5 shadow-[0_25px_80px_rgba(0,0,0,0.55)]"
+            className="relative max-h-[90vh] w-full max-w-lg overflow-auto rounded-2xl border border-parchment bg-white shadow-xl"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setSelectedProduct(null)}
-              className="absolute right-3 top-3 text-white/70 transition hover:text-gold"
-              aria-label="Close product details popup"
+              className="absolute right-4 top-4 z-10 rounded-full bg-white/80 p-1.5 text-stone backdrop-blur-sm hover:text-charcoal"
+              aria-label="Close"
             >
               <CircleX className="h-5 w-5" />
             </button>
-
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="flex min-h-72 items-center justify-center overflow-hidden rounded-xl border border-gold/30 bg-black/40 p-2">
-                <img
-                  src={productImageUrl(selectedProduct.image)}
-                  alt={selectedProduct.name}
-                  className="max-h-[420px] w-full rounded-md object-contain"
-                />
-              </div>
-              <div>
-                <p className="inline-flex items-center gap-2 rounded-full border border-gold/30 px-2.5 py-1 text-[11px] text-gold">
-                  <PackageSearch className="h-3.5 w-3.5" />
-                  Product Details
-                </p>
-                <h3 className="mt-3 font-heading text-3xl text-gold">{selectedProduct.name}</h3>
-                <div className="mt-4 space-y-2 text-sm text-white/80">
-                  <p><span className="text-white/60">Pack Size:</span> {selectedProduct.size}</p>
-                  <p><span className="text-white/60">Price:</span> {selectedProduct.price}</p>
-                  <p>
-                    <span className="text-white/60">Description:</span> Crafted with premium ingredients and farm-inspired flavour — perfect for gifting or elevating everyday cooking.
-                  </p>
-                </div>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <Button asChild onClick={() => setSelectedProduct(null)}>
-                    <Link to="/store">Explore more</Link>
-                  </Button>
-                  <Button variant="outline" onClick={() => setSelectedProduct(null)}>
-                    Close
-                  </Button>
-                </div>
-              </div>
+            <img
+              src={productImageUrl(selectedProduct.image)}
+              alt={selectedProduct.name}
+              className="h-72 w-full object-cover"
+            />
+            <div className="p-6">
+              <h3 className="font-heading text-2xl text-charcoal">{selectedProduct.name}</h3>
+              {selectedProduct.size && <p className="mt-1 text-sm text-stone">{selectedProduct.size}</p>}
+              <p className="mt-3 text-xl font-semibold text-gold">{selectedProduct.price}</p>
+              <Button asChild className="mt-6 w-full bg-gold text-white hover:bg-gold-deep">
+                <Link to="/store">View in Store</Link>
+              </Button>
             </div>
           </motion.div>
         </div>
@@ -664,4 +694,3 @@ export function HomePage() {
     </>
   )
 }
-

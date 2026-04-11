@@ -1,303 +1,363 @@
 import { Helmet } from 'react-helmet-async'
 import { motion } from 'framer-motion'
-import { CalendarDays, ChevronRight, Gem, Leaf, MapPin, Sparkles, Users } from 'lucide-react'
+import { BedDouble, CheckCircle2, ChevronRight, MapPin, Users, Waves } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { staticUrl } from '@/utils/staticUrl'
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: (delay = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.55, delay } }),
+}
+
+const ON_FARM_CABINS = [
+  {
+    id: 'cabin-1',
+    name: 'The Paddock Cabin',
+    type: 'On-Farm · Self-Contained',
+    tagline: 'Wake to the sound of the farm',
+    description: 'Nestled at the edge of the paddock, this beautifully appointed self-contained cabin offers sweeping views across the rolling green hills to the distant ocean. Enjoy breakfast on your private deck while the farm comes alive around you.',
+    features: ['Self-contained kitchen', 'Private deck with paddock views', 'Quality bedding & linen', 'Bathroom with premium amenities', 'Walk to the café & farm store', 'Pet-friendly outdoors'],
+    image: staticUrl('/images/farm/IMG_9130.jpg'),
+    guests: '2–4',
+    badge: 'Most Popular',
+  },
+  {
+    id: 'cabin-2',
+    name: 'The Grove Cabin',
+    type: 'On-Farm · Self-Contained',
+    tagline: 'Surrounded by olive trees',
+    description: 'Tucked among Omaru\'s own olive grove, this warm and private cabin offers a quiet sanctuary with a quintessential farm outlook. Close enough to feel part of the farm, peaceful enough to truly switch off.',
+    features: ['Fully self-contained', 'Kitchenette & dining area', 'Cosy fireplace', 'Ensuite bathroom', 'Outdoor seating area', 'Direct access to farm grounds'],
+    image: staticUrl('/images/farm/2025-01-12-8.jpg'),
+    guests: '2',
+    badge: 'New',
+  },
+]
+
+const HOLIDAY_HOMES = [
+  {
+    id: 'home-1',
+    name: 'Ventnor Retreat',
+    type: 'Holiday Home · Off-Farm',
+    tagline: 'Your private island base',
+    description: 'A beautifully furnished holiday home just minutes from Omaru Farm. Perfect for families or groups wanting the freedom of a full home with easy access to the farm, the café, and all Phillip Island has to offer.',
+    features: ['3 bedrooms, sleeps up to 6', 'Full kitchen & laundry', 'Spacious living areas', 'Private garden', 'Minutes from Omaru Farm', 'Close to beaches and attractions'],
+    image: staticUrl('/images/farm/IMG_3924.jpg'),
+    guests: '4–6',
+    badge: null,
+  },
+  {
+    id: 'home-2',
+    name: 'Island Cottage',
+    type: 'Holiday Home · Off-Farm',
+    tagline: 'Phillip Island charm',
+    description: 'A charming cottage-style holiday home with warm interiors and a relaxed island atmosphere. Close to Cowes and the major attractions, with easy access to Omaru Farm for dining and farm experiences.',
+    features: ['2 bedrooms, sleeps up to 4', 'Modern kitchen', 'Comfortable lounge', 'Outdoor entertaining area', '10 minutes to Cowes', 'Easy access to Penguin Parade'],
+    image: staticUrl('/images/farm/20210602_130149.jpg'),
+    guests: '2–4',
+    badge: null,
+  },
+]
+
 export function StayPage() {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [property, setProperty] = useState('The Paddock Cabin')
+  const [guests, setGuests] = useState('2')
+  const [notes, setNotes] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+
   return (
     <>
       <Helmet>
-        <title>Stay | Omaru Farm</title>
-        <meta name="description" content="Explore Omaru Farm accommodation options and booking requests." />
+        <title>Stay at Omaru Farm | Self-Contained Cabins & Holiday Homes · Phillip Island</title>
+        <meta name="description" content="Stay at Omaru Farm on Phillip Island. Two self-contained on-farm cabins with breathtaking views, plus two holiday homes. Perfect base for the Penguin Parade and all island attractions." />
       </Helmet>
 
       <main>
-        {/* Hero */}
-        <section className="relative overflow-hidden border-b border-gold/20">
+
+        {/* ── HERO ─────────────────────────────────────────────── */}
+        <section className="relative overflow-hidden">
           <img
             src={staticUrl('/images/farm/2025-01-12-8.jpg')}
-            alt="A peaceful retreat stay at Omaru Farm"
-            className="absolute inset-0 h-full w-full object-cover opacity-40"
+            alt="Peaceful farm accommodation at Omaru Farm, Phillip Island"
+            className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/20" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal/75 via-charcoal/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-charcoal/50 via-transparent to-transparent" />
 
-          <div className="relative mx-auto grid min-h-[72vh] max-w-[92vw] items-end gap-10 px-5 pb-14 pt-12 md:grid-cols-12 md:items-center">
-            <motion.div
-              className="md:col-span-7"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <p className="text-xs uppercase tracking-[0.32em] text-gold/80">Stay at Omaru</p>
-              <h1 className="mt-4 font-heading text-6xl leading-[0.9] text-[#f5efe2] md:text-7xl">
-                A Sanctuary
-                <br />
-                of <span className="italic">Silence</span>
+          <div className="relative mx-auto grid min-h-[75vh] max-w-[92vw] items-center gap-10 px-5 py-16 md:grid-cols-12">
+            <motion.div className="md:col-span-7" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+              <p className="mb-3 text-xs uppercase tracking-[0.32em] text-gold/90">Stay at Omaru Farm · Phillip Island</p>
+              <h1 className="font-heading text-5xl leading-tight text-white md:text-7xl">
+                Wake Up to the<br />
+                <span className="italic text-gold">Beautiful View</span>
               </h1>
-              <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/75 md:text-lg">
-                Slow mornings, warm light, and nights that feel truly still. Choose a retreat designed to reconnect you with the land.
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-white/85">
+                Stay on the farm in one of our self-contained cabins and fall asleep to paddock views and farm sounds.
+                Or choose one of our nearby holiday homes — the perfect island base.
               </p>
-
-              <div className="mt-6 flex flex-wrap gap-2 text-xs text-white/55">
+              <div className="mt-4 flex flex-wrap gap-2 text-xs">
                 {[
-                  { icon: <MapPin className="h-4 w-4 text-gold/90" />, text: 'Omaru Farm, coastal countryside' },
-                  { icon: <Leaf className="h-4 w-4 text-gold/90" />, text: 'Farm-to-table breakfast included' },
-                  { icon: <Sparkles className="h-4 w-4 text-gold/90" />, text: 'Premium, earthy comfort' },
+                  { icon: <BedDouble className="h-3.5 w-3.5" />, label: '2 On-Farm Cabins' },
+                  { icon: <BedDouble className="h-3.5 w-3.5" />, label: '2 Holiday Homes' },
+                  { icon: <Waves className="h-3.5 w-3.5" />, label: 'Ocean Views' },
+                  { icon: <MapPin className="h-3.5 w-3.5" />, label: '5 min to Penguin Parade' },
                 ].map((b) => (
-                  <span
-                    key={b.text}
-                    className="inline-flex items-center gap-2 rounded-full border border-gold/15 bg-black/30 px-3 py-1"
-                  >
-                    {b.icon}
-                    {b.text}
+                  <span key={b.label} className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-white/90 backdrop-blur-sm">
+                    <span className="text-gold">{b.icon}</span>
+                    {b.label}
                   </span>
                 ))}
               </div>
-
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Button asChild className="px-6 py-2.5">
-                  <a href="#book">Book Your Retreat</a>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button asChild className="bg-gold text-white hover:bg-gold-deep">
+                  <a href="#book">Book Your Stay</a>
                 </Button>
-                <Button variant="outline" asChild className="px-6 py-2.5">
-                  <a href="#stays">Explore The Stays</a>
+                <Button variant="outline" asChild className="border-white/50 text-white hover:bg-white/10">
+                  <a href="#stays">View Accommodation</a>
                 </Button>
               </div>
             </motion.div>
-
-            <div className="hidden md:col-span-5 md:block" />
           </div>
         </section>
 
-        {/* The Stays */}
-        <section id="stays" className="bg-[#0b0b0b] py-18 md:py-22">
-          <div className="mx-auto max-w-[92vw] px-5 py-20">
-            <div className="max-w-3xl">
-              <p className="text-xs uppercase tracking-[0.28em] text-gold/70">The Stays</p>
-              <h2 className="mt-3 font-heading text-4xl text-[#f5efe2] md:text-5xl">Designed to slow time.</h2>
-              <p className="mt-4 text-sm leading-relaxed text-white/70 md:text-base">
-                Select a stay that matches your mood—sunlit glass, heritage stone, or a tucked-away cabin. Each is curated with quiet luxury.
-              </p>
-            </div>
-
-            <div className="mt-10 space-y-12">
-              {[
-                {
-                  badge: 'Arrival',
-                  title: 'The Garden Walkway',
-                  desc:
-                    'A calm, open-air arrival—flower-lined paths, fresh coastal air, and a retreat that begins the moment you step onto the grounds.',
-                  image: staticUrl('/images/farm/IMG_9130.jpg'),
-                  meta: [
-                    { icon: <MapPin className="h-4 w-4" />, label: 'On-site café' },
-                    { icon: <Leaf className="h-4 w-4" />, label: 'Seasonal planters' },
-                    { icon: <Sparkles className="h-4 w-4" />, label: 'Coastal light' },
-                  ],
-                  align: 'left' as const,
-                },
-                {
-                  badge: 'Morning',
-                  title: 'Breakfast & Barista Corner',
-                  desc:
-                    'Unhurried mornings with barista coffee, farm milk, and a simple breakfast station—set beside wide windows and soft light.',
-                  image: staticUrl('/images/farm/IMG_0622.jpg'),
-                  meta: [
-                    { icon: <Gem className="h-4 w-4" />, label: 'Barista coffee' },
-                    { icon: <Leaf className="h-4 w-4" />, label: 'Farm milk & pantry' },
-                    { icon: <Users className="h-4 w-4" />, label: 'Easy, self-serve' },
-                  ],
-                  align: 'right' as const,
-                },
-              ].map((stay, idx) => {
-                const isRight = stay.align === 'right'
-                return (
-                  <motion.article
-                    key={stay.title}
-                    initial={{ opacity: 0, y: 18 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    transition={{ duration: 0.5, delay: idx * 0.05 }}
-                    className="grid items-center gap-8 md:grid-cols-12"
-                  >
-                    <div className={['md:col-span-7', isRight ? 'md:order-2' : ''].join(' ')}>
-                      <div className="relative overflow-hidden rounded-2xl border border-gold/15 bg-black/30 shadow-[0_28px_90px_rgba(0,0,0,0.55)]">
-                        <img
-                          src={stay.image}
-                          alt={stay.title}
-                          className="h-[320px] w-full object-cover transition duration-700 hover:scale-[1.03] md:h-[360px]"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-                        <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-gold/20 bg-black/40 px-3 py-1 text-xs text-white/75 backdrop-blur">
-                          <span className="h-1.5 w-1.5 rounded-full bg-gold" />
-                          {stay.badge}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={['md:col-span-5', isRight ? 'md:order-1' : ''].join(' ')}>
-                      <p className="text-xs uppercase tracking-[0.28em] text-gold/70">Stay</p>
-                      <h3 className="mt-3 font-heading text-3xl text-[#f5efe2] md:text-4xl">{stay.title}</h3>
-                      <p className="mt-3 text-sm leading-relaxed text-white/70 md:text-base">{stay.desc}</p>
-
-                      <div className="mt-6 flex flex-wrap gap-2">
-                        {stay.meta.map((m) => (
-                          <span
-                            key={m.label}
-                            className="inline-flex items-center gap-2 rounded-full border border-gold/15 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70"
-                          >
-                            <span className="text-gold/85">{m.icon}</span>
-                            {m.label}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.article>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* The Experience */}
-        <section id="experience" className="border-y border-gold/20 bg-[#151515] py-20">
+        {/* ── ON-FARM CABINS ───────────────────────────────────── */}
+        <section id="stays" className="bg-cream py-20 md:py-28">
           <div className="mx-auto max-w-[92vw] px-5">
-            <div className="text-center">
-              <p className="text-xs uppercase tracking-[0.28em] text-gold/70">The Experience</p>
-              <h2 className="mt-3 font-heading text-4xl text-[#f5efe2] md:text-5xl">Small moments, lasting calm.</h2>
-            </div>
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">On-Farm Stays</p>
+              <h2 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">Self-Contained Farm Cabins</h2>
+              <p className="mt-3 max-w-2xl text-base text-stone">
+                Both cabins are fully self-contained and set within the farm grounds — wake up to paddock views,
+                wander to the café for lunch, and fall asleep to the sounds of the countryside.
+              </p>
+            </motion.div>
 
-            <div className="mt-10 grid gap-6 md:grid-cols-12">
-              <div className="md:col-span-6">
-                <div className="relative overflow-hidden rounded-2xl border border-gold/15 bg-black/30">
-                  <img
-                    src={staticUrl('/images/farm/IMG_4141.jpg')}
-                    alt="A quiet moment at Omaru Farm"
-                    className="aspect-[4/5] w-full object-cover object-center opacity-90"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
-                  <div className="absolute bottom-5 left-5 right-5">
-                    <p className="text-xs uppercase tracking-[0.28em] text-gold/75">Featured</p>
-                    <p className="mt-2 font-heading text-2xl text-[#f5efe2]">Cosmic Silence</p>
-                    <p className="mt-2 text-sm text-white/65">Stargazing nights, gentle breezes, and the sound of the sea in the distance.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-6 md:col-span-6 md:grid-cols-2">
-                {[
-                  {
-                    title: 'Farm-to-Table',
-                    desc: 'Seasonal breakfast, garden produce, and pantry treats.',
-                    icon: <Leaf className="h-5 w-5" />,
-                    image: staticUrl('/images/farm/IMG_4256.jpg'),
-                  },
-                  {
-                    title: 'Slow Walks',
-                    desc: 'Quiet tracks across fields and coastal views.',
-                    icon: <MapPin className="h-5 w-5" />,
-                    image: staticUrl('/images/farm/IMG_4638.jpg'),
-                  },
-                  {
-                    title: 'Tea Ritual',
-                    desc: 'Afternoon tea moments, warm and unhurried.',
-                    icon: <Sparkles className="h-5 w-5" />,
-                    image: staticUrl('/images/farm/IMG_4547.jpg'),
-                  },
-                  {
-                    title: 'Local Discoveries',
-                    desc: 'Curated recommendations beyond the farm gate.',
-                    icon: <Gem className="h-5 w-5" />,
-                    image: staticUrl('/images/farm/IMG_7307.jpg'),
-                  },
-                ].map((x) => (
-                  <div
-                    key={x.title}
-                    className="group relative min-h-[260px] overflow-hidden rounded-2xl border border-gold/15 bg-black/30"
-                  >
+            <div className="mt-12 grid gap-8 md:grid-cols-2">
+              {ON_FARM_CABINS.map((cabin, idx) => (
+                <motion.div
+                  key={cabin.id}
+                  className="overflow-hidden rounded-2xl border border-parchment bg-white shadow-sm"
+                  initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.15 }} custom={idx * 0.08} variants={fadeUp}
+                >
+                  <div className="relative overflow-hidden">
                     <img
-                      src={x.image}
-                      alt={x.title}
-                      className="absolute inset-0 h-full w-full object-cover object-center opacity-85 transition duration-700 group-hover:scale-[1.03]"
+                      src={cabin.image}
+                      alt={cabin.name}
+                      className="h-64 w-full object-cover transition duration-500 hover:scale-105"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-                    <div className="absolute inset-0 ring-1 ring-inset ring-gold/10" />
-
-                    <div className="relative flex h-full flex-col justify-between p-6">
-                      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gold/15 bg-black/30 text-gold/85 backdrop-blur">
-                        {x.icon}
-                      </div>
-
-                      <div>
-                        <p className="font-heading text-2xl text-[#f5efe2]">{x.title}</p>
-                        <p className="mt-2 text-sm text-white/70">{x.desc}</p>
-                      </div>
+                    {cabin.badge && (
+                      <span className="absolute left-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-medium text-white">
+                        {cabin.badge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-6 md:p-8">
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gold">{cabin.type}</p>
+                    <h3 className="mt-2 font-heading text-2xl text-charcoal">{cabin.name}</h3>
+                    <p className="mt-1 text-sm italic text-stone">{cabin.tagline}</p>
+                    <p className="mt-4 text-sm leading-relaxed text-stone">{cabin.description}</p>
+                    <ul className="mt-5 space-y-2">
+                      {cabin.features.map((f) => (
+                        <li key={f} className="flex items-center gap-2.5 text-sm text-bark">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-gold" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-5 flex items-center justify-between border-t border-parchment pt-5">
+                      <span className="flex items-center gap-2 text-sm text-stone">
+                        <Users className="h-4 w-4 text-gold" />
+                        {cabin.guests} guests
+                      </span>
+                      <Button asChild className="bg-gold px-3 py-1.5 text-xs text-white hover:bg-gold-deep">
+                        <a href="#book">Enquire Now</a>
+                      </Button>
                     </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── HOLIDAY HOMES ────────────────────────────────────── */}
+        <section className="bg-sand py-20 md:py-28">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">Off-Farm Stays</p>
+              <h2 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">Holiday Homes</h2>
+              <p className="mt-3 max-w-2xl text-base text-stone">
+                Our two holiday homes are located nearby on Phillip Island — perfect for families or groups who want
+                the freedom and space of a full home, while staying close to Omaru Farm and all island attractions.
+              </p>
+            </motion.div>
+
+            <div className="mt-12 grid gap-8 md:grid-cols-2">
+              {HOLIDAY_HOMES.map((home, idx) => (
+                <motion.div
+                  key={home.id}
+                  className="overflow-hidden rounded-2xl border border-parchment bg-white shadow-sm"
+                  initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.15 }} custom={idx * 0.08} variants={fadeUp}
+                >
+                  <div className="overflow-hidden">
+                    <img
+                      src={home.image}
+                      alt={home.name}
+                      className="h-56 w-full object-cover transition duration-500 hover:scale-105"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="p-6 md:p-8">
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gold">{home.type}</p>
+                    <h3 className="mt-2 font-heading text-2xl text-charcoal">{home.name}</h3>
+                    <p className="mt-1 text-sm italic text-stone">{home.tagline}</p>
+                    <p className="mt-4 text-sm leading-relaxed text-stone">{home.description}</p>
+                    <ul className="mt-5 space-y-2">
+                      {home.features.map((f) => (
+                        <li key={f} className="flex items-center gap-2.5 text-sm text-bark">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-gold" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-5 flex items-center justify-between border-t border-parchment pt-5">
+                      <span className="flex items-center gap-2 text-sm text-stone">
+                        <Users className="h-4 w-4 text-gold" />
+                        {home.guests} guests
+                      </span>
+                      <Button asChild className="bg-gold px-3 py-1.5 text-xs text-white hover:bg-gold-deep">
+                        <a href="#book">Enquire Now</a>
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── EXPERIENCE SECTION ───────────────────────────────── */}
+        <section className="relative overflow-hidden py-20 md:py-28">
+          <img
+            src={staticUrl('/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG')}
+            alt="Breathtaking views from Omaru Farm accommodation"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-charcoal/60" />
+          <div className="relative mx-auto max-w-[92vw] px-5 text-white">
+            <motion.div className="text-center" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0} variants={fadeUp}>
+              <h2 className="font-heading text-4xl md:text-5xl">The Omaru Stay Experience</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-base text-white/85">
+                More than just a place to sleep. Staying at Omaru means waking to farm sounds, dining on food grown steps from your door,
+                and exploring Phillip Island with the best base on the island.
+              </p>
+              <div className="mt-10 grid gap-6 sm:grid-cols-2 md:grid-cols-4">
+                {[
+                  { icon: '🌅', label: 'Sunrise Paddock Views', desc: 'Wake up to breathtaking vistas every morning' },
+                  { icon: '🐾', label: 'Farm Animal Encounters', desc: 'Meet ponies, lambs, goats, and wallabies at dusk' },
+                  { icon: '🍽️', label: 'Farm-to-Table Dining', desc: 'Lunch and dinner in the café, minutes from your cabin' },
+                  { icon: '🐧', label: '5 min to Penguin Parade', desc: 'The world-famous penguin colony is on your doorstep' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-sm text-center">
+                    <span className="text-3xl">{item.icon}</span>
+                    <p className="mt-3 font-medium text-white">{item.label}</p>
+                    <p className="mt-1 text-xs text-white/75">{item.desc}</p>
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* Book Your Retreat */}
-        <section id="book" className="bg-[#0b0b0b] py-20">
+        {/* ── BOOKING FORM ─────────────────────────────────────── */}
+        <section id="book" className="bg-cream py-20 md:py-24">
           <div className="mx-auto max-w-[92vw] px-5">
-            <div className="mx-auto max-w-4xl rounded-2xl border border-gold/20 bg-white/[0.03] p-6 md:p-10">
-              <p className="text-xs uppercase tracking-[0.28em] text-gold/70 text-center">Book Your Retreat</p>
-              <h2 className="mt-3 text-center font-heading text-4xl text-[#f5efe2] md:text-5xl">Book Your Retreat</h2>
-              <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-white/70 md:text-base">
-                Share your preferred dates and a few details. We’ll confirm availability and reply by email.
+            <div className="mx-auto max-w-2xl rounded-2xl border border-parchment bg-white p-6 shadow-sm md:p-10">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-gold">Book Your Stay</p>
+              <h2 className="mt-2 font-heading text-3xl text-charcoal">Accommodation Enquiry</h2>
+              <p className="mt-2 text-sm text-stone">
+                Fill in your details and we'll be in touch with availability and pricing within 24 hours.
               </p>
 
-              <form className="mt-8 grid gap-4 md:grid-cols-12" onSubmit={(e) => e.preventDefault()}>
-                <div className="md:col-span-6">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/55">Arrival</p>
-                  <div className="relative mt-2">
-                    <input className="field bg-black/20 pr-10" type="date" aria-label="Arrival date" />
-                    <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/70" />
+              {submitted ? (
+                <div className="mt-8 rounded-2xl border border-sage/30 bg-fern/30 p-8 text-center">
+                  <p className="font-heading text-2xl text-charcoal">Enquiry Received!</p>
+                  <p className="mt-2 text-sm text-stone">Thank you — we'll be in touch within 24 hours with availability and pricing.</p>
+                </div>
+              ) : (
+                <form className="mt-8 space-y-5" onSubmit={(e) => { e.preventDefault(); setSubmitted(true) }}>
+                  <div>
+                    <label className="text-xs font-medium uppercase tracking-widest text-stone">Property</label>
+                    <select
+                      value={property}
+                      onChange={(e) => setProperty(e.target.value)}
+                      className="field mt-2"
+                    >
+                      <optgroup label="On-Farm Cabins">
+                        <option>The Paddock Cabin</option>
+                        <option>The Grove Cabin</option>
+                      </optgroup>
+                      <optgroup label="Holiday Homes">
+                        <option>Ventnor Retreat</option>
+                        <option>Island Cottage</option>
+                      </optgroup>
+                    </select>
                   </div>
-                </div>
-                <div className="md:col-span-6">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/55">Departure</p>
-                  <div className="relative mt-2">
-                    <input className="field bg-black/20 pr-10" type="date" aria-label="Departure date" />
-                    <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/70" />
+
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-medium uppercase tracking-widest text-stone">Full Name</label>
+                      <input className="field mt-2" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium uppercase tracking-widest text-stone">Email</label>
+                      <input className="field mt-2" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    </div>
                   </div>
-                </div>
 
-                <div className="md:col-span-6">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/55">Full name</p>
-                  <input className="field mt-2 bg-black/20" placeholder="Your name" />
-                </div>
-                <div className="md:col-span-6">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/55">Email</p>
-                  <input className="field mt-2 bg-black/20" placeholder="you@example.com" type="email" />
-                </div>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-medium uppercase tracking-widest text-stone">Check-In Date</label>
+                      <input className="field mt-2" type="date" required />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium uppercase tracking-widest text-stone">Check-Out Date</label>
+                      <input className="field mt-2" type="date" required />
+                    </div>
+                  </div>
 
-                <div className="md:col-span-12">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/55">Notes (optional)</p>
-                  <textarea className="field mt-2 min-h-[110px] resize-none bg-black/20" placeholder="Stay preference, guest count, special requests…" />
-                </div>
+                  <div>
+                    <label className="text-xs font-medium uppercase tracking-widest text-stone">Number of Guests</label>
+                    <select value={guests} onChange={(e) => setGuests(e.target.value)} className="field mt-2">
+                      {['1', '2', '3', '4', '5', '6'].map((n) => <option key={n}>{n}</option>)}
+                    </select>
+                  </div>
 
-                <div className="md:col-span-12">
-                  <Button type="submit" className="w-full">
-                    Send Request
+                  <div>
+                    <label className="text-xs font-medium uppercase tracking-widest text-stone">Special Requests</label>
+                    <textarea className="field mt-2 resize-none" rows={4} placeholder="Dietary requirements, pet-friendly, accessibility, early check-in, celebrations…" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                  </div>
+
+                  <Button type="submit" className="w-full bg-gold text-white hover:bg-gold-deep">
+                    Send Enquiry
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
-                  <p className="mt-3 text-center text-xs text-white/45">
-                    We’ll respond by email. For urgent requests, contact us directly.
+                  <p className="text-center text-xs text-stone">
+                    <MapPin className="mr-1 inline h-3 w-3 text-gold" />
+                    776 Ventnor Road, Ventnor, Phillip Island VIC 3922
                   </p>
-                </div>
-              </form>
+                </form>
+              )}
             </div>
           </div>
         </section>
+
       </main>
     </>
   )
 }
-

@@ -7,6 +7,13 @@ import { staticUrl } from '@/utils/staticUrl'
 
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   useEffect(() => {
     if (!mobileOpen) return
@@ -18,18 +25,27 @@ export function SiteHeader() {
   }, [mobileOpen])
 
   return (
-    <header className="sticky top-0 z-30 border-b border-gold/25 bg-obsidian/90 backdrop-blur">
-      <nav className="mx-auto flex w-full max-w-[92vw] items-center justify-between px-5 py-4">
+    <header
+      className={[
+        'sticky top-0 z-30 border-b transition-shadow duration-300',
+        scrolled
+          ? 'border-parchment bg-cream/95 shadow-sm backdrop-blur'
+          : 'border-parchment/60 bg-cream/90 backdrop-blur',
+      ].join(' ')}
+    >
+      <nav className="mx-auto flex w-full max-w-[92vw] items-center justify-between px-5 py-3.5">
         <Link to="/" className="flex items-center gap-3">
           <img
             src={staticUrl('/images/farm/omaru-logo.png')}
             alt="Omaru Farm logo"
-            className="h-11 w-11 drop-shadow-[0_0_6px_rgba(205,163,73,0.35)]"
+            className="h-10 w-10"
           />
-          <p className="font-heading text-xl text-gold">Omaru Farm</p>
+          <span className="font-heading text-xl text-charcoal">
+            Omaru <span className="text-gold">Farm</span>
+          </span>
         </Link>
 
-        <div className="hidden gap-6 text-sm text-white/85 md:flex">
+        <div className="hidden gap-7 text-sm md:flex">
           {mainNavItems.map((item) => (
             <NavLink
               key={item.to}
@@ -37,8 +53,8 @@ export function SiteHeader() {
               end={item.end}
               className={({ isActive }) =>
                 [
-                  'inline-flex items-center gap-1.5 transition hover:text-gold',
-                  isActive ? 'text-gold' : 'text-white/85',
+                  'font-medium transition-colors hover:text-gold',
+                  isActive ? 'text-gold' : 'text-bark',
                 ].join(' ')
               }
             >
@@ -48,7 +64,10 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button asChild className="hidden md:inline-flex">
+          <Button
+            asChild
+            className="hidden bg-gold text-white hover:bg-gold-deep md:inline-flex"
+          >
             <Link to="/book">Book Now</Link>
           </Button>
 
@@ -57,7 +76,7 @@ export function SiteHeader() {
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((v) => !v)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gold/25 bg-black/25 text-gold transition hover:border-gold/60 hover:bg-black/35 md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-parchment bg-sand text-bark transition hover:border-gold/50 hover:text-gold md:hidden"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -69,10 +88,10 @@ export function SiteHeader() {
         <div className="md:hidden">
           <button
             aria-label="Close menu overlay"
-            className="fixed inset-0 z-20 bg-black/55"
+            className="fixed inset-0 z-20 bg-charcoal/20"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="relative z-30 border-t border-gold/15 bg-[#0b0b0b]/95 backdrop-blur">
+          <div className="relative z-30 border-t border-parchment bg-cream shadow-lg">
             <div className="mx-auto max-w-[92vw] px-5 py-4">
               <div className="grid gap-1">
                 {mainNavItems.map((item) => (
@@ -83,10 +102,10 @@ export function SiteHeader() {
                     onClick={() => setMobileOpen(false)}
                     className={({ isActive }) =>
                       [
-                        'rounded-xl px-4 py-3 text-sm transition',
+                        'rounded-xl px-4 py-3 text-sm font-medium transition',
                         isActive
-                          ? 'border border-gold/25 bg-gold/10 text-gold'
-                          : 'border border-transparent text-white/85 hover:border-gold/20 hover:bg-white/5 hover:text-gold',
+                          ? 'bg-gold/10 text-gold'
+                          : 'text-bark hover:bg-sand hover:text-gold',
                       ].join(' ')
                     }
                   >
@@ -94,9 +113,12 @@ export function SiteHeader() {
                   </NavLink>
                 ))}
               </div>
-
               <div className="mt-4">
-                <Button asChild className="w-full" onClick={() => setMobileOpen(false)}>
+                <Button
+                  asChild
+                  className="w-full bg-gold text-white hover:bg-gold-deep"
+                  onClick={() => setMobileOpen(false)}
+                >
                   <Link to="/book">Book Now</Link>
                 </Button>
               </div>
@@ -107,4 +129,3 @@ export function SiteHeader() {
     </header>
   )
 }
-

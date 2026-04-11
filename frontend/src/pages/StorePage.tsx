@@ -192,7 +192,7 @@ export function StorePage() {
               transition={{ duration: 0.55 }}
             >
               <p className="text-xs uppercase tracking-[0.32em] text-gold/85">Omaru Farm Store</p>
-              <h1 className="mt-4 font-heading text-5xl leading-[0.95] text-[#f5efe2] md:text-6xl lg:text-7xl">
+              <h1 className="mt-4 font-heading text-5xl leading-[0.95] text-charcoal md:text-6xl lg:text-7xl">
                 The Farm
                 <br />
                 <span className="italic text-gold/95">Pantry</span>
@@ -202,7 +202,7 @@ export function StorePage() {
                 collection below.
               </p>
 
-              <div className="mt-6 flex flex-wrap gap-2 text-xs text-white/60">
+              <div className="mt-6 flex flex-wrap gap-2 text-xs text-stone">
                 {[
                   { icon: <ShoppingBag className="h-4 w-4 text-gold/90" />, text: '2026 collection' },
                   { icon: <Leaf className="h-4 w-4 text-gold/90" />, text: 'Farm-inspired quality' },
@@ -210,7 +210,7 @@ export function StorePage() {
                 ].map((b) => (
                   <span
                     key={b.text}
-                    className="inline-flex items-center gap-2 rounded-full border border-gold/15 bg-black/35 px-3 py-1.5 backdrop-blur-sm"
+                    className="inline-flex items-center gap-2 rounded-full border border-parchment bg-black/35 px-3 py-1.5 backdrop-blur-sm"
                   >
                     {b.icon}
                     {b.text}
@@ -241,15 +241,15 @@ export function StorePage() {
                   </span>
                   <div>
                     <p className="text-xs uppercase tracking-[0.22em] text-gold/75">This season</p>
-                    <p className="mt-1 font-heading text-2xl text-[#f5efe2]">Taste the harvest</p>
-                    <p className="mt-2 text-sm leading-relaxed text-white/65">
+                    <p className="mt-1 font-heading text-2xl text-charcoal">Taste the harvest</p>
+                    <p className="mt-2 text-sm leading-relaxed text-stone">
                       Filter by category, search by name, or sort by price — tap any product for full details.
                     </p>
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   {['20260311_130456.jpg', '20260311_130712.jpg', '20260311_130805.jpg'].map((src) => (
-                    <div key={src} className="overflow-hidden rounded-xl border border-gold/15">
+                    <div key={src} className="overflow-hidden rounded-xl border border-parchment">
                       <img
                         src={staticUrl(`/images/products/${src}`)}
                         alt=""
@@ -266,8 +266,8 @@ export function StorePage() {
         </section>
 
         <div id="store-browse" className="mx-auto max-w-[86vw] scroll-mt-24 px-5 py-12 md:py-14">
-          <p className="font-heading text-2xl text-[#f5efe2] md:text-3xl">Shop the collection</p>
-          <p className="mt-2 max-w-2xl text-sm text-white/70 md:text-base">
+          <p className="font-heading text-2xl text-charcoal md:text-3xl">Shop the collection</p>
+          <p className="mt-2 max-w-2xl text-sm text-stone md:text-base">
             Browse the complete 2026 range by category, name, and price.
           </p>
 
@@ -283,7 +283,7 @@ export function StorePage() {
             <option value="price-high" className="bg-black">Sort: Price High-Low</option>
           </select>
           <div className="md:col-span-2">
-            <p className="mb-2 text-xs uppercase tracking-[0.16em] text-white/60">Categories</p>
+            <p className="mb-2 text-xs uppercase tracking-[0.16em] text-stone">Categories</p>
             <div className="flex flex-wrap gap-2">
               {categories.map((item) => (
                 <button
@@ -292,7 +292,7 @@ export function StorePage() {
                   className={`rounded-full border px-3 py-1.5 text-sm transition ${
                     category === item
                       ? 'border-gold bg-gold/20 text-gold'
-                      : 'border-white/30 text-white/80 hover:border-gold/60 hover:text-gold'
+                      : 'border-white/30 text-bark hover:border-gold/60 hover:text-gold'
                   }`}
                 >
                   {item}
@@ -302,7 +302,7 @@ export function StorePage() {
           </div>
           </section>
 
-          <p className="mt-5 text-sm text-white/65">Showing {filteredProducts.length} products</p>
+          <p className="mt-5 text-sm text-stone">Showing {filteredProducts.length} products</p>
 
           <section className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {paginatedProducts.map((product, index) => (
@@ -329,8 +329,8 @@ export function StorePage() {
                   <CardTitle>{product.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-white/70">{product.category}</p>
-                  <p className="text-sm text-white/70">{product.size}</p>
+                  <p className="text-sm text-stone">{product.category}</p>
+                  <p className="text-sm text-stone">{product.size}</p>
                   <p className="mt-2 text-lg font-semibold text-gold">${product.price.toFixed(2)}</p>
                 </CardContent>
               </Card>
@@ -339,10 +339,10 @@ export function StorePage() {
           </section>
 
           <section
-            className="mt-8 rounded-xl border border-gold/20 bg-black/30 p-3 sm:p-4"
+            className="mt-8 rounded-xl border border-gold/20 bg-sand p-3 sm:p-4"
             aria-label="Product pagination"
           >
-            <p className="text-center text-sm text-white/70 sm:text-left">
+            <p className="text-center text-sm text-stone sm:text-left">
               Page {currentPage} of {totalPages}
             </p>
 
@@ -381,7 +381,7 @@ export function StorePage() {
                       className={`grid h-11 min-w-11 shrink-0 place-items-center rounded-full text-sm font-medium transition ${
                         token === currentPage
                           ? 'bg-gold text-black'
-                          : 'border border-white/30 text-white/80 hover:border-gold hover:text-gold'
+                          : 'border border-white/30 text-bark hover:border-gold hover:text-gold'
                       }`}
                     >
                       {token}
@@ -408,7 +408,7 @@ export function StorePage() {
           <motion.div
             initial={{ opacity: 0, y: 14, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="relative w-full max-w-2xl rounded-2xl border border-gold/35 bg-[#0d0d0d] p-5 shadow-[0_25px_80px_rgba(0,0,0,0.55)]"
+            className="relative w-full max-w-2xl rounded-2xl border border-parchment bg-white p-5 shadow-[0_25px_80px_rgba(0,0,0,0.55)]"
           >
             <button
               onClick={() => {
@@ -419,7 +419,7 @@ export function StorePage() {
                   setSearchParams(next, { replace: true })
                 }
               }}
-              className="absolute right-3 top-3 text-white/70 transition hover:text-gold"
+              className="absolute right-3 top-3 text-stone transition hover:text-gold"
               aria-label="Close details popup"
             >
               <CircleX className="h-5 w-5" />
@@ -439,12 +439,12 @@ export function StorePage() {
                   Product Details
                 </p>
                 <h3 className="mt-3 font-heading text-3xl text-gold">{selectedProduct.name}</h3>
-                <p className="mt-2 text-white/75">{selectedProduct.category}</p>
-                <div className="mt-4 space-y-2 text-sm text-white/80">
-                  <p><span className="text-white/60">Pack Size:</span> {selectedProduct.size}</p>
-                  <p><span className="text-white/60">Price:</span> ${selectedProduct.price.toFixed(2)}</p>
+                <p className="mt-2 text-stone">{selectedProduct.category}</p>
+                <div className="mt-4 space-y-2 text-sm text-bark">
+                  <p><span className="text-stone">Pack Size:</span> {selectedProduct.size}</p>
+                  <p><span className="text-stone">Price:</span> ${selectedProduct.price.toFixed(2)}</p>
                   <p>
-                    <span className="text-white/60">Description:</span> Handcrafted with farm-inspired quality, rich natural flavor, and premium ingredients suitable for everyday gourmet cooking.
+                    <span className="text-stone">Description:</span> Handcrafted with farm-inspired quality, rich natural flavor, and premium ingredients suitable for everyday gourmet cooking.
                   </p>
                 </div>
                 <div className="mt-5 flex gap-2">

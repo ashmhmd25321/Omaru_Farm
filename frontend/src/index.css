@@ -1,16 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-heading: "Cormorant Garamond", serif;
   --font-body: "Manrope", sans-serif;
-  --color-obsidian: #080808;
-  --color-gold: #cda349;
+
+  /* Brand palette */
+  --color-gold:      #c49a3c;
+  --color-gold-deep: #a07c28;
+
+  /* Light warm palette */
+  --color-cream:     #faf7f2;
+  --color-sand:      #f2ece0;
+  --color-parchment: #e8dccb;
+  --color-linen:     #ddd0bb;
+
+  /* Text */
+  --color-charcoal:  #1e1a16;
+  --color-bark:      #4a3b2d;
+  --color-stone:     #7a6a59;
+
+  /* Accent greens */
+  --color-sage:      #4a7059;
+  --color-fern:      #d8e8d0;
+
+  /* Keep obsidian for admin only */
+  --color-obsidian:  #080808;
 }
 
 @layer base {
   * {
-    @apply border-gold/20;
+    box-sizing: border-box;
   }
 
   html {
@@ -18,34 +38,48 @@
   }
 
   ::selection {
-    background: rgba(205, 163, 73, 0.35);
-    color: #fff;
+    background: rgba(196, 154, 60, 0.25);
+    color: #1e1a16;
   }
 
-  /* Hide native scrollbar (keep scrolling enabled) */
-  html,
-  body {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge legacy */
+  html, body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
   ::-webkit-scrollbar {
-    width: 0px;
-    height: 0px;
+    width: 0;
+    height: 0;
   }
 
   body {
-    @apply bg-obsidian font-body text-white antialiased;
+    @apply bg-cream font-body text-charcoal antialiased;
     margin: 0;
-    background-image:
-      radial-gradient(circle at 12% 10%, rgba(205, 163, 73, 0.16), transparent 30%),
-      radial-gradient(circle at 88% 0%, rgba(99, 73, 42, 0.2), transparent 22%);
     min-height: 100vh;
   }
 }
 
 @layer components {
+  /* Public site form fields */
   .field {
-    @apply w-full rounded-md border border-gold/30 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/20;
+    @apply w-full rounded-lg border border-parchment bg-white px-4 py-2.5 text-sm text-charcoal outline-none transition
+           placeholder:text-stone/60
+           focus:border-gold focus:ring-2 focus:ring-gold/20;
+  }
+
+  /* Admin form fields (dark) */
+  .field-dark {
+    @apply w-full rounded-md border border-gold/30 bg-white/5 px-3 py-2 text-sm text-white outline-none transition
+           focus:border-gold focus:ring-2 focus:ring-gold/20;
+  }
+
+  /* Warm section divider */
+  .section-divider {
+    @apply border-t border-parchment;
+  }
+
+  /* Premium badge */
+  .badge-warm {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-medium tracking-wide text-gold-deep;
   }
 }
