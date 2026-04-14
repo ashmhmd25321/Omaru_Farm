@@ -135,17 +135,17 @@ export function CafePage() {
             alt="Farm-to-table dining at Café Omaru, Phillip Island"
             className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal/75 via-charcoal/40 to-charcoal/10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-charcoal/50 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/22 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
 
           <div className="relative mx-auto grid min-h-[75vh] max-w-[92vw] items-center gap-10 px-5 py-16 md:grid-cols-12">
-            <motion.div className="md:col-span-7" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-              <p className="mb-3 text-xs uppercase tracking-[0.32em] text-gold/90">Café Omaru · Phillip Island</p>
-              <h1 className="font-heading text-5xl leading-tight text-white md:text-7xl">
+            <motion.div className="hero-panel md:col-span-8 lg:col-span-7" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+              <p className="mb-3 text-xs uppercase tracking-[0.32em] text-gold-deep">Café Omaru · Phillip Island</p>
+              <h1 className="font-heading text-4xl leading-tight text-charcoal md:text-6xl">
                 Farm-to-Table<br />
                 <span className="italic text-gold">Dining</span>
               </h1>
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-white/85">
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-stone">
                 From our olive groves and kitchen garden to your plate — lunch, sunset dinners, barista coffee,
                 and Phillip Island wines in a breathtaking paddock setting.
               </p>
@@ -156,7 +156,7 @@ export function CafePage() {
                   { icon: <GlassWater className="h-3.5 w-3.5" />, label: 'Phillip Island Wines' },
                   { icon: <Dog className="h-3.5 w-3.5" />, label: 'Dog Friendly' },
                 ].map((b) => (
-                  <span key={b.label} className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-white/90 backdrop-blur-sm">
+                  <span key={b.label} className="inline-flex items-center gap-1.5 rounded-full border border-parchment bg-zinc-50 px-3 py-1.5 text-bark">
                     <span className="text-gold">{b.icon}</span>
                     {b.label}
                   </span>
@@ -166,7 +166,7 @@ export function CafePage() {
                 <Button asChild className="bg-gold text-white hover:bg-gold-deep">
                   <a href="#menu">Explore The Menu</a>
                 </Button>
-                <Button variant="outline" asChild className="border-white/50 text-white hover:bg-white/10">
+                <Button variant="outline" asChild className="border-parchment text-bark hover:bg-zinc-50">
                   <a href="#reserve">Reserve a Table</a>
                 </Button>
               </div>
@@ -175,7 +175,7 @@ export function CafePage() {
         </section>
 
         {/* ── HOURS & INFO STRIP ───────────────────────────────── */}
-        <section className="bg-sand border-b border-parchment">
+        <section className="border-b border-parchment bg-zinc-50">
           <div className="mx-auto max-w-[92vw] px-5 py-8">
             <div className="grid gap-6 sm:grid-cols-3">
               {[
@@ -196,7 +196,7 @@ export function CafePage() {
         </section>
 
         {/* ── FARM TO TABLE STORY ──────────────────────────────── */}
-        <section className="bg-cream py-20 md:py-28">
+        <section className="bg-white py-20 md:py-28">
           <div className="mx-auto max-w-[92vw] px-5">
             <div className="grid gap-12 md:grid-cols-12 md:items-center">
               <div className="md:col-span-5">
@@ -239,7 +239,7 @@ export function CafePage() {
         </section>
 
         {/* ── MENU ─────────────────────────────────────────────── */}
-        <section id="menu" className="bg-sand py-20 md:py-24">
+        <section id="menu" className="bg-zinc-50 py-20 md:py-24">
           <div className="mx-auto max-w-[92vw] px-5">
             <motion.div className="text-center" initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">Seasonal Menu</p>
@@ -264,7 +264,7 @@ export function CafePage() {
                     {col.items.map((item) => (
                       <div key={`${col.key}-${item.itemName}`} className="border-b border-parchment pb-4 last:border-b-0 last:pb-0">
                         <div className="flex items-start gap-4">
-                          <div className="mt-0.5 h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-parchment bg-sand">
+                          <div className="mt-0.5 h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-parchment bg-zinc-50">
                             {item.image ? (
                               <img src={item.image} alt={item.itemName} className="h-full w-full object-cover" loading="lazy" />
                             ) : (
@@ -305,7 +305,7 @@ export function CafePage() {
 
             {/* Dog friendly strip */}
             <motion.div
-              className="mt-5 flex flex-wrap items-center gap-5 rounded-2xl border border-parchment bg-sand p-6"
+              className="mt-5 flex flex-wrap items-center gap-5 rounded-2xl border border-parchment bg-zinc-50 p-6"
               initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             >
               <Dog className="h-8 w-8 shrink-0 text-gold" />
@@ -321,7 +321,7 @@ export function CafePage() {
         </section>
 
         {/* ── RESERVE ──────────────────────────────────────────── */}
-        <section id="reserve" className="bg-cream py-20 md:py-24">
+        <section id="reserve" className="bg-white py-20 md:py-24">
           <div className="mx-auto max-w-[92vw] px-5">
             <div className="mx-auto max-w-4xl rounded-2xl border border-parchment bg-white p-6 shadow-sm md:p-10">
               <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-gold">Reserve a Table</p>
@@ -332,7 +332,7 @@ export function CafePage() {
                   { icon: <CalendarDays className="h-4 w-4 text-gold" />, text: 'Fast confirmation by email' },
                   { icon: <Users className="h-4 w-4 text-gold" />, text: 'Dietary notes welcome' },
                 ].map((b) => (
-                  <span key={b.text} className="inline-flex items-center gap-2 rounded-full border border-parchment bg-sand px-3 py-1 text-stone">
+                  <span key={b.text} className="inline-flex items-center gap-2 rounded-full border border-parchment bg-zinc-50 px-3 py-1 text-stone">
                     {b.icon} {b.text}
                   </span>
                 ))}
@@ -364,7 +364,7 @@ export function CafePage() {
                 {/* Period */}
                 <div className="md:col-span-12">
                   <p className="text-xs font-medium uppercase tracking-[0.22em] text-stone">Dining</p>
-                  <div className="mt-2 inline-flex rounded-xl border border-parchment bg-sand p-1">
+                  <div className="mt-2 inline-flex rounded-xl border border-parchment bg-zinc-50 p-1">
                     {periods.map((p) => (
                       <button
                         key={p}
@@ -384,7 +384,7 @@ export function CafePage() {
                     <p className="text-xs font-medium uppercase tracking-[0.22em] text-stone">Select Date</p>
                     <span className="text-xs text-stone">{prettyDate}</span>
                   </div>
-                  <div className="mt-2 rounded-2xl border border-parchment bg-sand p-4">
+                  <div className="mt-2 rounded-2xl border border-parchment bg-zinc-50 p-4">
                     <div className="relative">
                       <input
                         className="field"
@@ -409,7 +409,7 @@ export function CafePage() {
                 {/* Time */}
                 <div className="md:col-span-5">
                   <p className="text-xs font-medium uppercase tracking-[0.22em] text-stone">Preferred Time</p>
-                  <div className="mt-2 grid grid-cols-2 gap-3 rounded-2xl border border-parchment bg-sand p-4">
+                  <div className="mt-2 grid grid-cols-2 gap-3 rounded-2xl border border-parchment bg-zinc-50 p-4">
                     {([['From', timeFrom, timeFromInputRef, setTimeFrom], ['Until', timeUntil, timeUntilInputRef, setTimeUntil]] as const).map(([label, val, ref, setter]) => (
                       <label key={label} className="space-y-1.5">
                         <p className="text-[11px] uppercase tracking-[0.24em] text-stone">{label}</p>
@@ -440,7 +440,7 @@ export function CafePage() {
                 {/* Guests */}
                 <div className="md:col-span-4">
                   <p className="text-xs font-medium uppercase tracking-[0.22em] text-stone">Guests</p>
-                  <div className="mt-2 flex items-center justify-between rounded-xl border border-parchment bg-sand px-4 py-3">
+                  <div className="mt-2 flex items-center justify-between rounded-xl border border-parchment bg-zinc-50 px-4 py-3">
                     <span className="flex items-center gap-2 text-sm text-bark">
                       <Users className="h-4 w-4 text-gold" />
                       {guests} {guests === 1 ? 'Guest' : 'Guests'}

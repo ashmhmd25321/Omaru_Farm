@@ -53,7 +53,7 @@
   }
 
   body {
-    @apply bg-cream font-body text-charcoal antialiased;
+    @apply bg-white font-body text-charcoal antialiased;
     margin: 0;
     min-height: 100vh;
   }
@@ -81,5 +81,18 @@
   /* Premium badge */
   .badge-warm {
     @apply inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-medium tracking-wide text-gold-deep;
+  }
+
+  /* Hero copy on busy photos: frosted white panel */
+  .hero-panel {
+    @apply max-w-2xl rounded-2xl border border-white/70 bg-white/[0.94] p-6 shadow-[0_8px_40px_rgba(0,0,0,0.12)] backdrop-blur-md md:p-9;
+  }
+
+  /* Fallback when text sits directly on imagery */
+  .hero-text-on-photo {
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.55),
+      0 4px 24px rgba(0, 0, 0, 0.45),
+      0 0 1px rgba(0, 0, 0, 0.8);
   }
 }

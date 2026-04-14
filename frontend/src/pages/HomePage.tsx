@@ -1,9 +1,36 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { motion } from 'framer-motion'
+import type { LucideIcon } from 'lucide-react'
 import {
-  ArrowRight, BedDouble, ChevronRight, CircleX, Clock3, Dog,
-  Leaf, MapPin, PackageSearch, Salad, Star, Sun, Waves,
+  Anchor,
+  ArrowRight,
+  Beef,
+  BedDouble,
+  Bird,
+  Cherry,
+  ChevronRight,
+  CircleX,
+  Clock3,
+  Dog,
+  Droplet,
+  Egg,
+  Fish,
+  Footprints,
+  Gauge,
+  Leaf,
+  MapPin,
+  Mountain,
+  PackageSearch,
+  PawPrint,
+  Rabbit,
+  Salad,
+  ShoppingBag,
+  Sprout,
+  Squirrel,
+  Star,
+  Sun,
+  Waves,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -66,26 +93,26 @@ export function HomePage() {
   )
 
   const animals = useMemo(
-    () => [
-      { name: 'Ponies', emoji: '🐴', desc: 'Our gentle ponies roam the paddocks and love a visit.' },
-      { name: 'Cows & Calves', emoji: '🐄', desc: 'Dairy cows and newborn calves are a daily highlight.' },
-      { name: 'Sheep & Lambs', emoji: '🐑', desc: 'Fluffy white faces greet you at the fence.' },
-      { name: 'Goats', emoji: '🐐', desc: 'Cheeky and curious — always ready for a pat.' },
-      { name: 'Chooks', emoji: '🐔', desc: 'Our free-range hens lay the eggs used in the cafe kitchen.' },
-      { name: 'Cats & Dogs', emoji: '🐾', desc: 'Farm companions who will find you before you find them.' },
-      { name: 'Wallabies', emoji: '🦘', desc: 'Wild wallabies bound across the property at dusk.' },
+    (): { name: string; Icon: LucideIcon; desc: string }[] => [
+      { name: 'Ponies', Icon: Footprints, desc: 'Our gentle ponies roam the paddocks and love a visit.' },
+      { name: 'Cows & Calves', Icon: Beef, desc: 'Dairy cows and newborn calves are a daily highlight.' },
+      { name: 'Sheep & Lambs', Icon: Mountain, desc: 'Fluffy white faces greet you at the fence.' },
+      { name: 'Goats', Icon: Rabbit, desc: 'Cheeky and curious — always ready for a pat.' },
+      { name: 'Chooks', Icon: Bird, desc: 'Our free-range hens lay the eggs used in the cafe kitchen.' },
+      { name: 'Cats & Dogs', Icon: PawPrint, desc: 'Farm companions who will find you before you find them.' },
+      { name: 'Wallabies', Icon: Squirrel, desc: 'Wild wallabies bound across the property at dusk.' },
     ],
     [],
   )
 
   const attractions = useMemo(
-    () => [
-      { name: 'Penguin Parade', dist: '5 min', icon: '🐧', desc: 'Watch the world-famous fairy penguin colony at sunset.' },
-      { name: 'Nobbies Boardwalk', dist: '8 min', icon: '🌊', desc: 'Dramatic coastal views and fur seal colonies.' },
-      { name: 'Grand Prix Circuit', dist: '10 min', icon: '🏎️', desc: 'Iconic motorsport venue and visitor experience.' },
-      { name: 'Swan Lake', dist: '10 min', icon: '🦢', desc: 'A tranquil nature reserve and birdwatching spot.' },
-      { name: 'Kitty Miller Bay', dist: '12 min', icon: '⚓', desc: 'Explore the historic Speke shipwreck and rockpools.' },
-      { name: 'Cowes', dist: '10 min', icon: '🛍️', desc: 'The heart of Phillip Island — shops, dining, and the beach.' },
+    (): { name: string; dist: string; Icon: LucideIcon; desc: string }[] => [
+      { name: 'Penguin Parade', dist: '5 min', Icon: Bird, desc: 'Watch the world-famous fairy penguin colony at sunset.' },
+      { name: 'Nobbies Boardwalk', dist: '8 min', Icon: Waves, desc: 'Dramatic coastal views and fur seal colonies.' },
+      { name: 'Grand Prix Circuit', dist: '10 min', Icon: Gauge, desc: 'Iconic motorsport venue and visitor experience.' },
+      { name: 'Swan Lake', dist: '10 min', Icon: Fish, desc: 'A tranquil nature reserve and birdwatching spot.' },
+      { name: 'Kitty Miller Bay', dist: '12 min', Icon: Anchor, desc: 'Explore the historic Speke shipwreck and rockpools.' },
+      { name: 'Cowes', dist: '10 min', Icon: ShoppingBag, desc: 'The heart of Phillip Island — shops, dining, and the beach.' },
     ],
     [],
   )
@@ -154,14 +181,13 @@ export function HomePage() {
                 className={`absolute inset-0 h-full w-full object-cover object-center transition-transform duration-[7000ms] ${idx === currentSlide ? 'scale-[1.05]' : 'scale-[1.01]'}`}
                 loading={idx === 0 ? 'eager' : 'lazy'}
               />
-              {/* Warm light overlay — not dark */}
-              <div className="absolute inset-0 bg-gradient-to-r from-charcoal/65 via-charcoal/25 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-charcoal/50 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
             </div>
           ))}
 
-          {/* Slide dots */}
-          <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+          {/* Slide dots — above bottom info bar */}
+          <div className="absolute bottom-[5.25rem] left-1/2 z-20 flex -translate-x-1/2 gap-2 md:bottom-[4.5rem]">
             {heroImages.map((_, idx) => (
               <button
                 key={`dot-${idx}`}
@@ -172,34 +198,34 @@ export function HomePage() {
             ))}
           </div>
 
-          <div className="relative z-10 mx-auto max-w-[92vw] px-5 py-24">
-            <motion.div initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1 } }}>
+          <div className="relative z-10 mx-auto max-w-[92vw] px-5 pb-28 pt-20 md:pb-24 md:pt-24">
+            <motion.div className="hero-panel" initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1 } }}>
               <motion.p
-                className="mb-4 inline-flex items-center gap-2 rounded-full border border-gold/50 bg-white/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-gold backdrop-blur-sm"
+                className="mb-4 inline-flex items-center gap-2 rounded-full border border-gold/35 bg-gold/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-gold-deep"
                 custom={0} variants={fadeUp}
               >
                 <MapPin className="h-3.5 w-3.5" />
                 Phillip Island, Victoria
               </motion.p>
               <motion.h1
-                className="max-w-3xl font-heading text-5xl leading-tight text-white md:text-7xl"
+                className="max-w-3xl font-heading text-4xl leading-tight text-charcoal md:text-6xl"
                 custom={0.1} variants={fadeUp}
               >
                 Where Every View<br />
                 <span className="italic text-gold">Tells a Story</span>
               </motion.h1>
               <motion.p
-                className="mt-5 max-w-xl text-base leading-relaxed text-white/85 md:text-lg"
+                className="mt-5 max-w-xl text-base leading-relaxed text-stone md:text-lg"
                 custom={0.2} variants={fadeUp}
               >
-                <em>"Omaru"</em> means <strong>a beautiful view</strong> — and from our paddocks you'll see exactly why.
+                <em>"Omaru"</em> means <strong className="text-bark">a beautiful view</strong> — and from our paddocks you'll see exactly why.
                 Farm-to-table dining, self-contained cabin stays, and a premium farm store, just 5 minutes from the Penguin Parade.
               </motion.p>
               <motion.div className="mt-8 flex flex-wrap gap-3" custom={0.3} variants={fadeUp}>
                 <Button asChild className="bg-gold text-white hover:bg-gold-deep">
                   <Link to="/cafe">Dine With Us</Link>
                 </Button>
-                <Button asChild variant="outline" className="border-white/60 text-white hover:bg-white/10">
+                <Button asChild variant="outline" className="border-parchment text-bark hover:bg-zinc-50">
                   <Link to="/stay">Book a Stay</Link>
                 </Button>
               </motion.div>
@@ -207,8 +233,8 @@ export function HomePage() {
           </div>
 
           {/* Bottom address bar */}
-          <div className="absolute bottom-0 inset-x-0 z-10 border-t border-white/10 bg-charcoal/50 backdrop-blur-sm">
-            <div className="mx-auto flex max-w-[92vw] flex-wrap items-center justify-between gap-4 px-5 py-3 text-xs text-white/80">
+          <div className="absolute bottom-0 inset-x-0 z-10 border-t border-parchment bg-white/95 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur-sm">
+            <div className="mx-auto flex max-w-[92vw] flex-wrap items-center justify-between gap-4 px-5 py-3 text-xs text-stone">
               <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-gold" />776 Ventnor Road, Ventnor, Phillip Island VIC 3922</span>
               <span className="flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5 text-gold" />Café: Thu–Fri 10am–2pm & 5–8pm · Sat–Sun 10am–8pm</span>
               <span className="flex items-center gap-1.5"><Leaf className="h-3.5 w-3.5 text-gold" />Farm Store: Mon–Sun 9am–5pm</span>
@@ -217,7 +243,7 @@ export function HomePage() {
         </section>
 
         {/* ── "OMARU" MEANING ─────────────────────────────────── */}
-        <section className="bg-cream py-20 md:py-28">
+        <section className="bg-white py-20 md:py-28">
           <div className="mx-auto max-w-[92vw] px-5">
             <div className="grid items-center gap-12 md:grid-cols-2">
               <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
@@ -238,7 +264,7 @@ export function HomePage() {
                   <Button asChild className="bg-gold text-white hover:bg-gold-deep">
                     <Link to="/about">Our Story</Link>
                   </Button>
-                  <Button asChild variant="outline" className="border-parchment text-bark hover:bg-sand">
+                  <Button asChild variant="outline" className="border-parchment text-bark hover:bg-zinc-50">
                     <Link to="/stay">View Stays</Link>
                   </Button>
                 </div>
@@ -271,7 +297,7 @@ export function HomePage() {
         </section>
 
         {/* ── FARM-TO-TABLE STORY ──────────────────────────────── */}
-        <section className="bg-sand py-20 md:py-28">
+        <section className="bg-zinc-50 py-20 md:py-28">
           <div className="mx-auto max-w-[92vw] px-5">
             <motion.div className="text-center" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">Genuinely Farm to Table</p>
@@ -283,19 +309,23 @@ export function HomePage() {
             </motion.div>
 
             <div className="mt-14 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-              {[
-                { icon: '🫒', title: 'Our Olive Groves', desc: 'Cold-pressed extra virgin olive oil grown and harvested on the farm — used in every dish.' },
-                { icon: '🥚', title: 'Farm-Fresh Eggs', desc: 'Our free-range chooks produce the eggs that go directly from paddock to your plate.' },
-                { icon: '🍅', title: 'Garden Tomatoes', desc: 'Sun-ripened tomatoes grown in our kitchen garden, picked at their seasonal peak.' },
-                { icon: '🌿', title: 'Fresh Herbs', desc: 'Rosemary, thyme, basil and more — harvested fresh from our garden each morning.' },
-                { icon: '🌱', title: 'Seasonal Produce', desc: 'The menu follows what\'s growing — always seasonal, always local, always honest.' },
-              ].map((item, idx) => (
+              {(
+                [
+                  { Icon: Droplet, title: 'Our Olive Groves', desc: 'Cold-pressed extra virgin olive oil grown and harvested on the farm — used in every dish.' },
+                  { Icon: Egg, title: 'Farm-Fresh Eggs', desc: 'Our free-range chooks produce the eggs that go directly from paddock to your plate.' },
+                  { Icon: Cherry, title: 'Garden Tomatoes', desc: 'Sun-ripened tomatoes grown in our kitchen garden, picked at their seasonal peak.' },
+                  { Icon: Leaf, title: 'Fresh Herbs', desc: 'Rosemary, thyme, basil and more — harvested fresh from our garden each morning.' },
+                  { Icon: Sprout, title: 'Seasonal Produce', desc: "The menu follows what's growing — always seasonal, always local, always honest." },
+                ] as const
+              ).map((item, idx) => (
                 <motion.div
                   key={item.title}
                   className="rounded-2xl border border-parchment bg-white p-6 text-center shadow-sm"
                   initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }} custom={idx * 0.07} variants={fadeUp}
                 >
-                  <span className="text-4xl">{item.icon}</span>
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-gold/25 bg-gold/10 text-gold">
+                    <item.Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
+                  </div>
                   <h3 className="mt-4 font-heading text-xl text-charcoal">{item.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-stone">{item.desc}</p>
                 </motion.div>
@@ -331,10 +361,10 @@ export function HomePage() {
         </section>
 
         {/* ── DOG FRIENDLY ─────────────────────────────────────── */}
-        <section className="bg-cream py-10">
+        <section className="bg-white py-10">
           <div className="mx-auto max-w-[92vw] px-5">
             <motion.div
-              className="flex flex-wrap items-center gap-6 rounded-2xl border border-parchment bg-sand px-8 py-6"
+              className="flex flex-wrap items-center gap-6 rounded-2xl border border-parchment bg-zinc-50 px-8 py-6"
               initial="hidden" whileInView="show" viewport={{ once: true }} custom={0} variants={fadeUp}
             >
               <Dog className="h-10 w-10 shrink-0 text-gold" />
@@ -353,7 +383,7 @@ export function HomePage() {
         </section>
 
         {/* ── FARM STORE ───────────────────────────────────────── */}
-        <section className="bg-cream py-20 md:py-28">
+        <section className="bg-white py-20 md:py-28">
           <div className="mx-auto max-w-[92vw] px-5">
             <motion.div className="flex flex-wrap items-end justify-between gap-4" initial="hidden" whileInView="show" viewport={{ once: true }} custom={0} variants={fadeUp}>
               <div>
@@ -400,7 +430,7 @@ export function HomePage() {
             )}
 
             <div className="mt-10 text-center">
-              <Button asChild variant="outline" className="border-parchment text-bark hover:bg-sand">
+              <Button asChild variant="outline" className="border-parchment text-bark hover:bg-zinc-50">
                 <Link to="/store">Shop All Products</Link>
               </Button>
             </div>
@@ -408,7 +438,7 @@ export function HomePage() {
         </section>
 
         {/* ── FARM ANIMALS ─────────────────────────────────────── */}
-        <section className="bg-sand py-20 md:py-28">
+        <section className="bg-zinc-50 py-20 md:py-28">
           <div className="mx-auto max-w-[92vw] px-5">
             <motion.div className="grid items-center gap-12 md:grid-cols-2" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }}>
               <motion.div custom={0} variants={fadeUp}>
@@ -432,7 +462,9 @@ export function HomePage() {
                     className="rounded-2xl border border-parchment bg-white p-5 text-center"
                     initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }} custom={idx * 0.06} variants={fadeUp}
                   >
-                    <span className="text-3xl">{animal.emoji}</span>
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center text-gold">
+                      <animal.Icon className="h-8 w-8" strokeWidth={1.5} aria-hidden="true" />
+                    </div>
                     <p className="mt-2 font-medium text-charcoal text-sm">{animal.name}</p>
                     <p className="mt-1 text-xs leading-relaxed text-stone">{animal.desc}</p>
                   </motion.div>
@@ -458,12 +490,12 @@ export function HomePage() {
             className="absolute inset-0 h-full w-full object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal/70 via-charcoal/35 to-transparent" />
-          <div className="relative mx-auto max-w-[92vw] px-5 text-white">
-            <motion.div className="max-w-xl" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
-              <Sun className="h-10 w-10 text-gold" />
-              <h2 className="mt-4 font-heading text-4xl md:text-5xl">Breathtaking Views, Every Direction</h2>
-              <p className="mt-4 text-base leading-relaxed text-white/90">
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/25 to-transparent" />
+          <div className="relative mx-auto max-w-[92vw] px-5 py-4 md:py-8">
+            <motion.div className="hero-panel max-w-xl" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
+              <Sun className="h-10 w-10 text-gold" aria-hidden="true" />
+              <h2 className="mt-4 font-heading text-3xl text-charcoal md:text-5xl">Breathtaking Views, Every Direction</h2>
+              <p className="mt-4 text-base leading-relaxed text-stone">
                 Rolling green paddocks, distant ocean outlooks, sweeping sunset skies. At Omaru, the landscape is part of the experience.
                 It's why guests drive hours to get here — and why they always come back.
               </p>
@@ -474,7 +506,7 @@ export function HomePage() {
                   { icon: <Sun className="h-5 w-5" />, label: 'Sunset Dining' },
                   { icon: <MapPin className="h-5 w-5" />, label: 'Phillip Island' },
                 ].map((f) => (
-                  <div key={f.label} className="flex items-center gap-2 text-sm text-white/90">
+                  <div key={f.label} className="flex items-center gap-2 text-sm text-bark">
                     <span className="text-gold">{f.icon}</span>
                     {f.label}
                   </div>
@@ -485,7 +517,7 @@ export function HomePage() {
         </section>
 
         {/* ── STAY ─────────────────────────────────────────────── */}
-        <section className="bg-cream py-20 md:py-28">
+        <section className="bg-white py-20 md:py-28">
           <div className="mx-auto max-w-[92vw] px-5">
             <motion.div className="grid items-center gap-12 md:grid-cols-2" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }}>
               <motion.div custom={0} variants={fadeUp}>
@@ -527,7 +559,7 @@ export function HomePage() {
         </section>
 
         {/* ── NEARBY ATTRACTIONS ───────────────────────────────── */}
-        <section className="bg-sand py-20 md:py-28">
+        <section className="bg-zinc-50 py-20 md:py-28">
           <div className="mx-auto max-w-[92vw] px-5">
             <motion.div className="text-center" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">The Perfect Base</p>
@@ -545,7 +577,9 @@ export function HomePage() {
                   className="flex gap-4 rounded-2xl border border-parchment bg-white p-6"
                   initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }} custom={idx * 0.07} variants={fadeUp}
                 >
-                  <span className="text-3xl shrink-0">{a.icon}</span>
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gold/20 bg-gold/10 text-gold">
+                    <a.Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+                  </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium text-charcoal">{a.name}</h3>
@@ -572,7 +606,7 @@ export function HomePage() {
         </section>
 
         {/* ── REVIEWS ──────────────────────────────────────────── */}
-        <section className="bg-cream py-20 md:py-28">
+        <section className="bg-white py-20 md:py-28">
           <div className="mx-auto max-w-[92vw] px-5">
             <motion.div className="flex flex-wrap items-end justify-between gap-4" initial="hidden" whileInView="show" viewport={{ once: true }} custom={0} variants={fadeUp}>
               <div>
@@ -613,7 +647,7 @@ export function HomePage() {
 
             {reviewLimit < reviews.length && (
               <div className="mt-8 text-center">
-                <Button variant="outline" onClick={() => setReviewLimit((p) => p + 3)} className="border-parchment text-bark hover:bg-sand">
+                <Button variant="outline" onClick={() => setReviewLimit((p) => p + 3)} className="border-parchment text-bark hover:bg-zinc-50">
                   Show More Reviews
                 </Button>
               </div>
@@ -629,12 +663,12 @@ export function HomePage() {
             className="absolute inset-0 h-full w-full object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-charcoal/55" />
-          <div className="relative mx-auto max-w-[92vw] px-5 text-center text-white">
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0} variants={fadeUp}>
-              <p className="text-sm uppercase tracking-[0.3em] text-gold/90">Phillip Island's Destination Farm</p>
-              <h2 className="mt-3 font-heading text-4xl md:text-6xl">Come for the View.<br />Stay for the Experience.</h2>
-              <p className="mx-auto mt-5 max-w-xl text-base text-white/85">
+          <div className="absolute inset-0 bg-black/45" />
+          <div className="relative mx-auto max-w-[92vw] px-5 py-6 text-center md:py-10">
+            <motion.div className="hero-panel mx-auto max-w-2xl text-center" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0} variants={fadeUp}>
+              <p className="text-sm uppercase tracking-[0.3em] text-gold-deep">Phillip Island's Destination Farm</p>
+              <h2 className="mt-3 font-heading text-3xl text-charcoal md:text-5xl">Come for the View.<br />Stay for the Experience.</h2>
+              <p className="mx-auto mt-5 max-w-xl text-base text-stone">
                 Book a table for lunch or dinner, reserve your cabin, or explore the farm store.
                 Omaru is waiting to share its beautiful view with you.
               </p>
@@ -642,7 +676,7 @@ export function HomePage() {
                 <Button asChild className="bg-gold text-white hover:bg-gold-deep">
                   <Link to="/book">Book Now</Link>
                 </Button>
-                <Button asChild variant="outline" className="border-white/60 text-white hover:bg-white/10">
+                <Button asChild variant="outline" className="border-parchment text-bark hover:bg-zinc-50">
                   <Link to="/contact">
                     <ChevronRight className="mr-1 h-4 w-4" />
                     Get in Touch

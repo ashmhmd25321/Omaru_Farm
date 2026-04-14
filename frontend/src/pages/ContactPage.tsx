@@ -39,7 +39,7 @@ export function ContactPage() {
       <main>
 
         {/* ── HERO ─────────────────────────────────────────────── */}
-        <section className="bg-sand border-b border-parchment">
+        <section className="border-b border-parchment bg-white">
           <div className="mx-auto grid max-w-[92vw] gap-10 px-5 py-14 md:grid-cols-2 md:items-center md:py-20">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-gold">Get in Touch</p>
@@ -85,7 +85,7 @@ export function ContactPage() {
         </section>
 
         {/* ── HOURS + FORM ─────────────────────────────────────── */}
-        <section className="bg-cream py-16 md:py-22">
+        <section className="bg-zinc-50 py-16 md:py-22">
           <div className="mx-auto max-w-[92vw] px-5">
             <div className="grid gap-14 lg:grid-cols-2 lg:gap-20">
 
@@ -193,7 +193,7 @@ export function ContactPage() {
                         allowFullScreen
                       />
                     </div>
-                    <div className="flex items-center justify-between gap-4 border-t border-parchment bg-sand px-5 py-4">
+                    <div className="flex items-center justify-between gap-4 border-t border-parchment bg-zinc-50 px-5 py-4">
                       <div>
                         <p className="text-sm font-medium text-charcoal">776 Ventnor Road</p>
                         <p className="text-xs text-stone">Ventnor, Phillip Island VIC 3922</p>

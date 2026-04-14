@@ -29,8 +29,8 @@ export function SiteHeader() {
       className={[
         'sticky top-0 z-30 border-b transition-shadow duration-300',
         scrolled
-          ? 'border-parchment bg-cream/95 shadow-sm backdrop-blur'
-          : 'border-parchment/60 bg-cream/90 backdrop-blur',
+          ? 'border-parchment bg-white/95 shadow-sm backdrop-blur'
+          : 'border-parchment/60 bg-white/90 backdrop-blur',
       ].join(' ')}
     >
       <nav className="mx-auto flex w-full max-w-[92vw] items-center justify-between px-5 py-3.5">
@@ -91,7 +91,7 @@ export function SiteHeader() {
             className="fixed inset-0 z-20 bg-charcoal/20"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="relative z-30 border-t border-parchment bg-cream shadow-lg">
+          <div className="relative z-30 border-t border-parchment bg-white shadow-lg">
             <div className="mx-auto max-w-[92vw] px-5 py-4">
               <div className="grid gap-1">
                 {mainNavItems.map((item) => (

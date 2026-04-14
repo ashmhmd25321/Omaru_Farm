@@ -636,9 +636,9 @@ export function AdminDashboardPage() {
           <title>Admin Login | Omaru Farm</title>
         </Helmet>
         <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-5 py-12">
-          <Card className="w-full max-w-lg">
+          <Card variant="dark" className="w-full max-w-lg">
             <CardHeader>
-              <CardTitle>Omaru Admin Login</CardTitle>
+              <CardTitle variant="dark">Omaru Admin Login</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-white/70">Enter admin credentials from backend `.env` (`ADMIN_USERNAME` / `ADMIN_PASSWORD`).</p>
@@ -693,7 +693,7 @@ export function AdminDashboardPage() {
         <section className="mx-auto max-w-[96vw] px-4 pt-6 sm:px-5">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {stats.map((s) => (
-              <Card key={s.label}>
+              <Card variant="dark" key={s.label}>
                 <CardContent className="p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-white/50">{s.label}</p>
                   <p className="mt-2 text-2xl font-semibold text-gold">{s.value}</p>
@@ -751,10 +751,10 @@ export function AdminDashboardPage() {
                 </div>
               </div>
 
-              <Card className="overflow-hidden border-gold/20 shadow-[0_20px_70px_rgba(0,0,0,0.3)]">
+              <Card variant="dark" className="overflow-hidden border-gold/20 shadow-[0_20px_70px_rgba(0,0,0,0.3)]">
                 <CardHeader className="border-b border-gold/10 bg-black/25 pb-5">
                   <div>
-                    <CardTitle className="flex items-center gap-2 text-gold">
+                    <CardTitle variant="dark" className="flex items-center gap-2 text-gold">
                       <FolderTree className="h-6 w-6 text-gold/90" aria-hidden />
                       Store categories
                     </CardTitle>
@@ -927,11 +927,11 @@ export function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden border-gold/20 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+              <Card variant="dark" className="overflow-hidden border-gold/20 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
                 <CardHeader className="border-b border-gold/10 bg-black/25 pb-5">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <CardTitle className="flex items-center gap-2 text-gold">
+                      <CardTitle variant="dark" className="flex items-center gap-2 text-gold">
                         <Plus className="h-6 w-6 text-gold/90" aria-hidden />
                         Add a product
                       </CardTitle>
@@ -1505,8 +1505,8 @@ export function AdminDashboardPage() {
 
           {tab === 'testimonials' && (
             <section className="mt-5 space-y-4">
-              <Card>
-                <CardHeader><CardTitle>Add Testimonial</CardTitle></CardHeader>
+              <Card variant="dark">
+                <CardHeader><CardTitle variant="dark">Add Testimonial</CardTitle></CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-2">
                   <input className="field" placeholder="Guest name" value={newTestimonial.guestName} onChange={(e) => setNewTestimonial((v) => ({ ...v, guestName: e.target.value }))} />
                   <input className="field" placeholder="Location" value={newTestimonial.location} onChange={(e) => setNewTestimonial((v) => ({ ...v, location: e.target.value }))} />
@@ -1536,8 +1536,8 @@ export function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader><CardTitle>Testimonials ({testimonials.length})</CardTitle></CardHeader>
+              <Card variant="dark">
+                <CardHeader><CardTitle variant="dark">Testimonials ({testimonials.length})</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {testimonials.map((t) => (
                     <div key={t.id} className="rounded-xl border border-gold/15 bg-black/20 p-3">
@@ -1592,9 +1592,9 @@ export function AdminDashboardPage() {
                 </p>
               </div>
 
-              <Card className="overflow-hidden border-gold/20">
+              <Card variant="dark" className="overflow-hidden border-gold/20">
                 <CardHeader className="border-b border-gold/10 bg-black/25">
-                  <CardTitle>Add menu item</CardTitle>
+                  <CardTitle variant="dark">Add menu item</CardTitle>
                   <p className="text-sm font-normal text-white/50">Creates a new row — open it from the list to add a photo or tweak details.</p>
                 </CardHeader>
                 <CardContent className="grid gap-4 pt-6 md:grid-cols-3">
@@ -1965,9 +1965,9 @@ export function AdminDashboardPage() {
           {tab === 'about' && (
             <section className="mt-5 space-y-6">
               <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
-                <Card className="overflow-hidden border-gold/20">
+                <Card variant="dark" className="overflow-hidden border-gold/20">
                   <CardHeader className="border-b border-gold/10 bg-black/20">
-                    <CardTitle>About page copy</CardTitle>
+                    <CardTitle variant="dark">About page copy</CardTitle>
                     <p className="text-sm font-normal text-white/50">
                       These fields feed the legacy story column and the “Living Earth” card on{' '}
                       <span className="text-gold/80">/about</span>. Save to publish.
@@ -2035,8 +2035,8 @@ export function AdminDashboardPage() {
 
           {tab === 'contact' && (
             <section className="mt-5">
-              <Card>
-                <CardHeader><CardTitle>Contact Details</CardTitle></CardHeader>
+              <Card variant="dark">
+                <CardHeader><CardTitle variant="dark">Contact Details</CardTitle></CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-2">
                   <input className="field" value={contact.farmName} onChange={(e) => setContact((v) => ({ ...v, farmName: e.target.value }))} placeholder="Farm name" />
                   <input className="field" value={contact.email} onChange={(e) => setContact((v) => ({ ...v, email: e.target.value }))} placeholder="Email" />
@@ -2065,8 +2065,8 @@ export function AdminDashboardPage() {
 
           {tab === 'bookings' && (
             <section className="mt-5">
-              <Card>
-                <CardHeader><CardTitle>Bookings ({bookings.length})</CardTitle></CardHeader>
+              <Card variant="dark">
+                <CardHeader><CardTitle variant="dark">Bookings ({bookings.length})</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {bookings.length === 0 ? (
                     <p className="text-sm text-white/65">No bookings yet.</p>
@@ -2139,8 +2139,8 @@ export function AdminDashboardPage() {
 
           {tab === 'media' && (
             <section className="mt-5 space-y-4">
-              <Card>
-                <CardHeader><CardTitle>Upload Image</CardTitle></CardHeader>
+              <Card variant="dark">
+                <CardHeader><CardTitle variant="dark">Upload Image</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   <input
                     type="file"
@@ -2198,8 +2198,8 @@ export function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader><CardTitle>Media Library ({media.length})</CardTitle></CardHeader>
+              <Card variant="dark">
+                <CardHeader><CardTitle variant="dark">Media Library ({media.length})</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {media.length === 0 ? (
                     <p className="text-sm text-white/65">No uploaded files yet.</p>
@@ -2257,8 +2257,8 @@ export function AdminDashboardPage() {
 
           {tab === 'settings' && (
             <section className="mt-5">
-              <Card>
-                <CardHeader><CardTitle>Site Settings</CardTitle></CardHeader>
+              <Card variant="dark">
+                <CardHeader><CardTitle variant="dark">Site Settings</CardTitle></CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-2">
                   <input className="field" value={siteSettings.brandName} onChange={(e) => setSiteSettings((v) => ({ ...v, brandName: e.target.value }))} placeholder="Brand name" />
                   <input className="field" value={siteSettings.footerTagline} onChange={(e) => setSiteSettings((v) => ({ ...v, footerTagline: e.target.value }))} placeholder="Footer tagline" />

@@ -26,7 +26,7 @@ export function SiteLayout() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-cream text-charcoal">
+    <div className="min-h-screen bg-white text-charcoal">
       <ScrollToTop />
       <SiteHeader />
       <Outlet />

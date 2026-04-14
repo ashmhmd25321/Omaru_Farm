@@ -179,38 +179,38 @@ export function StorePage() {
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover object-center opacity-45"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/70 to-black/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
           <div className="pointer-events-none absolute -right-24 top-1/4 h-72 w-72 rounded-full bg-gold/10 blur-3xl" />
           <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-[#63492a]/25 blur-3xl" />
 
           <div className="relative mx-auto grid min-h-[58vh] max-w-[92vw] items-center gap-8 px-5 py-14 md:min-h-[52vh] md:grid-cols-12 md:py-16">
             <motion.div
-              className="md:col-span-8 lg:col-span-7"
+              className="hero-panel md:col-span-8 lg:col-span-7"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55 }}
             >
-              <p className="text-xs uppercase tracking-[0.32em] text-gold/85">Omaru Farm Store</p>
-              <h1 className="mt-4 font-heading text-5xl leading-[0.95] text-charcoal md:text-6xl lg:text-7xl">
+              <p className="text-xs uppercase tracking-[0.32em] text-gold-deep">Omaru Farm Store</p>
+              <h1 className="mt-4 font-heading text-4xl leading-[0.95] text-charcoal md:text-6xl lg:text-7xl">
                 The Farm
                 <br />
-                <span className="italic text-gold/95">Pantry</span>
+                <span className="italic text-gold">Pantry</span>
               </h1>
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-white/78 md:text-lg">
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-stone md:text-lg">
                 Small-batch oils, honeys, preserves, and pantry staples — curated from the land and ready for your table. Browse the full 2026
                 collection below.
               </p>
 
-              <div className="mt-6 flex flex-wrap gap-2 text-xs text-stone">
+              <div className="mt-6 flex flex-wrap gap-2 text-xs">
                 {[
-                  { icon: <ShoppingBag className="h-4 w-4 text-gold/90" />, text: '2026 collection' },
-                  { icon: <Leaf className="h-4 w-4 text-gold/90" />, text: 'Farm-inspired quality' },
-                  { icon: <Truck className="h-4 w-4 text-gold/90" />, text: 'Pickup & delivery info on request' },
+                  { icon: <ShoppingBag className="h-4 w-4 text-gold" />, text: '2026 collection' },
+                  { icon: <Leaf className="h-4 w-4 text-gold" />, text: 'Farm-inspired quality' },
+                  { icon: <Truck className="h-4 w-4 text-gold" />, text: 'Pickup & delivery info on request' },
                 ].map((b) => (
                   <span
                     key={b.text}
-                    className="inline-flex items-center gap-2 rounded-full border border-parchment bg-black/35 px-3 py-1.5 backdrop-blur-sm"
+                    className="inline-flex items-center gap-2 rounded-full border border-parchment bg-zinc-50 px-3 py-1.5 text-bark"
                   >
                     {b.icon}
                     {b.text}
@@ -219,10 +219,10 @@ export function StorePage() {
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button asChild className="px-6 py-2.5">
+                <Button asChild className="bg-gold px-6 py-2.5 text-white hover:bg-gold-deep">
                   <a href="#store-browse">Browse products</a>
                 </Button>
-                <Button variant="outline" asChild className="px-6 py-2.5">
+                <Button variant="outline" asChild className="border-parchment px-6 py-2.5 text-bark hover:bg-zinc-50">
                   <a href="/contact">Enquire</a>
                 </Button>
               </div>
@@ -234,7 +234,7 @@ export function StorePage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.55, delay: 0.08 }}
             >
-              <div className="relative ml-auto max-w-sm rounded-2xl border border-gold/20 bg-black/40 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.55)] backdrop-blur-md">
+              <div className="relative ml-auto max-w-sm rounded-2xl border border-parchment bg-white/95 p-5 shadow-lg backdrop-blur-md">
                 <div className="flex items-start gap-3">
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-gold/20 bg-gold/10 text-gold">
                     <Sparkles className="h-5 w-5" aria-hidden="true" />
@@ -271,16 +271,16 @@ export function StorePage() {
             Browse the complete 2026 range by category, name, and price.
           </p>
 
-          <section className="mt-8 grid gap-4 rounded-xl border border-gold/25 bg-black/35 p-4 md:grid-cols-2">
+          <section className="mt-8 grid gap-4 rounded-xl border border-parchment bg-zinc-50 p-4 md:grid-cols-2">
           <input value={query} onChange={(e) => setQuery(e.target.value)} className="field" placeholder="Search products..." />
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'name' | 'price-low' | 'price-high')}
             className="field"
           >
-            <option value="name" className="bg-black">Sort: Name A-Z</option>
-            <option value="price-low" className="bg-black">Sort: Price Low-High</option>
-            <option value="price-high" className="bg-black">Sort: Price High-Low</option>
+            <option value="name">Sort: Name A-Z</option>
+            <option value="price-low">Sort: Price Low-High</option>
+            <option value="price-high">Sort: Price High-Low</option>
           </select>
           <div className="md:col-span-2">
             <p className="mb-2 text-xs uppercase tracking-[0.16em] text-stone">Categories</p>

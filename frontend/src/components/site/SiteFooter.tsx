@@ -8,7 +8,7 @@ export function SiteFooter() {
   const currentYear = useMemo(() => new Date().getFullYear(), [])
 
   return (
-    <footer className="border-t border-parchment bg-sand">
+    <footer className="border-t border-parchment bg-white">
       <div className="mx-auto max-w-[92vw] px-5 py-14 md:py-16">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">
 
@@ -118,7 +118,7 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="border-t border-parchment bg-parchment/40">
+      <div className="border-t border-parchment bg-zinc-50/80">
         <div className="mx-auto flex max-w-[92vw] flex-col gap-2 px-5 py-4 text-xs text-stone md:flex-row md:items-center md:justify-between">
           <p>© {currentYear} Omaru Farm. All rights reserved.</p>
           <p className="font-medium uppercase tracking-widest text-gold">Phillip Island, Victoria</p>
