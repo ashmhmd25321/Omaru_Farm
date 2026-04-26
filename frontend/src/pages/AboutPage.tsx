@@ -1,83 +1,65 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { motion } from 'framer-motion'
-import { Leaf, Sparkles, UserRound, Wheat } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ArrowRight, BedDouble, ChevronLeft, ChevronRight, Leaf, Sprout, Sun } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
 import { staticUrl } from '@/utils/staticUrl'
+
+const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 26 },
+  show: (delay = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] as const },
+  }),
+}
 
 export function AboutPage() {
   const [aboutContent, setAboutContent] = useState({
     legacyTitle: 'Our Legacy',
     legacyDescription:
       'Built on patient craft and deep respect for the land, Omaru has grown into a place where guests can taste the seasons, meet the makers, and take home pantry essentials made with intention.',
-    foundationTitle: 'The Living Earth of Omaru',
+    foundationTitle: 'Artisanal Stewardship',
     foundationDescription:
       'Our work is guided by sustainability, quality, and heritage. Every harvest, meal, and product is shaped by patience, restraint, and a quiet respect for the land.',
   })
-  const imagePool = useMemo(
-    () => [
-      { src: staticUrl('/images/farm/image-farm/7CD1DA41BA7E970B38EA4E75B43CD7CD.JPG'), alt: 'Aerial view of Omaru Farm market gardens', label: 'Market Gardens', caption: 'Our solar-powered growing hub viewed from above' },
-      { src: staticUrl('/images/farm/image-farm/DC543FC904F0A78254E08248B5D588EC.JPG'), alt: 'Aerial view of Omaru Farm outdoor dining and grounds', label: 'Farm Grounds', caption: 'Sweeping grounds with outdoor picnic seating' },
-      { src: staticUrl('/images/farm/image-farm/IMG_4637.jpg'), alt: 'Fresh produce box and artisan pantry inside the farm store', label: 'Farm Store', caption: 'Seasonal produce and artisan pantry goods, ready to take home' },
-      { src: staticUrl('/images/farm/image-farm/IMG_4672.JPG'), alt: 'Guests celebrating at sunset on the Omaru Farm lawn', label: 'Sunset Gathering', caption: 'Friends and family gathered at golden hour on the lawn' },
-      { src: staticUrl('/images/farm/image-farm/IMG_4682.jpg'), alt: 'Group dining together inside Café Omaru at night', label: 'Café Dinner', caption: 'A warm evening feast shared around the table' },
-      { src: staticUrl('/images/farm/image-farm/IMG_4724.jpg'), alt: 'Guests enjoying lunch inside Café Omaru', label: 'Café Lunch', caption: 'Good food, good company — a typical afternoon at Café Omaru' },
-      { src: staticUrl('/images/farm/image-farm/IMG_4737.jpg'), alt: 'Two people holding sunflowers in the Omaru Farm garden', label: 'Garden Life', caption: 'Sunflower season in full bloom at our kitchen garden' },
-      { src: staticUrl('/images/farm/image-farm/IMG_4757.jpg'), alt: 'Café Omaru entrance with a horse rider in the foreground', label: 'Café Entrance', caption: 'Guests arrive by foot — or by horse — at Café Omaru' },
-      { src: staticUrl('/images/farm/image-farm/IMG_4976.JPG'), alt: 'Farmer feeding a large flock of free-range chickens', label: 'Free Range', caption: 'Morning feed for our free-range flock' },
-      { src: staticUrl('/images/farm/image-farm/IMG_6051.jpg'), alt: 'Café Omaru bar with wine bottles and glasses', label: 'The Bar', caption: 'A curated selection of local wines and spirits' },
-      { src: staticUrl('/images/farm/image-farm/IMG_7318.jpg'), alt: 'Café Omaru interior dining room set for service', label: 'Café Interior', caption: 'Warm lighting and welcoming tables, ready for guests' },
-      { src: staticUrl('/images/farm/image-farm/IMG_7807.jpg'), alt: 'Three-tier afternoon tea stand with cakes and pastries', label: 'Afternoon Tea', caption: 'House-made treats on our signature afternoon tea stand' },
-      { src: staticUrl('/images/farm/image-farm/IMG_8196.jpg'), alt: 'Children feeding baby goats on Omaru Farm', label: 'Farm Animals', caption: 'Little hands, big smiles — meeting the baby goats' },
-    ],
-    [],
-  )
+  const [sanctuarySlide, setSanctuarySlide] = useState(0)
+  const [pauseSanctuarySlider, setPauseSanctuarySlider] = useState(false)
 
-  const transforms = useMemo(
-    () => [
-      { rot: -7, x: -34, y: 26 },
-      { rot: 6, x: 28, y: 10 },
-      { rot: -2, x: 0, y: -18 },
-    ],
-    [],
-  )
-  const fanTransforms = useMemo(
-    () => [
-      { rot: -10, x: -56, y: 46 },
-      { rot: 10, x: 52, y: 26 },
-      { rot: 0, x: 0, y: -32 },
-    ],
-    [],
-  )
-  /** Tighter motion on narrow viewports so cards stay in-bounds (no horizontal scroll). */
-  const transformsMobile = useMemo(
-    () => [
-      { rot: -5, x: -14, y: 18 },
-      { rot: 4, x: 12, y: 8 },
-      { rot: -1, x: 0, y: -10 },
-    ],
-    [],
-  )
-  const fanTransformsMobile = useMemo(
-    () => [
-      { rot: -8, x: -22, y: 28 },
-      { rot: 8, x: 20, y: 16 },
-      { rot: 0, x: 0, y: -20 },
-    ],
-    [],
-  )
-
-  const [mdUp, setMdUp] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches,
-  )
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)')
-    const sync = () => setMdUp(mq.matches)
-    sync()
-    mq.addEventListener('change', sync)
-    return () => mq.removeEventListener('change', sync)
-  }, [])
+  const sanctuarySlides = [
+    {
+      src: staticUrl('/images/farm/image-farm/IMG_4672.JPG'),
+      alt: 'Golden evening gathering at Omaru Farm',
+      label: 'Golden Hour Gatherings',
+    },
+    {
+      src: staticUrl('/images/farm/image-farm/IMG_4682.jpg'),
+      alt: 'Night dinner gathering at Omaru',
+      label: 'Evening Table',
+    },
+    {
+      src: staticUrl('/images/farm/image-farm/IMG_6051.jpg'),
+      alt: 'Wine and bar collection at Omaru',
+      label: 'Curated Local Wines',
+    },
+    {
+      src: staticUrl('/images/farm/image-farm/DC543FC904F0A78254E08248B5D588EC.JPG'),
+      alt: 'Aerial view of Omaru Farm grounds',
+      label: 'The Omaru Estate',
+    },
+    {
+      src: staticUrl('/images/farm/image-farm/IMG_4976.JPG'),
+      alt: 'Feeding chickens at Omaru Farm',
+      label: 'Farm Morning Rituals',
+    },
+    {
+      src: staticUrl('/images/farm/image-farm/IMG_7807.jpg'),
+      alt: 'Afternoon tea selection at Omaru',
+      label: 'Afternoon Tea on the Deck',
+    },
+  ]
 
   useEffect(() => {
     const controller = new AbortController()
@@ -95,518 +77,470 @@ export function AboutPage() {
           foundationDescription: String(value.foundationDescription ?? prev.foundationDescription),
         }))
       })
-      .catch(() => {
-        // keep local fallback text
-      })
+      .catch(() => {})
     return () => controller.abort()
   }, [])
 
-  const [stackStart, setStackStart] = useState(0)
-  const [fanOpen, setFanOpen] = useState(false)
-  const [rosieOpen, setRosieOpen] = useState(false)
-  const stack = useMemo(() => {
-    const n = imagePool.length
-    return [0, 1, 2].map((k) => imagePool[(stackStart + k) % n])
-  }, [imagePool, stackStart])
-  const [topCard, setTopCard] = useState(2)
-  const selectedIndex = useMemo(() => (stackStart + topCard) % imagePool.length, [imagePool.length, stackStart, topCard])
+  useEffect(() => {
+    if (pauseSanctuarySlider) return
+    const timer = window.setInterval(
+      () => setSanctuarySlide((p) => (p + 1) % sanctuarySlides.length),
+      4500,
+    )
+    return () => window.clearInterval(timer)
+  }, [pauseSanctuarySlider, sanctuarySlides.length])
 
   return (
     <>
       <Helmet>
         <title>About | Omaru Farm</title>
-        <meta name="description" content="Learn about Omaru Farm’s story, values, and sustainable approach." />
+        <meta
+          name="description"
+          content="Discover the story of Omaru Farm — a premium farm-to-table destination rooted in sustainability, heritage, and breathtaking views on Phillip Island."
+        />
       </Helmet>
 
-      <main className="bg-white">
-        {/* Hero */}
-        <section className="relative overflow-hidden border-b border-parchment">
-          <div className="absolute inset-0">
-            <img
-              src={staticUrl('/images/farm/IMG_0623.jpg')}
-              alt=""
-              className="h-full w-full object-cover opacity-55"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/15 to-transparent" />
-          </div>
+      <main>
 
-          <div className="relative mx-auto max-w-[92vw] px-5 py-20 md:py-28">
-            <div className="hero-panel max-w-3xl">
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="text-xs uppercase tracking-[0.28em] text-gold-deep"
-              >
-                About Omaru
-              </motion.p>
-              <motion.h1
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.05 }}
-                className="mt-4 max-w-3xl font-heading text-4xl leading-[0.98] text-charcoal md:text-6xl"
-              >
-                Nurturing the land for a century.
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="mt-5 max-w-2xl text-sm leading-relaxed text-stone md:text-base"
-              >
-                Omaru Farm is a premium yet earthy destination — where seasonal produce, thoughtful hospitality, and small-batch pantry goods come
-                together in a calm, luxurious farm-to-table experience.
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.15 }}
-                className="mt-8 flex flex-wrap gap-3"
-              >
-                <Link to="/store">
-                  <Button className="bg-gold text-white hover:bg-gold-deep">Explore Store</Button>
-                </Link>
-                <Link to="/book">
-                  <Button variant="outline" className="border-parchment text-bark hover:bg-zinc-50">Book Now</Button>
-                </Link>
-              </motion.div>
-            </div>
+        {/* ══════════════════════════════════════════
+            HERO — centered editorial text with bottom fade
+        ══════════════════════════════════════════ */}
+        <section className="relative flex min-h-[82vh] items-center justify-center overflow-hidden bg-surface">
+          <img
+            src={staticUrl('/images/farm/20211027_195611.jpg')}
+            alt="Rolling countryside at Omaru Farm, Phillip Island"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+          />
+          {/* Layered overlays */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/25 to-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/8 via-transparent to-black/6" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.34)_0%,rgba(0,0,0,0.16)_38%,transparent_72%)]" />
+          {/* Bottom fade to surface like reference */}
+          <div className="absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-b from-transparent via-surface/45 to-surface/96" />
+
+          <div className="relative z-10 mx-auto w-full max-w-[92vw] px-5 text-center">
+            <motion.p
+              className="mb-4 font-body text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-gold"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              Est. 2024
+            </motion.p>
+            <motion.h1
+              className="hero-headline mx-auto max-w-3xl font-heading text-[2.7rem] font-semibold leading-[1.04] tracking-[-0.03em] text-white sm:text-5xl md:text-[4.6rem]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              The Spirit of Omaru
+            </motion.h1>
+            <motion.p
+              className="mx-auto mt-5 max-w-2xl font-body text-base leading-[1.75] text-white/92 md:text-[1.45rem]"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.35 }}
+            >
+              In the ancient tongue, Omaru signifies "Place of Shelter". We have cultivated this land to be a sanctuary for the modern agrarian soul.
+            </motion.p>
           </div>
         </section>
 
-        {/* Legacy feature */}
-        <section className="border-b border-gold/10 bg-white">
-          <div className="mx-auto grid max-w-[92vw] gap-8 px-5 py-16 md:grid-cols-12 md:items-center md:py-20">
+        {/* ══════════════════════════════════════════
+            ROOTS IN THE SOIL
+            Left: image  |  Right: story text
+        ══════════════════════════════════════════ */}
+        <section className="bg-white py-24 md:py-32">
+          <div className="mx-auto grid max-w-[92vw] items-center gap-12 px-5 md:grid-cols-[2fr_3fr] md:gap-20 lg:gap-28">
+
+            {/* Left: image */}
             <motion.div
-              className="md:col-span-5"
-              initial={{ opacity: 0, x: -12 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.35 }}
-              transition={{ duration: 0.5 }}
+              className="group relative overflow-hidden rounded-sm"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              custom={0}
+              variants={fadeUp}
             >
-              <div className="overflow-hidden rounded-2xl border border-parchment bg-zinc-50 shadow-[0_30px_90px_rgba(0,0,0,0.55)]">
-                <div className="aspect-[4/3]">
-                  <img
-                    src={staticUrl('/images/farm/IMG_6144.jpg')}
-                    alt="Omaru Farm legacy"
-                    className="h-full w-full object-cover opacity-95"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="p-5">
-                  <p className="text-xs uppercase tracking-[0.26em] text-gold/70">Omaru Farm</p>
-                  <p className="mt-1 font-heading text-2xl text-charcoal">Our Legacy</p>
-                </div>
+              <img
+                src={staticUrl('/images/farm/20210910_180301.jpg')}
+                alt="Sunrise over free-range hens at Omaru Farm"
+                className="h-72 w-full object-cover transition duration-700 group-hover:scale-[1.03] md:h-[410px]"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-estate/55 via-estate/10 to-transparent" />
+              <div className="absolute left-4 top-4 rounded-sm bg-white/88 px-3 py-1.5 font-body text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-gold-deep backdrop-blur-sm">
+                First Light
+              </div>
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <p className="font-body text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-white/82">
+                  Sunrise Feed Rounds
+                </p>
               </div>
             </motion.div>
 
+            {/* Right: text */}
             <motion.div
-              className="md:col-span-7 md:pl-4"
-              initial={{ opacity: 0, x: 12 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.35 }}
-              transition={{ duration: 0.5 }}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              custom={0.12}
+              variants={fadeUp}
             >
-              <h2 className="font-heading text-4xl leading-[1] text-charcoal md:text-5xl">{aboutContent.legacyTitle}</h2>
-              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-stone md:text-base">
+              <p className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold">
+                At First Light
+              </p>
+              <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
+                Where Morning Begins<br />in the Paddocks
+              </h2>
+              <p className="mt-6 font-body text-base leading-[1.78] text-stone">
+                Before the cafe opens, the farm is already awake. The flock gathers at sunrise, the horizon turns amber, and the first rhythm of the day begins quietly by hand.
+              </p>
+              <p className="mt-4 font-body text-base leading-[1.78] text-stone">
+                Omaru grew from one paddock into a living place of care - where soil, season, and people move together. Every meal and every guest experience starts here, in this morning light.
+              </p>
+              <p className="mt-5 font-body text-base leading-[1.78] text-stone">
                 {aboutContent.legacyDescription}
               </p>
-              <div className="mt-7 flex flex-wrap items-center gap-3">
-                <a
-                  href="#pillars"
-                  className="text-sm font-semibold text-bark underline decoration-white/20 underline-offset-4 hover:text-gold hover:decoration-gold/50"
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-sm bg-surface-low px-4 py-3">
+                  <p className="font-heading text-2xl font-semibold text-charcoal">
+                    5:30<span className="text-gold">am</span>
+                  </p>
+                  <p className="font-body text-[0.62rem] font-semibold uppercase tracking-[0.17em] text-stone">
+                    Morning Feed Rounds
+                  </p>
+                </div>
+                <div className="rounded-sm bg-surface-low px-4 py-3">
+                  <p className="font-heading text-2xl font-semibold text-charcoal">
+                    100<span className="text-gold">%</span>
+                  </p>
+                  <p className="font-body text-[0.62rem] font-semibold uppercase tracking-[0.17em] text-stone">
+                    Free-Range Flock
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/contact"
+                className="mt-8 inline-flex items-center gap-2 font-body text-sm font-semibold uppercase tracking-[0.15em] text-gold-deep transition hover:text-gold"
+              >
+                Step Into Our Story <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </motion.div>
+
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════
+            FARM LIFE GALLERY
+        ══════════════════════════════════════════ */}
+        <section className="bg-surface py-24 md:py-32">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.div
+              className="mb-12 text-center"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.35 }}
+              custom={0}
+              variants={fadeUp}
+            >
+              <p className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold">
+                Life at Omaru
+              </p>
+              <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
+                Farm Moments Gallery
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl font-body text-base leading-[1.75] text-stone">
+                A living journal of sunsets, harvests, animals, and the quiet details that shape daily life on the farm.
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-12">
+              {[
+                {
+                  src: '/images/farm/20211017_191630.jpg',
+                  alt: 'Golden sunset over Omaru Farm gates',
+                  caption: 'Evening Glow',
+                  tile: 'lg:col-span-4',
+                  image: 'h-[320px]',
+                },
+                {
+                  src: '/images/farm/20210522_100834.jpg',
+                  alt: 'Young leafy greens in hydroponic channels',
+                  caption: 'New Growth',
+                  tile: 'lg:col-span-3',
+                  image: 'h-[320px]',
+                },
+                {
+                  src: '/images/farm/20210907_144206.jpg',
+                  alt: 'Basket of fresh farm eggs collected at Omaru',
+                  caption: 'Fresh Collection',
+                  tile: 'lg:col-span-3',
+                  image: 'h-[320px]',
+                },
+                {
+                  src: '/images/farm/IMG_4256.jpg',
+                  alt: 'Basil and herbs growing in Omaru greenhouse',
+                  caption: 'Herb House',
+                  tile: 'lg:col-span-2',
+                  image: 'h-[320px]',
+                },
+                {
+                  src: '/images/farm/IMG_4547.jpg',
+                  alt: 'Farm-made treat and floral still life at Omaru',
+                  caption: 'Handmade Details',
+                  tile: 'lg:col-span-5',
+                  image: 'h-[340px]',
+                },
+                {
+                  src: '/images/farm/IMG_6144.jpg',
+                  alt: 'Twilight clouds above Omaru Farm seating area',
+                  caption: 'Twilight Calm',
+                  tile: 'lg:col-span-3',
+                  image: 'h-[340px]',
+                },
+                {
+                  src: '/images/farm/IMG_7307.jpg',
+                  alt: 'Interior dining space at Cafe Omaru',
+                  caption: 'Cafe Interior',
+                  tile: 'lg:col-span-4',
+                  image: 'h-[340px]',
+                },
+                {
+                  src: '/images/farm/IMG_9130.jpg',
+                  alt: 'Cafe Omaru exterior with flowers and walkway',
+                  caption: 'Welcome Walk',
+                  tile: 'lg:col-span-8',
+                  image: 'h-[300px]',
+                },
+                {
+                  src: '/images/farm/PXL_20210512_061750528.PORTRAIT.jpg',
+                  alt: 'Close portrait of sheep at Omaru Farm',
+                  caption: 'Resident Portrait',
+                  tile: 'lg:col-span-4',
+                  image: 'h-[300px]',
+                },
+              ].map((img, idx) => (
+                <motion.figure
+                  key={img.src}
+                  className={`group self-start overflow-hidden rounded-sm bg-white shadow-[0_10px_30px_rgba(26,18,8,0.08)] ${img.tile}`}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.12 }}
+                  custom={idx * 0.05}
+                  variants={fadeUp}
                 >
-                  See our pillars
-                </a>
-                <span className="text-white/25">•</span>
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={staticUrl(img.src)}
+                      alt={img.alt}
+                      className={`${img.image} w-full object-cover transition duration-700 group-hover:scale-[1.04]`}
+                      loading="lazy"
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-estate/55 via-transparent to-transparent opacity-90" />
+                    <figcaption className="absolute inset-x-0 bottom-0 px-4 py-3 font-body text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white">
+                      {img.caption}
+                    </figcaption>
+                  </div>
+                </motion.figure>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════
+            A SANCTUARY FOR THE SENSES
+            Light editorial section — text left, dual images right
+        ══════════════════════════════════════════ */}
+        <section className="bg-white py-24 md:py-32">
+          <div className="mx-auto grid max-w-[94vw] items-center gap-12 px-5 md:grid-cols-[1.05fr_1.35fr] md:gap-12 lg:gap-16">
+
+            {/* Left: text block */}
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              custom={0}
+              variants={fadeUp}
+            >
+              <span className="inline-flex items-center gap-2 font-body text-[0.78rem] font-semibold uppercase tracking-[0.08em] text-stone">
+                <span className="inline-block h-5 w-[2px] bg-gold/70" aria-hidden />
+                The Experience
+              </span>
+
+              <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
+                A Sanctuary for the Senses
+              </h2>
+
+              <p className="mt-5 font-body text-[1.05rem] leading-[1.7] text-stone">
+                Whether it's the aroma of fresh roasted coffee in our stone cafe, the tactile grain of our farmhouse floors, or the golden hour glow over the paddocks, Omaru is designed to be felt as much as seen.
+              </p>
+              <p className="mt-3 font-body text-[1.05rem] leading-[1.7] text-stone">
+                {aboutContent.foundationDescription}
+              </p>
+
+              {/* Feature card */}
+              <div className="mt-8 rounded-xl bg-surface p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_rgba(26,18,8,0.08)]">
+                    <BedDouble className="h-5 w-5 text-gold-deep" aria-hidden />
+                  </div>
+                  <div>
+                    <h3 className="font-heading text-[2rem] font-semibold leading-none text-charcoal">
+                      Restorative Stay
+                    </h3>
+                    <p className="mt-2 font-body text-base leading-relaxed text-stone">
+                      Our cabins are built with sustainably sourced timber, designed to frame the horizon.
+                    </p>
+                  </div>
+                </div>
                 <Link
-                  to="/contact"
-                  className="text-sm font-semibold text-bark underline decoration-white/20 underline-offset-4 hover:text-gold hover:decoration-gold/50"
+                  to="/stay"
+                  className="mt-5 inline-flex items-center gap-1.5 font-body text-xs font-semibold uppercase tracking-[0.16em] text-gold-deep transition hover:text-gold"
                 >
-                  Talk to us
+                  Explore stays <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Right: animated image slider */}
+            <motion.div
+              className="relative"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.2 }}
+              custom={0.14}
+              variants={fadeUp}
+            >
+              <div
+                className="group relative overflow-hidden rounded-2xl shadow-[0_14px_34px_rgba(26,18,8,0.12)]"
+                onMouseEnter={() => setPauseSanctuarySlider(true)}
+                onMouseLeave={() => setPauseSanctuarySlider(false)}
+              >
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={sanctuarySlides[sanctuarySlide]!.src}
+                    src={sanctuarySlides[sanctuarySlide]!.src}
+                    alt={sanctuarySlides[sanctuarySlide]!.alt}
+                    className="h-[360px] w-full object-cover md:h-[460px]"
+                    loading="lazy"
+                    initial={{ opacity: 0, scale: 1.08, x: 24 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 1.04, x: -18 }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </AnimatePresence>
+
+                {/* Overlay + caption */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-estate/62 via-estate/15 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 px-5 py-4">
+                  <p className="font-body text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-white/92">
+                    {sanctuarySlides[sanctuarySlide]!.label}
+                  </p>
+                  <span className="font-body text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-white/65">
+                    {String(sanctuarySlide + 1).padStart(2, '0')} / {String(sanctuarySlides.length).padStart(2, '0')}
+                  </span>
+                </div>
+
+                {/* Controls */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSanctuarySlide((p) => (p - 1 + sanctuarySlides.length) % sanctuarySlides.length)
+                  }
+                  className="absolute left-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-sm bg-white/85 text-charcoal backdrop-blur-sm transition hover:bg-white"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="h-4 w-4" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSanctuarySlide((p) => (p + 1) % sanctuarySlides.length)}
+                  className="absolute right-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-sm bg-white/85 text-charcoal backdrop-blur-sm transition hover:bg-white"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+
+              {/* Dot indicators */}
+              <div className="mt-4 flex items-center justify-center gap-2">
+                {sanctuarySlides.map((_, i) => (
+                  <button
+                    key={`sanctuary-dot-${i}`}
+                    type="button"
+                    onClick={() => setSanctuarySlide(i)}
+                    className={`h-1.5 rounded-full transition-all ${
+                      i === sanctuarySlide ? 'w-8 bg-gold' : 'w-3 bg-stone/35 hover:bg-stone/55'
+                    }`}
+                    aria-label={`Show sanctuary image ${i + 1}`}
+                  />
+                ))}
+              </div>
+            </motion.div>
+
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════
+            RECONNECT WITH THE LAND — warm CTA
+        ══════════════════════════════════════════ */}
+        <section className="relative overflow-hidden bg-sand py-24 md:py-32">
+          {/* Subtle texture watermark */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: `url("${staticUrl('/images/farm/20210602_130149.jpg')}")`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+          <div className="absolute inset-0 bg-sand/92" />
+
+          <div className="relative mx-auto max-w-[92vw] px-5 text-center">
+            <motion.div
+              className="mx-auto max-w-lg"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.4 }}
+              custom={0}
+              variants={fadeUp}
+            >
+              {/* Decorative tree icon */}
+              <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-sm bg-gold/15">
+                <Sun className="h-7 w-7 text-gold-deep" aria-hidden />
+              </div>
+
+              <h2 className="font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
+                Reconnect with<br />the Land
+              </h2>
+              <p className="mx-auto mt-5 font-body text-base leading-[1.78] text-stone">
+                We invite you to experience the living beauty of Omaru. Join us for a meal, a stay, or simply a moment — let the farm do the rest.
+              </p>
+
+              <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  to="/stay"
+                  className="inline-flex h-11 items-center rounded-sm px-8 font-body text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-[0_8px_28px_rgba(119,90,25,0.3)] transition hover:brightness-105"
+                  style={{ background: GOLD_GRADIENT }}
+                >
+                  Plan Your Visit
+                </Link>
+                <Link
+                  to="/cafe"
+                  className="inline-flex h-11 items-center rounded-sm border border-gold/30 bg-transparent px-8 font-body text-sm font-semibold uppercase tracking-[0.12em] text-gold-deep transition hover:border-gold/55 hover:bg-gold/6"
+                >
+                  See the Café Menu
                 </Link>
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* Pillars + Living earth (merged) */}
-        <section id="pillars" className="overflow-x-clip border-t border-gold/10 bg-white">
-          <div className="mx-auto max-w-[92vw] px-4 py-12 sm:px-5 md:py-20">
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="h-px min-w-8 flex-1 bg-gold/15" />
-              <p className="shrink-0 px-1 text-center text-[10px] uppercase tracking-[0.2em] text-gold/70 sm:text-xs sm:tracking-[0.28em]">
-                Our Foundations
-              </p>
-              <div className="h-px min-w-8 flex-1 bg-gold/15" />
-            </div>
-
-            <div className="mt-6 grid min-w-0 gap-6 md:min-h-[860px] md:grid-cols-2 md:gap-5">
-              <motion.div
-                className="grid min-w-0 gap-5 md:grid-rows-[auto_1fr]"
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.35 }}
-                transition={{ duration: 0.45 }}
-              >
-                <div className="rounded-[28px] border border-parchment bg-zinc-50 p-5 shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:p-6 md:p-7">
-                  <p className="text-xs uppercase tracking-[0.24em] text-gold/70">Living Earth</p>
-                  <h2 className="mt-3 font-heading text-3xl leading-[0.98] text-charcoal sm:text-4xl sm:leading-[0.96] md:text-5xl">
-                    {aboutContent.foundationTitle}
-                  </h2>
-                  <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone md:text-base">
-                    {aboutContent.foundationDescription}
-                  </p>
-
-                  <div className="mt-6 flex flex-wrap gap-2.5">
-                    {['Seasonal harvests', 'Small-batch craft', 'Natural ingredients'].map((t) => (
-                      <span
-                        key={t}
-                        className="rounded-full border border-parchment bg-zinc-100/80 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-stone"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid h-full gap-3 rounded-[28px] border border-parchment bg-zinc-50 p-4 shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:gap-4 sm:p-5 md:grid-rows-3">
-                  {[
-                    {
-                      title: 'Sustainability',
-                      icon: Leaf,
-                      body: 'Minimising waste, respecting seasons, and choosing what feels honest and natural.',
-                    },
-                    {
-                      title: 'Quality',
-                      icon: Sparkles,
-                      body: 'Premium ingredients, thoughtful craft, and a standard felt in every detail.',
-                    },
-                    {
-                      title: 'Heritage',
-                      icon: Wheat,
-                      body: 'A story carried forward through consistency, care, and a deep connection to place.',
-                    },
-                  ].map((item, i) => (
-                    <motion.div
-                      key={item.title}
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, amount: 0.25 }}
-                      transition={{ duration: 0.45, delay: i * 0.05 }}
-                      className="flex h-full flex-col items-start gap-3 rounded-2xl border border-gold/12 bg-zinc-100/80 p-4 sm:flex-row sm:gap-4 sm:p-5"
-                    >
-                      <span className="grid h-10 w-10 flex-none place-items-center rounded-xl border border-parchment bg-black/35 text-gold sm:h-11 sm:w-11">
-                        <item.icon className="h-5 w-5" />
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="font-heading text-xl text-charcoal sm:text-2xl">{item.title}</h3>
-                        <p className="mt-1 text-sm leading-relaxed text-white/68">{item.body}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="min-w-0"
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.25 }}
-                transition={{ duration: 0.45, delay: 0.05 }}
-              >
-                <div className="relative h-full min-h-[min(420px,78svh)] overflow-hidden rounded-[28px] border border-parchment bg-black/10 p-3 shadow-[0_30px_90px_rgba(0,0,0,0.45)] sm:p-5 md:min-h-[740px] md:overflow-visible">
-                  <div className="absolute left-3 top-3 z-[5] max-w-[calc(100%-1.5rem)] rounded-full border border-gold/20 bg-zinc-50 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-gold/80 backdrop-blur sm:left-6 sm:top-6 sm:max-w-none sm:px-3 sm:text-[11px] sm:tracking-[0.22em]">
-                    Moments from Omaru
-                  </div>
-
-                  <div className="relative mx-auto mt-12 h-[clamp(240px,56vw,360px)] w-full min-w-0 max-w-[560px] sm:mt-14 sm:h-[400px] md:mt-16 md:h-[600px]">
-                    <motion.div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 -z-10"
-                      initial={false}
-                      animate={{ x: [0, 10, -10, 0], y: [0, -8, 8, 0] }}
-                      transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-                    >
-                      <div className="absolute left-1/2 top-1/2 h-[min(92vw,380px)] w-[min(92vw,380px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(205,163,73,0.22),transparent_60%)] blur-2xl md:h-[680px] md:w-[680px]" />
-                      <div className="absolute left-1/2 top-1/2 h-[min(92vw,380px)] w-[min(92vw,380px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_55%)] blur-3xl md:h-[680px] md:w-[680px]" />
-                    </motion.div>
-
-                    {stack.map((img, idx) => {
-                      const isTop = idx === topCard
-                      const z = isTop ? 20 : 10 + idx
-                      const t = (
-                        fanOpen
-                          ? mdUp
-                            ? fanTransforms
-                            : fanTransformsMobile
-                          : mdUp
-                            ? transforms
-                            : transformsMobile
-                      )[idx]
-                      return (
-                      <motion.button
-                        key={img.src}
-                        type="button"
-                        aria-label={`Photo card: ${img.label}`}
-                        onClick={() => setTopCard(idx)}
-                        initial={false}
-                        animate={{
-                          x: t.x,
-                          y: t.y + (isTop ? -6 : 0),
-                          rotate: t.rot,
-                          scale: isTop ? 1.015 : 0.985,
-                        }}
-                        transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                        whileHover={mdUp ? { y: t.y - 14, rotate: 0, scale: 1.02 } : { y: t.y - 6, rotate: 0, scale: 1.01 }}
-                        whileTap={{ y: t.y - (mdUp ? 18 : 10), rotate: 0, scale: mdUp ? 1.03 : 1.02 }}
-                        drag={isTop ? 'x' : false}
-                        dragConstraints={{ left: 0, right: 0 }}
-                        dragElastic={0.2}
-                        onDragEnd={(_, info) => {
-                          const dx = info.offset.x
-                          if (dx > 90) {
-                            setStackStart((s) => (s - 1 + imagePool.length) % imagePool.length)
-                            setTopCard(2)
-                          } else if (dx < -90) {
-                            setStackStart((s) => (s + 1) % imagePool.length)
-                            setTopCard(2)
-                          }
-                        }}
-                        className="absolute left-1/2 top-1/2 w-[96%] -translate-x-1/2 -translate-y-1/2 text-left"
-                        style={{ zIndex: z }}
-                      >
-                        <div
-                          className={[
-                            'relative overflow-hidden rounded-[26px] border bg-white shadow-[0_30px_90px_rgba(0,0,0,0.65)]',
-                            isTop ? 'border-gold/30' : 'border-gold/22',
-                          ].join(' ')}
-                        >
-                          {/* pin */}
-                          <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2">
-                            <div className="h-3.5 w-3.5 rounded-full bg-gold shadow-[0_10px_24px_rgba(205,163,73,0.45)]" />
-                            <div className="mx-auto -mt-1 h-3 w-px bg-gold/70" />
-                          </div>
-
-                          <div className="bg-[#f5efe2] p-3">
-                            <div className="overflow-hidden rounded-[18px] border border-black/10 bg-black/5">
-                              <img
-                                src={img.src}
-                                alt={img.alt}
-                                className="h-48 w-full object-cover sm:h-56 md:h-80"
-                                loading="lazy"
-                              />
-                            </div>
-                            <div className="px-1 pb-1 pt-3">
-                              <p className="text-[11px] uppercase tracking-[0.24em] text-black/55">Omaru • {img.label}</p>
-                              <p className="mt-1 font-heading text-base leading-snug text-black/85 sm:text-lg md:text-xl">
-                                {img.caption}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.button>
-                    )})}
-                  </div>
-
-                  <div className="mt-4 sm:mt-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-3">
-                        <p className="text-xs uppercase tracking-[0.22em] text-stone">Gallery</p>
-                        <p className="text-xs text-white/45">
-                          <span className="text-gold/85">{selectedIndex + 1}</span> / {imagePool.length}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setFanOpen((v) => !v)}
-                          className="rounded-full border border-gold/20 bg-zinc-100/80 px-3 py-1.5 text-xs text-stone transition hover:border-gold/40 hover:text-gold"
-                        >
-                          {fanOpen ? 'Collapse' : 'Fan out'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setStackStart((s) => (s - 1 + imagePool.length) % imagePool.length)
-                            setTopCard(2)
-                          }}
-                          className="rounded-full border border-gold/20 bg-zinc-100/80 px-3 py-1.5 text-xs text-stone transition hover:border-gold/40 hover:text-gold"
-                        >
-                          Prev
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setStackStart((s) => (s + 1) % imagePool.length)
-                            setTopCard(2)
-                          }}
-                          className="rounded-full border border-gold/20 bg-zinc-100/80 px-3 py-1.5 text-xs text-stone transition hover:border-gold/40 hover:text-gold"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 h-1.5 overflow-hidden rounded-full border border-parchment bg-zinc-100/80">
-                      <div
-                        className="h-full bg-gold/80"
-                        style={{ width: `${((selectedIndex + 1) / imagePool.length) * 100}%` }}
-                      />
-                    </div>
-
-                    <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-                      {imagePool.map((p, i) => {
-                        const active = i === stackStart
-                        return (
-                          <button
-                            key={p.src}
-                            type="button"
-                            onClick={() => {
-                              setStackStart(i)
-                              setTopCard(2)
-                            }}
-                            className={`relative h-12 w-16 flex-none overflow-hidden rounded-xl border transition ${
-                              active ? 'border-gold/60' : 'border-parchment hover:border-gold/35'
-                            }`}
-                            aria-label={`Show ${p.label}`}
-                          >
-                            <img src={p.src} alt={p.alt} className="h-full w-full object-cover opacity-90" loading="lazy" />
-                            {active && <div className="absolute inset-0 ring-1 ring-gold/35" />}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <p className="mt-4 text-center text-xs text-stone">
-                    Hover or tap a card to lift it.
-                  </p>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-
-        {/* Artisans */}
-        <section className="border-t border-gold/10 bg-white pt-16 pb-16 md:pt-20 md:pb-20">
-          <div className="mx-auto max-w-[92vw] px-5">
-            <h2 className="font-heading text-4xl text-charcoal md:text-5xl">Meet the Artisan</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone md:text-base">
-              There’s one heart behind the entire Omaru Farm experience — guiding the land, the hospitality, and every detail with care.
-            </p>
-
-            <div className="mt-10">
-              <motion.article
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.25 }}
-                transition={{ duration: 0.55 }}
-                className="relative overflow-hidden rounded-2xl border border-parchment bg-white/90 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur"
-              >
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,rgba(205,163,73,0.10),transparent_55%),radial-gradient(circle_at_80%_80%,rgba(99,73,42,0.16),transparent_60%)]" />
-
-                <div className="relative grid gap-6 p-6 md:grid-cols-12 md:items-center md:gap-10 md:p-10">
-                  <button
-                    type="button"
-                    onClick={() => setRosieOpen(true)}
-                    className="group relative overflow-hidden rounded-2xl border border-parchment bg-zinc-50 shadow-[0_22px_70px_rgba(0,0,0,0.55)] md:col-span-5"
-                    aria-label="Open Rosie Maurer photo"
-                  >
-                    <img
-                      src={staticUrl('/images/farm/rosie-maurer.jpg')}
-                      alt="Rosie Maurer at Omaru Farm"
-                      className="h-[320px] w-full object-cover [filter:contrast(1.08)_saturate(1.06)_brightness(1.02)] transition duration-700 group-hover:scale-[1.04] md:h-[420px]"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-                    <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-gold/20 bg-black/45 px-3 py-1 text-xs text-bark backdrop-blur">
-                      <span className="grid h-5 w-5 place-items-center rounded-full border border-gold/20 bg-zinc-100/80 text-gold/85">
-                        <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
-                      </span>
-                      Founder
-                    </div>
-                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3">
-                      <p className="text-xs uppercase tracking-[0.28em] text-stone">Tap to enlarge</p>
-                      <span className="rounded-full border border-gold/20 bg-black/35 px-3 py-1 text-xs text-gold/90">
-                        View photo
-                      </span>
-                    </div>
-                  </button>
-
-                  <div className="md:col-span-7">
-                    <p className="text-xs uppercase tracking-[0.28em] text-gold/70">Omaru Farm</p>
-                    <h3 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">Rosie Maurer</h3>
-                    <p className="mt-2 text-sm text-stone md:text-base">Founder &amp; Host</p>
-
-                    <p className="mt-5 text-sm leading-relaxed text-stone md:text-base">
-                      From the farm gates to the table, Rosie shapes the Omaru experience end-to-end — growing, welcoming, and crafting the
-                      calm premium feel guests remember.
-                    </p>
-
-                    <div className="mt-6 flex flex-wrap gap-2 text-xs text-stone">
-                      {[
-                        { icon: <Leaf className="h-4 w-4 text-gold/85" />, text: 'Farm-to-table focus' },
-                        { icon: <Wheat className="h-4 w-4 text-gold/85" />, text: 'Seasonal produce' },
-                        { icon: <Sparkles className="h-4 w-4 text-gold/85" />, text: 'Quiet premium hospitality' },
-                      ].map((b) => (
-                        <span key={b.text} className="inline-flex items-center gap-2 rounded-full border border-parchment bg-white px-3 py-1.5">
-                          {b.icon}
-                          {b.text}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.article>
-            </div>
-          </div>
-        </section>
-
-        {/* Rosie lightbox */}
-        {rosieOpen && (
-          <div
-            className="fixed inset-0 z-[80] grid place-items-center bg-black/80 p-4 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Rosie Maurer photo"
-            onClick={() => setRosieOpen(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.18 }}
-              className="w-full max-w-4xl overflow-hidden rounded-2xl border border-gold/25 bg-white"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between gap-3 border-b border-parchment px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-charcoal">Rosie Maurer</p>
-                  <p className="text-xs text-stone">Founder &amp; Host</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setRosieOpen(false)}
-                  className="rounded-full border border-gold/20 bg-white px-3 py-1.5 text-xs text-stone hover:bg-white/[0.06]"
-                >
-                  Close
-                </button>
-              </div>
-              <div className="relative">
-                <img
-                  src={staticUrl('/images/farm/rosie-maurer.jpg')}
-                  alt="Rosie Maurer at Omaru Farm"
-                  className="max-h-[78vh] w-full object-contain bg-black [filter:contrast(1.08)_saturate(1.06)_brightness(1.02)]"
-                />
-                <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-gold/15" />
-              </div>
-            </motion.div>
-          </div>
-        )}
       </main>
     </>
   )
 }
-

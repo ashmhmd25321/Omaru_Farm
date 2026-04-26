@@ -30,7 +30,7 @@ export function SiteHeader() {
         'sticky top-0 z-30 border-b transition-shadow duration-300',
         scrolled
           ? 'border-parchment bg-white/95 shadow-sm backdrop-blur'
-          : 'border-parchment/60 bg-white/90 backdrop-blur',
+          : 'border-parchment/40 bg-white/82 backdrop-blur',
       ].join(' ')}
     >
       <nav className="mx-auto flex w-full max-w-[92vw] items-center justify-between px-5 py-3.5">
@@ -40,12 +40,12 @@ export function SiteHeader() {
             alt="Omaru Farm logo"
             className="h-10 w-10"
           />
-          <span className="font-heading text-xl text-charcoal">
+          <span className="font-heading text-[1.375rem] leading-tight text-charcoal md:text-2xl">
             Omaru <span className="text-gold">Farm</span>
           </span>
         </Link>
 
-        <div className="hidden gap-7 text-sm md:flex">
+        <div className="hidden items-center gap-8 text-base font-body md:flex lg:gap-10 lg:text-[1.0625rem]">
           {mainNavItems.map((item) => (
             <NavLink
               key={item.to}
@@ -53,8 +53,11 @@ export function SiteHeader() {
               end={item.end}
               className={({ isActive }) =>
                 [
-                  'font-medium transition-colors hover:text-gold',
-                  isActive ? 'text-gold' : 'text-bark',
+                  'relative whitespace-nowrap font-semibold tracking-[0.03em] transition-colors',
+                  "after:pointer-events-none after:absolute after:inset-x-0 after:-bottom-1 after:h-0.5 after:rounded-full after:bg-gold after:content-[''] after:transition-opacity after:duration-200",
+                  isActive
+                    ? 'text-gold after:opacity-100'
+                    : 'text-bark after:opacity-0 hover:text-gold hover:after:opacity-40',
                 ].join(' ')
               }
             >
@@ -64,12 +67,13 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            asChild
-            className="hidden bg-gold text-white hover:bg-gold-deep md:inline-flex"
+          <Link
+            to="/book"
+            className="hidden h-10 items-center rounded-sm px-6 font-body text-sm font-semibold tracking-wide text-white shadow-[0_4px_16px_rgba(119,90,25,0.3)] transition hover:brightness-105 md:inline-flex"
+            style={{ background: 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)' }}
           >
-            <Link to="/book">Book Now</Link>
-          </Button>
+            Book Now
+          </Link>
 
           <button
             type="button"
@@ -102,7 +106,7 @@ export function SiteHeader() {
                     onClick={() => setMobileOpen(false)}
                     className={({ isActive }) =>
                       [
-                        'rounded-xl px-4 py-3 text-sm font-medium transition',
+                        'rounded-xl px-4 py-3.5 text-base font-semibold tracking-wide transition',
                         isActive
                           ? 'bg-gold/10 text-gold'
                           : 'text-bark hover:bg-sand hover:text-gold',

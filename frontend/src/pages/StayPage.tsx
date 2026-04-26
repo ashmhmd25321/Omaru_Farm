@@ -1,361 +1,561 @@
 import { Helmet } from 'react-helmet-async'
 import { motion } from 'framer-motion'
-import { BedDouble, Bird, CheckCircle2, ChevronRight, MapPin, PawPrint, Sunrise, UtensilsCrossed, Users, Waves } from 'lucide-react'
+import {
+  ArrowRight,
+  BedDouble,
+  Bird,
+  CalendarDays,
+  ChevronDown,
+  Leaf,
+  MapPin,
+  PawPrint,
+  Sunrise,
+  UtensilsCrossed,
+  Users,
+  Waves,
+} from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { staticUrl } from '@/utils/staticUrl'
 
+const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
+
 const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  show: (delay = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.55, delay } }),
+  hidden: { opacity: 0, y: 26 },
+  show: (delay = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] as const },
+  }),
 }
 
-const ON_FARM_CABINS = [
+const STAYS = [
   {
-    id: 'cabin-1',
-    name: 'The Paddock Cabin',
+    id: 'glass-pavilion',
+    name: 'The Glass Pavilion',
     type: 'On-Farm · Self-Contained',
-    tagline: 'Wake to the sound of the farm',
-    description: 'Nestled at the edge of the paddock, this beautifully appointed self-contained cabin offers sweeping views across the rolling green hills to the distant ocean. Enjoy breakfast on your private deck while the farm comes alive around you.',
-    features: ['Self-contained kitchen', 'Private deck with paddock views', 'Quality bedding & linen', 'Bathroom with premium amenities', 'Walk to the café & farm store', 'Pet-friendly outdoors'],
-    image: staticUrl('/images/farm/IMG_9130.jpg'),
-    guests: '2–4',
     badge: 'Most Popular',
+    tagline: 'Wake to the sound of the farm.',
+    description:
+      'Established in 1952, a quintessential open-farm pavilion. Designed for those who seek to enjoy life in the open paddock without compromising on comfort. A pure farm experience with the finest produce on your doorstep.',
+    amenities: [
+      { Icon: BedDouble, label: 'King bed + sofa bed' },
+      { Icon: Waves, label: 'Private deck, ocean views' },
+      { Icon: UtensilsCrossed, label: 'Self-contained kitchen' },
+    ],
+    guests: '2–4',
+    image: staticUrl('/images/farm/IMG_9130.jpg'),
+    imagePosition: 'left' as const,
   },
   {
-    id: 'cabin-2',
-    name: 'The Grove Cabin',
-    type: 'On-Farm · Self-Contained',
-    tagline: 'Surrounded by olive trees',
-    description: 'Tucked among Omaru\'s own olive grove, this warm and private cabin offers a quiet sanctuary with a quintessential farm outlook. Close enough to feel part of the farm, peaceful enough to truly switch off.',
-    features: ['Fully self-contained', 'Kitchenette & dining area', 'Cosy fireplace', 'Ensuite bathroom', 'Outdoor seating area', 'Direct access to farm grounds'],
+    id: 'stone-cottage',
+    name: 'Heritage Stone Cottage',
+    type: 'On-Farm · Heritage Stay',
+    badge: null,
+    tagline: 'Surrounded by olive trees and open skies.',
+    description:
+      'Nestled among ancient olive groves, the Heritage Stone Cottage is a sanctuary of slow living. The stone walls carry warmth from the land while the views from the veranda stretch across the Phillip Island farmscape.',
+    amenities: [
+      { Icon: BedDouble, label: 'Queen & twin rooms' },
+      { Icon: Leaf, label: 'Olive grove outlook' },
+      { Icon: PawPrint, label: 'Dog-friendly outdoors' },
+    ],
+    guests: '2–4',
     image: staticUrl('/images/farm/2025-01-12-8.jpg'),
-    guests: '2',
-    badge: 'New',
+    imagePosition: 'right' as const,
+  },
+  {
+    id: 'ventnor-retreat',
+    name: 'Ventnor Retreat',
+    type: 'Holiday Home · Off-Farm',
+    badge: null,
+    tagline: 'Your private Phillip Island base.',
+    description:
+      'A beautifully furnished holiday home minutes from Omaru Farm. Perfect for families wanting the freedom of a full home — with easy access to the farm, the café, and every Phillip Island experience.',
+    amenities: [
+      { Icon: Users, label: 'Sleeps up to 6 guests' },
+      { Icon: MapPin, label: 'Minutes from Omaru Farm' },
+      { Icon: Bird, label: '5 min to Penguin Parade' },
+    ],
+    guests: '4–6',
+    image: staticUrl('/images/farm/IMG_3924.jpg'),
+    imagePosition: 'left' as const,
+  },
+  {
+    id: 'island-cottage',
+    name: 'Island Cottage',
+    type: 'Holiday Home · Off-Farm',
+    badge: null,
+    tagline: 'Phillip Island charm, close to everything.',
+    description:
+      'A charming cottage with warm interiors and a relaxed island feel. Close to Cowes and major attractions, with easy access to Omaru Farm for dining and farm experiences.',
+    amenities: [
+      { Icon: BedDouble, label: '2 bedrooms, sleeps 4' },
+      { Icon: MapPin, label: '10 minutes to Cowes' },
+      { Icon: Bird, label: 'Easy Penguin Parade access' },
+    ],
+    guests: '2–4',
+    image: staticUrl('/images/farm/20210602_130149.jpg'),
+    imagePosition: 'right' as const,
   },
 ]
 
-const HOLIDAY_HOMES = [
-  {
-    id: 'home-1',
-    name: 'Ventnor Retreat',
-    type: 'Holiday Home · Off-Farm',
-    tagline: 'Your private island base',
-    description: 'A beautifully furnished holiday home just minutes from Omaru Farm. Perfect for families or groups wanting the freedom of a full home with easy access to the farm, the café, and all Phillip Island has to offer.',
-    features: ['3 bedrooms, sleeps up to 6', 'Full kitchen & laundry', 'Spacious living areas', 'Private garden', 'Minutes from Omaru Farm', 'Close to beaches and attractions'],
-    image: staticUrl('/images/farm/IMG_3924.jpg'),
-    guests: '4–6',
-    badge: null,
-  },
-  {
-    id: 'home-2',
-    name: 'Island Cottage',
-    type: 'Holiday Home · Off-Farm',
-    tagline: 'Phillip Island charm',
-    description: 'A charming cottage-style holiday home with warm interiors and a relaxed island atmosphere. Close to Cowes and the major attractions, with easy access to Omaru Farm for dining and farm experiences.',
-    features: ['2 bedrooms, sleeps up to 4', 'Modern kitchen', 'Comfortable lounge', 'Outdoor entertaining area', '10 minutes to Cowes', 'Easy access to Penguin Parade'],
-    image: staticUrl('/images/farm/20210602_130149.jpg'),
-    guests: '2–4',
-    badge: null,
-  },
+const EXPERIENCES = [
+  { Icon: Sunrise,         label: 'Taste the Life',      desc: 'Savour breakfast on your private deck as mist lifts from the paddocks at dawn.' },
+  { Icon: UtensilsCrossed, label: 'Wildlife Chef',        desc: 'Dine on produce grown steps from your door — picked fresh, served with care.' },
 ]
 
 export function StayPage() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [property, setProperty] = useState('The Paddock Cabin')
-  const [guests, setGuests] = useState('2')
-  const [notes, setNotes] = useState('')
+  const pad2 = (n: number) => `${n}`.padStart(2, '0')
+  const toISODate = (d: Date) => {
+    const y = d.getFullYear(); const m = pad2(d.getMonth() + 1); const day = pad2(d.getDate())
+    return `${y}-${m}-${day}`
+  }
+
+  const [checkIn, setCheckIn]   = useState(() => { const d = new Date(); d.setDate(d.getDate() + 7); return toISODate(d) })
+  const [checkOut, setCheckOut] = useState(() => { const d = new Date(); d.setDate(d.getDate() + 10); return toISODate(d) })
+  const [cabin, setCabin]       = useState('The Glass Pavilion')
+  const [guests, setGuests]     = useState('2 Guests')
   const [submitted, setSubmitted] = useState(false)
 
   return (
     <>
       <Helmet>
         <title>Stay at Omaru Farm | Self-Contained Cabins & Holiday Homes · Phillip Island</title>
-        <meta name="description" content="Stay at Omaru Farm on Phillip Island. Two self-contained on-farm cabins with breathtaking views, plus two holiday homes. Perfect base for the Penguin Parade and all island attractions." />
+        <meta
+          name="description"
+          content="Stay at Omaru Farm on Phillip Island. Self-contained cabins with breathtaking views, plus holiday homes. Perfect base for the Penguin Parade and all island attractions."
+        />
       </Helmet>
 
       <main>
 
-        {/* ── HERO ─────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden">
+        {/* ══════════════════════════════════════════
+            HERO — full-viewport image, bottom-left text
+        ══════════════════════════════════════════ */}
+        <section className="relative flex min-h-[80vh] items-end overflow-hidden">
           <img
-            src={staticUrl('/images/farm/2025-01-12-8.jpg')}
-            alt="Peaceful farm accommodation at Omaru Farm, Phillip Island"
+            src={staticUrl('/images/farm/pexels-caleb-clark-6462955-32869744.jpg')}
+            alt="Farm accommodation at Omaru, Phillip Island"
             className="absolute inset-0 h-full w-full object-cover"
+            loading="eager"
+            fetchPriority="high"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
+          {/* Gradient: strong bottom-left, fades to transparent top-right */}
+          <div className="absolute inset-0 bg-gradient-to-r from-estate/75 via-estate/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-estate/80 via-estate/20 to-transparent" />
 
-          <div className="relative mx-auto grid min-h-[75vh] max-w-[92vw] items-center gap-10 px-5 py-16 md:grid-cols-12">
-            <motion.div className="hero-panel md:col-span-8 lg:col-span-7" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-              <p className="mb-3 text-xs uppercase tracking-[0.32em] text-gold-deep">Stay at Omaru Farm · Phillip Island</p>
-              <h1 className="font-heading text-4xl leading-tight text-charcoal md:text-6xl">
-                Wake Up to the<br />
-                <span className="italic text-gold">Beautiful View</span>
+          <div className="relative z-10 mx-auto w-full max-w-[92vw] px-5 pb-20 md:pb-28">
+            <motion.div
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+              className="max-w-xl"
+            >
+              <p className="mb-4 font-body text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-gold/80">
+                Welcome to Omaru
+              </p>
+              <h1 className="hero-headline font-heading text-[2.6rem] font-semibold leading-[1.04] tracking-[-0.03em] text-white sm:text-5xl md:text-[3.5rem] lg:text-[4rem]">
+                A Sanctuary<br />
+                of <span className="italic text-gold">Silence</span>
               </h1>
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-stone">
-                Stay on the farm in one of our self-contained cabins and fall asleep to paddock views and farm sounds.
-                Or choose one of our nearby holiday homes — the perfect island base.
+              <p className="mt-5 font-body text-base leading-[1.78] text-white/72 md:text-lg">
+                Self-contained cabins and holiday homes nestled within Omaru Farm — breathtaking views, farm sounds, and total privacy just 5 minutes from the Penguin Parade.
               </p>
-              <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                {[
-                  { icon: <BedDouble className="h-3.5 w-3.5" />, label: '2 On-Farm Cabins' },
-                  { icon: <BedDouble className="h-3.5 w-3.5" />, label: '2 Holiday Homes' },
-                  { icon: <Waves className="h-3.5 w-3.5" />, label: 'Ocean Views' },
-                  { icon: <MapPin className="h-3.5 w-3.5" />, label: '5 min to Penguin Parade' },
-                ].map((b) => (
-                  <span key={b.label} className="inline-flex items-center gap-1.5 rounded-full border border-parchment bg-zinc-50 px-3 py-1.5 text-bark">
-                    <span className="text-gold">{b.icon}</span>
-                    {b.label}
-                  </span>
-                ))}
-              </div>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button asChild className="bg-gold text-white hover:bg-gold-deep">
-                  <a href="#book">Book Your Stay</a>
-                </Button>
-                <Button variant="outline" asChild className="border-parchment text-bark hover:bg-zinc-50">
-                  <a href="#stays">View Accommodation</a>
-                </Button>
+                <a
+                  href="#stays"
+                  className="inline-flex h-11 items-center rounded-sm px-8 font-body text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:brightness-105"
+                  style={{ background: GOLD_GRADIENT }}
+                >
+                  Explore Retreats
+                </a>
+                <a
+                  href="#book"
+                  className="inline-flex h-11 items-center rounded-sm border border-white/25 bg-transparent px-8 font-body text-sm font-semibold uppercase tracking-[0.12em] text-white/85 transition hover:border-white/45 hover:bg-white/8"
+                >
+                  Check Availability
+                </a>
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* ── ON-FARM CABINS ───────────────────────────────────── */}
-        <section id="stays" className="bg-white py-20 md:py-28">
+        {/* ══════════════════════════════════════════
+            THE STAYS — white, alternating editorial rows
+        ══════════════════════════════════════════ */}
+        <section id="stays" className="bg-white py-24 md:py-32">
           <div className="mx-auto max-w-[92vw] px-5">
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">On-Farm Stays</p>
-              <h2 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">Self-Contained Farm Cabins</h2>
-              <p className="mt-3 max-w-2xl text-base text-stone">
-                Both cabins are fully self-contained and set within the farm grounds — wake up to paddock views,
-                wander to the café for lunch, and fall asleep to the sounds of the countryside.
+
+            {/* Section heading */}
+            <motion.div
+              className="mb-14"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              custom={0}
+              variants={fadeUp}
+            >
+              <h2 className="font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
+                The Stays
+              </h2>
+              <p className="mt-4 max-w-xl font-body text-base leading-[1.75] text-stone">
+                Each property at Omaru has been crafted to make you feel embedded in the land while allowing all the comforts that let you truly unwind on Phillip Island.
               </p>
             </motion.div>
 
-            <div className="mt-12 grid gap-8 md:grid-cols-2">
-              {ON_FARM_CABINS.map((cabin, idx) => (
-                <motion.div
-                  key={cabin.id}
-                  className="overflow-hidden rounded-2xl border border-parchment bg-white shadow-sm"
-                  initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.15 }} custom={idx * 0.08} variants={fadeUp}
-                >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={cabin.image}
-                      alt={cabin.name}
-                      className="h-64 w-full object-cover transition duration-500 hover:scale-105"
-                      loading="lazy"
-                    />
-                    {cabin.badge && (
-                      <span className="absolute left-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-medium text-white">
-                        {cabin.badge}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-6 md:p-8">
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gold">{cabin.type}</p>
-                    <h3 className="mt-2 font-heading text-2xl text-charcoal">{cabin.name}</h3>
-                    <p className="mt-1 text-sm italic text-stone">{cabin.tagline}</p>
-                    <p className="mt-4 text-sm leading-relaxed text-stone">{cabin.description}</p>
-                    <ul className="mt-5 space-y-2">
-                      {cabin.features.map((f) => (
-                        <li key={f} className="flex items-center gap-2.5 text-sm text-bark">
-                          <CheckCircle2 className="h-4 w-4 shrink-0 text-gold" />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-5 flex items-center justify-between border-t border-parchment pt-5">
-                      <span className="flex items-center gap-2 text-sm text-stone">
-                        <Users className="h-4 w-4 text-gold" />
-                        {cabin.guests} guests
-                      </span>
-                      <Button asChild className="bg-gold px-3 py-1.5 text-xs text-white hover:bg-gold-deep">
-                        <a href="#book">Enquire Now</a>
-                      </Button>
+            {/* Alternating rows */}
+            <div className="space-y-20 md:space-y-28">
+              {STAYS.map((stay, idx) => {
+                const isLeft = stay.imagePosition === 'left'
+                return (
+                  <motion.div
+                    key={stay.id}
+                    className={`grid items-center gap-10 md:grid-cols-[5fr_6fr] md:gap-14 lg:gap-20 ${isLeft ? '' : 'md:[&>*:first-child]:order-2 md:[&>*:last-child]:order-1'}`}
+                    initial="hidden"
+                    whileInView="show"
+                    viewport={{ once: true, amount: 0.15 }}
+                    custom={idx * 0.05}
+                    variants={fadeUp}
+                  >
+                    {/* Image */}
+                    <div className="group relative overflow-hidden rounded-sm">
+                      {stay.badge && (
+                        <span
+                          className="absolute left-4 top-4 z-10 rounded-sm px-3 py-1 font-body text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-white"
+                          style={{ background: GOLD_GRADIENT }}
+                        >
+                          {stay.badge}
+                        </span>
+                      )}
+                      <img
+                        src={stay.image}
+                        alt={stay.name}
+                        className="h-72 w-full object-cover transition duration-700 group-hover:scale-[1.03] md:h-[380px]"
+                        loading="lazy"
+                      />
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+
+                    {/* Content */}
+                    <div>
+                      <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold">
+                        {stay.type}
+                      </p>
+                      <h3 className="mt-3 font-heading text-3xl font-semibold leading-tight tracking-[-0.02em] text-charcoal md:text-4xl">
+                        {stay.name}
+                      </h3>
+                      <p className="mt-1.5 font-body text-sm italic text-stone">{stay.tagline}</p>
+                      <p className="mt-5 font-body text-base leading-[1.78] text-stone">{stay.description}</p>
+
+                      {/* Amenity icons */}
+                      <div className="mt-6 flex flex-wrap gap-5">
+                        {stay.amenities.map(({ Icon, label }) => (
+                          <span key={label} className="inline-flex items-center gap-2 font-body text-sm text-bark">
+                            <Icon className="h-4 w-4 shrink-0 text-gold" strokeWidth={1.75} aria-hidden />
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Enquire link */}
+                      <a
+                        href="#book"
+                        className="mt-7 inline-flex items-center gap-2 font-body text-xs font-semibold uppercase tracking-[0.16em] text-gold-deep transition hover:text-gold"
+                      >
+                        Enquire to Book Details <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                      </a>
+                    </div>
+                  </motion.div>
+                )
+              })}
             </div>
           </div>
         </section>
 
-        {/* ── HOLIDAY HOMES ────────────────────────────────────── */}
-        <section className="bg-zinc-50 py-20 md:py-28">
+        {/* ══════════════════════════════════════════
+            THE EXPERIENCE — dark estate, editorial grid
+        ══════════════════════════════════════════ */}
+        <section className="bg-estate py-24 md:py-32">
           <div className="mx-auto max-w-[92vw] px-5">
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }} custom={0} variants={fadeUp}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">Off-Farm Stays</p>
-              <h2 className="mt-3 font-heading text-4xl text-charcoal md:text-5xl">Holiday Homes</h2>
-              <p className="mt-3 max-w-2xl text-base text-stone">
-                Our two holiday homes are located nearby on Phillip Island — perfect for families or groups who want
-                the freedom and space of a full home, while staying close to Omaru Farm and all island attractions.
+
+            {/* Heading */}
+            <motion.div
+              className="mb-14 text-center"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.4 }}
+              custom={0}
+              variants={fadeUp}
+            >
+              <p className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold/70">
+                More Than a Place to Sleep
+              </p>
+              <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-white md:text-5xl">
+                The Experience
+              </h2>
+              <p className="mx-auto mt-4 max-w-lg font-body text-base leading-[1.75] text-white/50">
+                Slow mornings, farm encounters, and paddock views that reset the soul.
               </p>
             </motion.div>
 
-            <div className="mt-12 grid gap-8 md:grid-cols-2">
-              {HOLIDAY_HOMES.map((home, idx) => (
-                <motion.div
-                  key={home.id}
-                  className="overflow-hidden rounded-2xl border border-parchment bg-white shadow-sm"
-                  initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.15 }} custom={idx * 0.08} variants={fadeUp}
+            {/* Asymmetric experience grid */}
+            <div className="grid gap-4 md:grid-cols-[3fr_2fr]">
+
+              {/* Left: large dark image card — Cosmic Silence */}
+              <motion.div
+                className="group relative min-h-[440px] overflow-hidden rounded-sm"
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.15 }}
+                custom={0.06}
+                variants={fadeUp}
+              >
+                <img
+                  src={staticUrl('/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG')}
+                  alt="Stargazing and silence at Omaru Farm, Phillip Island"
+                  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-estate/90 via-estate/50 to-estate/20" />
+                <div className="absolute inset-x-0 bottom-0 p-8 md:p-10">
+                  <span className="inline-flex items-center gap-2 font-body text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-gold">
+                    <Sunrise className="h-3.5 w-3.5" aria-hidden />
+                    Far from the City
+                  </span>
+                  <h3 className="mt-2 font-heading text-3xl font-semibold text-white">
+                    Cosmic Silence
+                  </h3>
+                  <p className="mt-3 max-w-xs font-body text-sm leading-relaxed text-white/65">
+                    Experience absolute darkness and absolute quiet. Our farm sits away from all light pollution — the night sky at Omaru is extraordinary.
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Right column */}
+              <motion.div
+                className="flex flex-col gap-4"
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.15 }}
+                custom={0.16}
+                variants={fadeUp}
+              >
+                {/* Heritage estate card */}
+                <div
+                  className="relative flex min-h-[220px] flex-col justify-between overflow-hidden rounded-sm p-7"
+                  style={{ background: 'linear-gradient(150deg, #1a1208 0%, #2c1f0a 60%, #1a1208 100%)' }}
                 >
-                  <div className="overflow-hidden">
-                    <img
-                      src={home.image}
-                      alt={home.name}
-                      className="h-56 w-full object-cover transition duration-500 hover:scale-105"
-                      loading="lazy"
-                    />
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{ backgroundImage: 'radial-gradient(circle at 70% 30%, rgba(197,160,89,0.14) 0%, transparent 55%)' }}
+                  />
+                  <div className="relative">
+                    <p className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.36em] text-gold/55">
+                      Farm Heritage
+                    </p>
+                    <h3 className="mt-2 font-heading text-2xl font-semibold tracking-[0.06em] text-white/90">
+                      Omaru Farm
+                    </h3>
+                    <p className="mt-0.5 font-body text-[0.6rem] uppercase tracking-[0.24em] text-gold/40">Est. 1954 · Phillip Island</p>
                   </div>
-                  <div className="p-6 md:p-8">
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gold">{home.type}</p>
-                    <h3 className="mt-2 font-heading text-2xl text-charcoal">{home.name}</h3>
-                    <p className="mt-1 text-sm italic text-stone">{home.tagline}</p>
-                    <p className="mt-4 text-sm leading-relaxed text-stone">{home.description}</p>
-                    <ul className="mt-5 space-y-2">
-                      {home.features.map((f) => (
-                        <li key={f} className="flex items-center gap-2.5 text-sm text-bark">
-                          <CheckCircle2 className="h-4 w-4 shrink-0 text-gold" />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-5 flex items-center justify-between border-t border-parchment pt-5">
-                      <span className="flex items-center gap-2 text-sm text-stone">
-                        <Users className="h-4 w-4 text-gold" />
-                        {home.guests} guests
-                      </span>
-                      <Button asChild className="bg-gold px-3 py-1.5 text-xs text-white hover:bg-gold-deep">
-                        <a href="#book">Enquire Now</a>
-                      </Button>
+                  <div className="relative mt-4">
+                    <div className="h-px w-full" style={{ background: 'linear-gradient(to right, transparent, rgba(197,160,89,0.25), transparent)' }} />
+                    <p className="mt-4 font-heading text-lg italic font-normal text-white/70">
+                      "Where the land speaks and silence is the luxury."
+                    </p>
+                  </div>
+                </div>
+
+                {/* Two small experience icon cards */}
+                <div className="grid grid-cols-2 gap-4">
+                  {EXPERIENCES.map(({ Icon, label, desc }) => (
+                    <div key={label} className="rounded-sm bg-white/[0.05] p-6 backdrop-blur-sm">
+                      <div
+                        className="mb-4 flex h-9 w-9 items-center justify-center rounded-sm"
+                        style={{ background: GOLD_GRADIENT }}
+                      >
+                        <Icon className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
+                      </div>
+                      <p className="font-heading text-base font-semibold text-white">{label}</p>
+                      <p className="mt-1.5 font-body text-xs leading-relaxed text-white/48">{desc}</p>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  ))}
+                </div>
+              </motion.div>
             </div>
+
+            {/* Feature strip */}
+            <motion.div
+              className="mt-14 flex flex-wrap items-center justify-center gap-8"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true }}
+              custom={0.3}
+              variants={fadeUp}
+            >
+              {[
+                { Icon: Bird,   text: '5 min to Penguin Parade' },
+                { Icon: Waves,  text: 'Ocean views from the paddock' },
+                { Icon: PawPrint, text: 'Farm animals on-site' },
+                { Icon: MapPin,  text: '776 Ventnor Road, Phillip Island' },
+              ].map(({ Icon, text }) => (
+                <span key={text} className="inline-flex items-center gap-2 font-body text-xs text-white/38">
+                  <Icon className="h-3.5 w-3.5 text-gold/55" aria-hidden />
+                  {text}
+                </span>
+              ))}
+            </motion.div>
+
           </div>
         </section>
 
-        {/* ── EXPERIENCE SECTION ───────────────────────────────── */}
-        <section className="relative overflow-hidden py-20 md:py-28">
-          <img
-            src={staticUrl('/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG')}
-            alt="Breathtaking views from Omaru Farm accommodation"
-            className="absolute inset-0 h-full w-full object-cover"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-black/45" />
-          <div className="relative mx-auto max-w-[92vw] px-5 py-6 md:py-10">
-            <motion.div className="hero-panel mx-auto max-w-4xl text-center" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0} variants={fadeUp}>
-              <h2 className="font-heading text-3xl text-charcoal md:text-5xl">The Omaru Stay Experience</h2>
-              <p className="mx-auto mt-4 max-w-2xl text-base text-stone">
-                More than just a place to sleep. Staying at Omaru means waking to farm sounds, dining on food grown steps from your door,
-                and exploring Phillip Island with the best base on the island.
-              </p>
-              <div className="mt-10 grid gap-6 sm:grid-cols-2 md:grid-cols-4">
-                {[
-                  { Icon: Sunrise, label: 'Sunrise Paddock Views', desc: 'Wake up to breathtaking vistas every morning' },
-                  { Icon: PawPrint, label: 'Farm Animal Encounters', desc: 'Meet ponies, lambs, goats, and wallabies at dusk' },
-                  { Icon: UtensilsCrossed, label: 'Farm-to-Table Dining', desc: 'Lunch and dinner in the café, minutes from your cabin' },
-                  { Icon: Bird, label: '5 min to Penguin Parade', desc: 'The world-famous penguin colony is on your doorstep' },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-2xl border border-parchment bg-white p-6 text-center shadow-sm">
-                    <div className="mx-auto flex h-10 w-10 items-center justify-center text-gold">
-                      <item.Icon className="h-8 w-8" strokeWidth={1.5} aria-hidden="true" />
-                    </div>
-                    <p className="mt-3 font-medium text-charcoal">{item.label}</p>
-                    <p className="mt-1 text-xs text-stone">{item.desc}</p>
-                  </div>
-                ))}
+        {/* ══════════════════════════════════════════
+            BOOK YOUR RETREAT — surface-low, clean form
+        ══════════════════════════════════════════ */}
+        <section id="book" className="bg-surface-low py-24 md:py-32">
+          <div className="mx-auto max-w-[92vw] px-5">
+
+            <motion.div
+              className="mx-auto max-w-2xl"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              custom={0}
+              variants={fadeUp}
+            >
+              {/* Heading */}
+              <div className="mb-12 text-center">
+                <h2 className="font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
+                  Book Your Retreat
+                </h2>
+                <p className="mx-auto mt-4 max-w-sm font-body text-base leading-[1.75] text-stone">
+                  Complete the form below to check availability. We'll get back to you promptly to confirm your arrival.
+                </p>
               </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* ── BOOKING FORM ─────────────────────────────────────── */}
-        <section id="book" className="bg-white py-20 md:py-24">
-          <div className="mx-auto max-w-[92vw] px-5">
-            <div className="mx-auto max-w-2xl rounded-2xl border border-parchment bg-white p-6 shadow-sm md:p-10">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-gold">Book Your Stay</p>
-              <h2 className="mt-2 font-heading text-3xl text-charcoal">Accommodation Enquiry</h2>
-              <p className="mt-2 text-sm text-stone">
-                Fill in your details and we'll be in touch with availability and pricing within 24 hours.
-              </p>
 
               {submitted ? (
-                <div className="mt-8 rounded-2xl border border-sage/30 bg-fern/30 p-8 text-center">
-                  <p className="font-heading text-2xl text-charcoal">Enquiry Received!</p>
-                  <p className="mt-2 text-sm text-stone">Thank you — we'll be in touch within 24 hours with availability and pricing.</p>
+                <div className="rounded-sm bg-white py-14 text-center shadow-[0_8px_40px_rgba(26,18,8,0.06)]">
+                  <div
+                    className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-sm"
+                    style={{ background: GOLD_GRADIENT }}
+                  >
+                    <CalendarDays className="h-6 w-6 text-white" aria-hidden />
+                  </div>
+                  <p className="font-heading text-2xl font-semibold text-charcoal">Enquiry Received!</p>
+                  <p className="mx-auto mt-2 max-w-xs font-body text-sm text-stone">
+                    Thank you — we'll be in touch within 24 hours with availability and pricing.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSubmitted(false)}
+                    className="mt-6 font-body text-xs font-semibold uppercase tracking-[0.16em] text-gold-deep transition hover:text-gold"
+                  >
+                    Make Another Enquiry
+                  </button>
                 </div>
               ) : (
-                <form className="mt-8 space-y-5" onSubmit={(e) => { e.preventDefault(); setSubmitted(true) }}>
-                  <div>
-                    <label className="text-xs font-medium uppercase tracking-widest text-stone">Property</label>
-                    <select
-                      value={property}
-                      onChange={(e) => setProperty(e.target.value)}
-                      className="field mt-2"
+                <form
+                  className="space-y-6 rounded-sm bg-white p-8 shadow-[0_8px_40px_rgba(26,18,8,0.06)] md:p-10"
+                  onSubmit={(e) => { e.preventDefault(); setSubmitted(true) }}
+                >
+                  {/* Row 1: Check-in + Check-out */}
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone">
+                        Check-in
+                      </span>
+                      <div className="relative mt-2">
+                        <input
+                          type="date"
+                          value={checkIn}
+                          onChange={(e) => setCheckIn(e.target.value)}
+                          required
+                          className="field w-full pr-8"
+                          aria-label="Check-in date"
+                        />
+                        <CalendarDays className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/55" aria-hidden />
+                      </div>
+                    </label>
+                    <label className="block">
+                      <span className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone">
+                        Check-out
+                      </span>
+                      <div className="relative mt-2">
+                        <input
+                          type="date"
+                          value={checkOut}
+                          onChange={(e) => setCheckOut(e.target.value)}
+                          required
+                          className="field w-full pr-8"
+                          aria-label="Check-out date"
+                        />
+                        <CalendarDays className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/55" aria-hidden />
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Row 2: Cabin */}
+                  <label className="block">
+                    <span className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone">
+                      Cabin
+                    </span>
+                    <div className="relative mt-2">
+                      <select
+                        value={cabin}
+                        onChange={(e) => setCabin(e.target.value)}
+                        className="field w-full appearance-none pr-8"
+                        aria-label="Select cabin"
+                      >
+                        <optgroup label="On-Farm Cabins">
+                          <option>The Glass Pavilion</option>
+                          <option>Heritage Stone Cottage</option>
+                        </optgroup>
+                        <optgroup label="Holiday Homes">
+                          <option>Ventnor Retreat</option>
+                          <option>Island Cottage</option>
+                        </optgroup>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/55" aria-hidden />
+                    </div>
+                  </label>
+
+                  {/* Row 3: Guests */}
+                  <label className="block">
+                    <span className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone">
+                      Guests
+                    </span>
+                    <div className="relative mt-2">
+                      <select
+                        value={guests}
+                        onChange={(e) => setGuests(e.target.value)}
+                        className="field w-full appearance-none pr-8"
+                        aria-label="Number of guests"
+                      >
+                        {[1, 2, 3, 4, 5, 6].map((n) => (
+                          <option key={n} value={`${n} ${n === 1 ? 'Guest' : 'Guests'}`}>
+                            {n} {n === 1 ? 'Guest' : 'Guests'}
+                          </option>
+                        ))}
+                      </select>
+                      <Users className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/55" aria-hidden />
+                    </div>
+                  </label>
+
+                  {/* Submit */}
+                  <div className="pt-2 text-center">
+                    <button
+                      type="submit"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-sm font-body text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-105"
+                      style={{ background: GOLD_GRADIENT }}
                     >
-                      <optgroup label="On-Farm Cabins">
-                        <option>The Paddock Cabin</option>
-                        <option>The Grove Cabin</option>
-                      </optgroup>
-                      <optgroup label="Holiday Homes">
-                        <option>Ventnor Retreat</option>
-                        <option>Island Cottage</option>
-                      </optgroup>
-                    </select>
+                      Check Availability
+                    </button>
+                    <p className="mt-4 font-body text-xs text-stone/55">
+                      776 Ventnor Road, Ventnor, Phillip Island VIC 3922
+                    </p>
                   </div>
-
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <div>
-                      <label className="text-xs font-medium uppercase tracking-widest text-stone">Full Name</label>
-                      <input className="field mt-2" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium uppercase tracking-widest text-stone">Email</label>
-                      <input className="field mt-2" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <div>
-                      <label className="text-xs font-medium uppercase tracking-widest text-stone">Check-In Date</label>
-                      <input className="field mt-2" type="date" required />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium uppercase tracking-widest text-stone">Check-Out Date</label>
-                      <input className="field mt-2" type="date" required />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium uppercase tracking-widest text-stone">Number of Guests</label>
-                    <select value={guests} onChange={(e) => setGuests(e.target.value)} className="field mt-2">
-                      {['1', '2', '3', '4', '5', '6'].map((n) => <option key={n}>{n}</option>)}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium uppercase tracking-widest text-stone">Special Requests</label>
-                    <textarea className="field mt-2 resize-none" rows={4} placeholder="Dietary requirements, pet-friendly, accessibility, early check-in, celebrations…" value={notes} onChange={(e) => setNotes(e.target.value)} />
-                  </div>
-
-                  <Button type="submit" className="w-full bg-gold text-white hover:bg-gold-deep">
-                    Send Enquiry
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  <p className="text-center text-xs text-stone">
-                    <MapPin className="mr-1 inline h-3 w-3 text-gold" />
-                    776 Ventnor Road, Ventnor, Phillip Island VIC 3922
-                  </p>
                 </form>
               )}
-            </div>
+            </motion.div>
           </div>
         </section>
 
