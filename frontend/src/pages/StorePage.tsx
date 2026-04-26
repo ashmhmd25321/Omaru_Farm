@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, CircleX, Clock3, MapPin, PackageSearch, Search, Truck, Wheat, X } from 'lucide-react'
+import { ArrowRight, Clock3, MapPin, PackageSearch, Search, Truck, Wheat, X } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { productCatalog } from '@/data/productCatalog'
 import { productImageUrl } from '@/utils/productImage'

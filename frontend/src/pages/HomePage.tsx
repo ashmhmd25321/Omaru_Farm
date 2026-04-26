@@ -14,7 +14,6 @@ import {
   Leaf,
   MapPin,
   Mountain,
-  PackageSearch,
   PawPrint,
   Rabbit,
   Squirrel,
@@ -45,7 +44,7 @@ const fadeUp = {
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
 
 export function HomePage() {
-  const [products, setProducts] = useState<Product[]>(featuredProducts.slice(0, 4))
+  const [, setProducts] = useState<Product[]>(featuredProducts.slice(0, 4))
   const [currentSlide, setCurrentSlide] = useState(0)
   const [residentGalleryIndex, setResidentGalleryIndex] = useState(0)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)

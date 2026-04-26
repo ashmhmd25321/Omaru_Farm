@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, BedDouble, ChevronLeft, ChevronRight, Leaf, Sprout, Sun } from 'lucide-react'
+import { ArrowRight, BedDouble, ChevronLeft, ChevronRight, Sun } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { staticUrl } from '@/utils/staticUrl'
 
