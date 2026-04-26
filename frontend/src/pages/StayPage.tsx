@@ -134,15 +134,17 @@ export function StayPage() {
         ══════════════════════════════════════════ */}
         <section className="relative flex min-h-[80vh] items-end overflow-hidden">
           <img
-            src={staticUrl('/images/farm/pexels-caleb-clark-6462955-32869744.jpg')}
+            src={staticUrl('/images/farm/image-farm/7CD1DA41BA7E970B38EA4E75B43CD7CD.JPG')}
             alt="Farm accommodation at Omaru, Phillip Island"
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover [filter:saturate(1.14)_contrast(1.1)_brightness(0.9)]"
             loading="eager"
             fetchPriority="high"
           />
-          {/* Gradient: strong bottom-left, fades to transparent top-right */}
-          <div className="absolute inset-0 bg-gradient-to-r from-estate/75 via-estate/30 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-estate/80 via-estate/20 to-transparent" />
+          {/* Cinematic layering: improves contrast and keeps headline readable */}
+          <div className="absolute inset-0 bg-gradient-to-r from-estate/82 via-estate/36 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/68 via-estate/24 to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.12)_0%,rgba(0,0,0,0.34)_72%,rgba(0,0,0,0.5)_100%)]" />
+          <div className="absolute inset-0 opacity-[0.14] [background:repeating-linear-gradient(0deg,rgba(255,255,255,0.07)_0px,rgba(255,255,255,0.07)_1px,transparent_1px,transparent_3px)]" />
 
           <div className="relative z-10 mx-auto w-full max-w-[92vw] px-5 pb-20 md:pb-28">
             <motion.div

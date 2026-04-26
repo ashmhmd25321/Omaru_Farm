@@ -34,6 +34,31 @@ type MenuItem = {
   sortOrder?: number
 }
 
+type DaypartKey = 'morning' | 'lunch' | 'sunset' | 'evening'
+
+const daypartOptions: { key: DaypartKey; label: string; blurb: string }[] = [
+  {
+    key: 'morning',
+    label: 'Morning',
+    blurb: 'Start slow with fresh coffee, warm bakes, and bright paddock light.',
+  },
+  {
+    key: 'lunch',
+    label: 'Lunch',
+    blurb: 'Seasonal farm plates and relaxed country dining at midday.',
+  },
+  {
+    key: 'sunset',
+    label: 'Sunset',
+    blurb: 'Golden-hour views, grazing fields, and a restorative atmosphere.',
+  },
+  {
+    key: 'evening',
+    label: 'Evening',
+    blurb: 'A warm dining room, curated pours, and a slower farm rhythm.',
+  },
+]
+
 const fallbackMenu: MenuItem[] = [
   { section: 'Breakfast', itemName: 'Heritage Grain Porridge', description: 'Oat porridge, stone-fruit compote, crème fraîche, honey and toasted farm seeds', price: 19, image: '' },
   { section: 'Breakfast', itemName: 'Poached Farm Eggs', description: 'Free-range eggs on sourdough with hollandaise, shaved garden greens and chilli oil', price: 24, image: '' },
@@ -76,6 +101,12 @@ export function CafePage() {
   const [formState, setFormState] = useState({ loading: false, success: false, error: '' })
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>(fallbackMenu)
+  const [activeDaypart, setActiveDaypart] = useState<DaypartKey>('sunset')
+  const [statsInView, setStatsInView] = useState(false)
+  const [statsAnimated, setStatsAnimated] = useState(false)
+  const [panoramicCount, setPanoramicCount] = useState(0)
+  const [produceCount, setProduceCount] = useState(0)
+  const experienceSectionRef = useRef<HTMLElement | null>(null)
 
   const prettyDate = useMemo(() => {
     const [y, m, d] = selectedDate.split('-').map(Number)
@@ -122,6 +153,51 @@ export function CafePage() {
     }))
   }, [menuItems])
 
+  const activeDaypartBlurb = useMemo(
+    () => daypartOptions.find((option) => option.key === activeDaypart)?.blurb ?? '',
+    [activeDaypart],
+  )
+
+  const isMediaActive = (targets: DaypartKey[]) => targets.includes(activeDaypart)
+
+  useEffect(() => {
+    if (!experienceSectionRef.current) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setStatsInView(true)
+      },
+      { threshold: 0.3 },
+    )
+    observer.observe(experienceSectionRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!statsInView || statsAnimated) return
+
+    const duration = 1300
+    let frame = 0
+    const start = performance.now()
+
+    const step = (now: number) => {
+      const elapsed = now - start
+      const t = Math.min(elapsed / duration, 1)
+      const eased = 1 - (1 - t) ** 3
+
+      setPanoramicCount(Math.round(360 * eased))
+      setProduceCount(Math.round(100 * eased))
+
+      if (t < 1) {
+        frame = requestAnimationFrame(step)
+      } else {
+        setStatsAnimated(true)
+      }
+    }
+
+    frame = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frame)
+  }, [statsAnimated, statsInView])
+
   const handleReserve = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormState({ loading: true, success: false, error: '' })
@@ -160,20 +236,21 @@ export function CafePage() {
         ══════════════════════════════════════════ */}
         <section className="relative flex min-h-[85vh] items-end justify-center overflow-hidden">
           <img
-            src={staticUrl('/images/farm/20210602_130149.jpg')}
+            src={staticUrl('/images/farm/image-farm/IMG_0620.jpg')}
             alt="Café Omaru — farm-to-table dining with breathtaking paddock views, Phillip Island"
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover [filter:saturate(1.08)_contrast(1.06)_brightness(0.9)]"
             loading="eager"
             fetchPriority="high"
           />
           {/* Dual overlay for maximum readability while preserving image */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/25 to-black/68" />
-          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-black/15" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/26 via-black/34 to-black/72" />
+          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-black/8 to-black/24" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.18)_0%,rgba(0,0,0,0.34)_72%,rgba(0,0,0,0.45)_100%)]" />
 
           {/* Centered bottom content */}
           <div className="relative z-10 w-full px-6 pb-20 text-center md:pb-28">
             <motion.p
-              className="mb-4 font-body text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-gold"
+              className="mx-auto mb-4 inline-flex items-center rounded-sm border border-gold/45 bg-black/38 px-3 py-1.5 font-body text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-gold backdrop-blur-sm"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -262,123 +339,161 @@ export function CafePage() {
               <div className="mx-auto mt-4 h-0.5 w-12" style={{ background: GOLD_GRADIENT }} />
             </motion.div>
 
-            {/* 2×2 editorial grid */}
-            <div className="grid gap-4 md:grid-cols-2">
+            {/* Featured story + supporting cards */}
+            <div className="grid gap-4 lg:grid-cols-[1.45fr_1fr]">
 
-              {/* ── Top-left: Artisan Lunch — image + sidebar text ── */}
-              <motion.div
-                className="group grid overflow-hidden rounded-sm sm:grid-cols-[3fr_2fr]"
+              {/* Featured: Farm Dinner */}
+              <motion.article
+                className="group relative min-h-[440px] overflow-hidden rounded-sm lg:min-h-[640px]"
                 initial="hidden"
                 whileInView="show"
-                viewport={{ once: true, amount: 0.15 }}
+                viewport={{ once: true, amount: 0.16 }}
                 custom={0.06}
                 variants={fadeUp}
               >
-                <div className="relative overflow-hidden">
-                  <img
-                    src={staticUrl('/images/farm/image-farm/IMG_4637.jpg')}
-                    alt="Artisan lunch at Café Omaru"
-                    className="h-60 w-full object-cover transition duration-700 group-hover:scale-[1.03] sm:h-full"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-estate/20" />
-                </div>
-                <div className="flex flex-col justify-center bg-white p-7">
-                  <p className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-gold">
-                    Midday Magic
-                  </p>
-                  <h3 className="mt-2 font-heading text-2xl font-semibold leading-tight text-charcoal">
-                    Artisan Lunch
-                  </h3>
-                  <p className="mt-3 font-body text-xs leading-relaxed text-stone">
-                    Seasonal dishes sourced fresh from our own farm and local Phillip Island producers. Light, fresh, and restorative.
-                  </p>
-                  <a
-                    href="#full-menu"
-                    className="mt-5 inline-flex items-center gap-1.5 font-body text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-gold-deep transition hover:text-gold"
-                  >
-                    Lunch Menu <ArrowRight className="h-3 w-3" aria-hidden />
-                  </a>
-                </div>
-              </motion.div>
-
-              {/* ── Top-right: Farm Dinner — full-bleed image overlay ── */}
-              <motion.div
-                className="group relative min-h-[260px] overflow-hidden rounded-sm"
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.15 }}
-                custom={0.12}
-                variants={fadeUp}
-              >
                 <img
-                  src={staticUrl('/images/farm/image-farm/IMG_4682.jpg')}
-                  alt="Farm dinner experience at Café Omaru"
-                  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+                  src={staticUrl('/images/farm/image-farm/IMG_0674.jpg')}
+                  alt="Farm dinner sunset at Café Omaru"
+                  className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.16)_contrast(1.08)_brightness(0.94)]"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-estate/80 via-estate/30 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-7">
-                  <p className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-gold">
-                    Evening Experience
+                <div className="absolute inset-0 bg-gradient-to-t from-estate/88 via-estate/35 to-black/10" />
+                <div className="absolute inset-x-0 bottom-0 p-7 md:p-9">
+                  <p className="font-body text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-gold">
+                    Featured Story
                   </p>
-                  <h3 className="mt-2 font-heading text-2xl font-semibold text-white">Farm Dinner</h3>
-                  <p className="mt-2 font-body text-xs leading-relaxed text-white/72">
-                    An elevated sunset dining journey through Omaru's best — available Thursday through Sunday evenings.
+                  <h3 className="mt-3 font-heading text-3xl font-semibold text-white md:text-4xl">
+                    Farm Dinner
+                  </h3>
+                  <p className="mt-3 max-w-xl font-body text-sm leading-relaxed text-white/78">
+                    An elevated sunset dining journey through Omaru&apos;s best produce, paired with warm hospitality and uninterrupted paddock views.
                   </p>
+                  <div className="mt-5 grid max-w-xl grid-cols-3 gap-2">
+                    <div className="relative overflow-hidden rounded-sm border border-white/20">
+                      <img
+                        src={staticUrl('/images/farm/image-farm/IMG_0620.jpg')}
+                        alt="Omaru sunset dining view"
+                        className="h-16 w-full object-cover [filter:saturate(1.15)_contrast(1.07)_brightness(0.97)]"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="relative overflow-hidden rounded-sm border border-white/20">
+                      <img
+                        src={staticUrl('/images/farm/image-farm/IMG_0644.jpg')}
+                        alt="Fresh fruit spread at Omaru"
+                        className="h-16 w-full object-cover [filter:saturate(1.14)_contrast(1.06)_brightness(1.02)]"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="relative overflow-hidden rounded-sm border border-white/20">
+                      <img
+                        src={staticUrl('/images/farm/image-farm/IMG_0869.jpg')}
+                        alt="Chef's starter platter at Omaru"
+                        className="h-16 w-full object-cover [filter:saturate(1.13)_contrast(1.08)_brightness(1.01)]"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                  <a
+                    href="#reserve"
+                    className="mt-6 inline-flex items-center gap-2 font-body text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-gold transition hover:text-white"
+                  >
+                    Reserve for Dinner <ArrowRight className="h-3 w-3" aria-hidden />
+                  </a>
                 </div>
-              </motion.div>
+              </motion.article>
 
-              {/* ── Bottom-left: Barista Coffee ── */}
-              <motion.div
-                className="group overflow-hidden rounded-sm bg-white"
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.1 }}
-                custom={0.18}
-                variants={fadeUp}
-              >
-                <div className="overflow-hidden">
-                  <img
-                    src={staticUrl('/images/farm/image-farm/IMG_7807.jpg')}
-                    alt="Barista coffee at Café Omaru"
-                    className="h-52 w-full object-cover transition duration-700 group-hover:scale-[1.03]"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="font-heading text-xl font-semibold text-charcoal">Barista Coffee</h3>
-                  <p className="mt-2 font-body text-xs leading-relaxed text-stone">
-                    Locally roasted single-origin beans, ground to order. Espresso, flat white, cold brew and more — from $5.00 per cup.
-                  </p>
-                </div>
-              </motion.div>
+              <div className="grid gap-4">
+                {/* Supporting 1: Artisan Lunch */}
+                <motion.article
+                  className="group overflow-hidden rounded-sm bg-white"
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.12 }}
+                  custom={0.12}
+                  variants={fadeUp}
+                >
+                  <div className="grid sm:grid-cols-[1.2fr_1fr]">
+                    <div className="overflow-hidden">
+                      <img
+                        src={staticUrl('/images/farm/image-farm/IMG_0642.jpg')}
+                        alt="Artisan lunch spread at Café Omaru"
+                        className="h-52 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.15)_contrast(1.07)_brightness(1.01)]"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="p-5">
+                      <p className="font-body text-[0.58rem] font-semibold uppercase tracking-[0.27em] text-gold">
+                        Midday Magic
+                      </p>
+                      <h3 className="mt-2 font-heading text-xl font-semibold text-charcoal">Artisan Lunch</h3>
+                      <p className="mt-2 font-body text-xs leading-relaxed text-stone">
+                        Seasonal dishes crafted from our farm produce and trusted local makers.
+                      </p>
+                    </div>
+                  </div>
+                </motion.article>
 
-              {/* ── Bottom-right: Phillip Island Wines ── */}
-              <motion.div
-                className="group overflow-hidden rounded-sm bg-white"
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.1 }}
-                custom={0.24}
-                variants={fadeUp}
-              >
-                <div className="overflow-hidden">
-                  <img
-                    src={staticUrl('/images/farm/image-farm/IMG_6051.jpg')}
-                    alt="Phillip Island wines at Café Omaru"
-                    className="h-52 w-full object-cover transition duration-700 group-hover:scale-[1.03]"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="font-heading text-xl font-semibold text-charcoal">Phillip Island Wines</h3>
-                  <p className="mt-2 font-body text-xs leading-relaxed text-stone">
-                    Curated regional varietals from Phillip Island and Mornington Peninsula. Specifically selected to pair with our farm-to-table menu.
-                  </p>
-                </div>
-              </motion.div>
+                {/* Supporting 2: Barista Coffee */}
+                <motion.article
+                  className="group overflow-hidden rounded-sm bg-white"
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.12 }}
+                  custom={0.18}
+                  variants={fadeUp}
+                >
+                  <div className="grid sm:grid-cols-[1.2fr_1fr]">
+                    <div className="overflow-hidden">
+                      <img
+                        src={staticUrl('/images/farm/image-farm/IMG_0641.jpg')}
+                        alt="Barista and artisan breads at Café Omaru"
+                        className="h-52 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.14)_contrast(1.08)_brightness(0.98)]"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="p-5">
+                      <p className="font-body text-[0.58rem] font-semibold uppercase tracking-[0.27em] text-gold">
+                        Morning Ritual
+                      </p>
+                      <h3 className="mt-2 font-heading text-xl font-semibold text-charcoal">Barista Coffee</h3>
+                      <p className="mt-2 font-body text-xs leading-relaxed text-stone">
+                        Freshly ground single-origin coffee with house-made bites and relaxed country warmth.
+                      </p>
+                    </div>
+                  </div>
+                </motion.article>
 
+                {/* Supporting 3: Phillip Island Wines */}
+                <motion.article
+                  className="group overflow-hidden rounded-sm bg-white"
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.12 }}
+                  custom={0.24}
+                  variants={fadeUp}
+                >
+                  <div className="grid sm:grid-cols-[1.2fr_1fr]">
+                    <div className="overflow-hidden">
+                      <img
+                        src={staticUrl('/images/farm/image-farm/IMG_6051.jpg')}
+                        alt="Phillip Island wines at Café Omaru"
+                        className="h-52 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.17)_contrast(1.1)_brightness(0.99)]"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="p-5">
+                      <p className="font-body text-[0.58rem] font-semibold uppercase tracking-[0.27em] text-gold">
+                        Cellar Selection
+                      </p>
+                      <h3 className="mt-2 font-heading text-xl font-semibold text-charcoal">Phillip Island Wines</h3>
+                      <p className="mt-2 font-body text-xs leading-relaxed text-stone">
+                        Regional varietals from Phillip Island and Mornington Peninsula, chosen to complement our menu.
+                      </p>
+                    </div>
+                  </div>
+                </motion.article>
+              </div>
             </div>
           </div>
         </section>
@@ -448,26 +563,92 @@ export function CafePage() {
 
         {/* ══════════════════════════════════════════
             WHERE THE PADDOCK MEETS THE PLATE
-            Left: landscape image  |  Right: text + stats
+            Left: global-view media collage  |  Right: text + stats
         ══════════════════════════════════════════ */}
-        <section className="bg-white py-24 md:py-32">
+        <section ref={experienceSectionRef} className="bg-white py-24 md:py-32">
           <div className="mx-auto grid max-w-[92vw] items-center gap-12 px-5 md:grid-cols-2 md:gap-16 lg:gap-24">
 
-            {/* Left: landscape photo */}
+            {/* Left: global-view media collage */}
             <motion.div
-              className="overflow-hidden rounded-sm"
+              className="grid gap-3"
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, amount: 0.2 }}
               custom={0}
               variants={fadeUp}
             >
-              <img
-                src={staticUrl('/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG')}
-                alt="Breathtaking paddock and ocean views at Omaru Farm"
-                className="h-80 w-full object-cover md:h-[460px]"
-                loading="lazy"
-              />
+              <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['sunset', 'evening']) ? 'ring-1 ring-gold/45' : ''}`}>
+                <video
+                  src={staticUrl('/images/farm/image-farm/e16abd906ce342f0bd27ac365d346401.mov')}
+                  poster={staticUrl('/images/farm/image-farm/20260127_204402.jpg')}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className="h-[320px] w-full object-cover transition duration-700 group-hover:scale-[1.02] md:h-[420px] [filter:saturate(1.14)_contrast(1.08)_brightness(0.95)]"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-estate/48 via-transparent to-transparent" />
+                <p className="pointer-events-none absolute left-4 top-4 rounded-sm border border-white/30 bg-white/12 px-2.5 py-1 font-body text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-white/92 backdrop-blur-md">
+                  Sunset Panorama
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['morning', 'lunch']) ? 'ring-1 ring-gold/45' : ''}`}>
+                  <video
+                    src={staticUrl('/images/farm/image-farm/IMG_0659.MOV')}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="h-40 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.12)_contrast(1.06)_brightness(0.98)]"
+                  />
+                  <p className="pointer-events-none absolute left-2 top-2 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
+                    Farm Walk
+                  </p>
+                </div>
+
+                <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['sunset', 'evening']) ? 'ring-1 ring-gold/45' : ''}`}>
+                  <video
+                    src={staticUrl('/images/farm/image-farm/IMG_0669.MOV')}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="h-40 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.12)_contrast(1.06)_brightness(0.98)]"
+                  />
+                  <p className="pointer-events-none absolute left-2 top-2 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
+                    Golden Hour
+                  </p>
+                </div>
+
+                <div className={`group relative overflow-hidden rounded-sm border border-estate/10 bg-surface ${isMediaActive(['morning', 'evening']) ? 'ring-1 ring-gold/45' : ''}`}>
+                  <img
+                    src={staticUrl('/images/farm/image-farm/IMG_0781.jpg')}
+                    alt="Guests enjoying the indoor Omaru Farm cafe atmosphere"
+                    className="h-40 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.13)_contrast(1.08)_brightness(0.99)]"
+                    loading="lazy"
+                  />
+                  <p className="pointer-events-none absolute left-2 top-2 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
+                    Dining Hall
+                  </p>
+                </div>
+              </div>
+
+              <div className={`group relative overflow-hidden rounded-sm border border-estate/10 bg-surface ${isMediaActive(['sunset', 'lunch']) ? 'ring-1 ring-gold/45' : ''}`}>
+                <img
+                  src={staticUrl('/images/farm/image-farm/20260127_204402.jpg')}
+                  alt="Omaru farm paddock and cattle at golden hour"
+                  className="h-44 w-full object-cover transition duration-700 group-hover:scale-[1.02] [filter:saturate(1.13)_contrast(1.08)_brightness(0.97)]"
+                  loading="lazy"
+                />
+                <p className="pointer-events-none absolute left-3 top-3 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
+                  Cattle & Coastline
+                </p>
+              </div>
             </motion.div>
 
             {/* Right: content + stats */}
@@ -481,6 +662,23 @@ export function CafePage() {
               <p className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold">
                 The Experience
               </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {daypartOptions.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => setActiveDaypart(option.key)}
+                    className={`rounded-sm border px-3 py-1.5 font-body text-[0.62rem] font-semibold uppercase tracking-[0.16em] transition ${
+                      option.key === activeDaypart
+                        ? 'border-gold/65 bg-gold/10 text-gold-deep'
+                        : 'border-estate/14 text-stone hover:border-gold/35 hover:text-charcoal'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-3 font-body text-sm leading-relaxed text-stone">{activeDaypartBlurb}</p>
               <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
                 Where the Paddock<br />Meets the Plate.
               </h2>
@@ -492,23 +690,38 @@ export function CafePage() {
               </p>
 
               {/* Stats */}
-              <div className="mt-10 flex gap-14">
-                <div>
+              <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-sm border border-estate/10 bg-surface p-5">
                   <p className="font-heading text-5xl font-semibold leading-none text-charcoal">
-                    360<span className="text-gold">°</span>
+                    {panoramicCount}<span className="text-gold">°</span>
                   </p>
                   <p className="mt-2 font-body text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone">
                     Panoramic Views
                   </p>
                 </div>
-                <div>
+                <div className="rounded-sm border border-estate/10 bg-surface p-5">
                   <p className="font-heading text-5xl font-semibold leading-none text-charcoal">
-                    100<span className="text-gold">%</span>
+                    {produceCount}<span className="text-gold">%</span>
                   </p>
                   <p className="mt-2 font-body text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone">
                     Farm-Grown Produce
                   </p>
                 </div>
+              </div>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <a
+                  href="#reserve"
+                  className="inline-flex h-11 items-center rounded-sm px-6 font-body text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-105"
+                  style={{ background: GOLD_GRADIENT }}
+                >
+                  Book a Table
+                </a>
+                <a
+                  href="#full-menu"
+                  className="inline-flex h-11 items-center rounded-sm border border-estate/16 bg-white px-6 font-body text-xs font-semibold uppercase tracking-[0.14em] text-charcoal transition hover:border-gold/45 hover:text-gold-deep"
+                >
+                  View Full Menu
+                </a>
               </div>
             </motion.div>
 
