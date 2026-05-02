@@ -103,7 +103,7 @@ export function AboutPage() {
       <main>
 
         {/* ══════════════════════════════════════════
-            HERO — centered editorial text with bottom fade
+            HERO — centered editorial text
         ══════════════════════════════════════════ */}
         <section className="relative flex min-h-[82vh] items-center justify-center overflow-hidden bg-surface">
           <img
@@ -117,8 +117,6 @@ export function AboutPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/25 to-black/35" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/8 via-transparent to-black/6" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.34)_0%,rgba(0,0,0,0.16)_38%,transparent_72%)]" />
-          {/* Bottom fade to surface like reference */}
-          <div className="absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-b from-transparent via-surface/45 to-surface/96" />
 
           <div className="relative z-10 mx-auto w-full max-w-[92vw] px-5 text-center">
             <motion.p

@@ -175,8 +175,6 @@ export function HomePage() {
           {/* Overlays */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-black/28 to-black/52" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/12 via-transparent to-black/8" />
-          {/* Bottom fade to match editorial hero reference */}
-          <div className="absolute inset-x-0 bottom-0 h-[34%] bg-gradient-to-b from-transparent via-surface/50 to-surface/92" />
 
           {/* Content — centered */}
           <div className="relative z-10 flex flex-col items-center px-6 pb-36 pt-20 text-center">
@@ -245,9 +243,9 @@ export function HomePage() {
             ))}
           </div>
 
-          {/* Bottom info bar */}
-          <div className="absolute inset-x-0 bottom-0 z-10 bg-white/95 backdrop-blur-sm">
-            <div className="mx-auto flex max-w-[92vw] flex-wrap items-center justify-between gap-3 px-5 py-3 font-body text-xs text-stone">
+          {/* Bottom info bar — dark glass so the hero image stays visible (no white fade) */}
+          <div className="absolute inset-x-0 bottom-0 z-10 border-t border-white/10 bg-black/45 backdrop-blur-md">
+            <div className="mx-auto flex max-w-[92vw] flex-wrap items-center justify-between gap-3 px-5 py-3 font-body text-xs text-white/85">
               <span className="flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5 shrink-0 text-gold" />
                 776 Ventnor Road, Ventnor, Phillip Island VIC 3922
