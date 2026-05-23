@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, Clock3, MapPin, PackageSearch, Search, Truck, Wheat, X } from 'lucide-react'
+import { ArrowRight, Clock3, Leaf, MapPin, PackageSearch, Search, Wheat, X } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { productCatalog } from '@/data/productCatalog'
 import { productImageUrl } from '@/utils/productImage'
@@ -112,8 +112,6 @@ export function StorePage() {
   const [sortBy,   setSortBy]   = useState<'name' | 'price-low' | 'price-high'>('name')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [email, setEmail] = useState('')
-  const [subState, setSubState] = useState<'idle' | 'sent'>('idle')
   const pageSize = 12
 
   /* ── API fetch: category order ── */
@@ -220,10 +218,10 @@ export function StorePage() {
   return (
     <>
       <Helmet>
-        <title>Farm Store | Omaru — Pantry Essentials, Grown with Intent</title>
+        <title>Farm Store | Omaru — Organic, Homemade Pantry Goods</title>
         <meta
           name="description"
-          content="Cold-pressed olive oils, artisan honeys, seasonings, and pantry staples — harvested from Omaru Farm, Phillip Island. Shop the full 2026 collection."
+          content="Organic, homemade pickles, herbs & spices, chutneys and pantry favourites — year-round production from Omaru Farm, Phillip Island."
         />
       </Helmet>
 
@@ -235,7 +233,7 @@ export function StorePage() {
         <section className="relative flex min-h-[60vh] items-center justify-center overflow-hidden">
           <img
             src={staticUrl('/images/products/20260311_130334.jpg')}
-            alt="Omaru Farm Store — artisanal pantry products on warm wooden shelves"
+            alt="Omaru Farm Store — organic homemade pickles, herbs, spices and chutneys"
             className="absolute inset-0 h-full w-full object-cover"
             loading="eager"
             fetchPriority="high"
@@ -257,17 +255,32 @@ export function StorePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             >
-              Pantry Essentials,<br />
+              Organic &amp; Homemade,<br />
               <span className="italic text-gold">Grown with Intent</span>
             </motion.h1>
             <motion.p
-              className="mx-auto mt-5 max-w-md font-body text-base leading-[1.75] text-white/72"
+              className="mx-auto mt-5 max-w-lg font-body text-base leading-[1.75] text-white/82"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.35 }}
             >
-              Small-batch oils, honeys, preserves and pantry staples — curated from the land and ready for your table.
+              We have year-round production of pickles, herbs &amp; spices, chutneys and more — every jar and blend made by hand on the farm.
             </motion.p>
+            <motion.div
+              className="mx-auto mt-5 flex flex-wrap items-center justify-center gap-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.42 }}
+            >
+              {['Organic', 'Homemade', 'Grown with Intent'].map((label) => (
+                <span
+                  key={label}
+                  className="rounded-sm border border-white/25 bg-white/10 px-3 py-1 font-body text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm"
+                >
+                  {label}
+                </span>
+              ))}
+            </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -289,39 +302,50 @@ export function StorePage() {
             INFO STRIP
         ══════════════════════════════════════════ */}
         <section className="bg-white">
-          <div className="mx-auto grid max-w-[92vw] gap-6 px-5 py-8 sm:grid-cols-3">
-            <div className="flex items-start gap-3">
+          <motion.div className="mx-auto grid max-w-[92vw] gap-6 px-5 py-8 sm:grid-cols-2 lg:grid-cols-4">
+            <motion.div className="flex items-start gap-3">
+              <Leaf className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
+              <motion.div>
+                <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-charcoal">
+                  Organic &amp; Homemade
+                </p>
+                <p className="mt-1 font-body text-xs leading-relaxed text-stone">
+                  Every jar and blend is made by hand on the farm, with organic ingredients where possible.
+                </p>
+              </motion.div>
+            </motion.div>
+            <motion.div className="flex items-start gap-3">
+              <Wheat className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
+              <motion.div>
+                <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-charcoal">
+                  Grown with Intent
+                </p>
+                <p className="mt-1 font-body text-xs leading-relaxed text-stone">
+                  Pickles, herbs &amp; spices, chutneys and more — available throughout the year.
+                </p>
+              </motion.div>
+            </motion.div>
+            <motion.div className="flex items-start gap-3">
               <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
-              <div>
+              <motion.div>
                 <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-charcoal">
                   Trading Hours
                 </p>
-                <p className="mt-1 font-body text-xs text-stone">Mon–Sat 9:00 AM – 5:00 PM</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
+                <p className="mt-1 font-body text-xs text-stone">Mon–Sun 9:00 AM – 5:00 PM</p>
+              </motion.div>
+            </motion.div>
+            <motion.div className="flex items-start gap-3">
               <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
-              <div>
+              <motion.div>
                 <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-charcoal">
                   Find Us
                 </p>
                 <p className="mt-1 font-body text-xs text-stone">
                   776 Ventnor Road, Ventnor, VIC 3922
                 </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <Truck className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
-              <div>
-                <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-charcoal">
-                  Local Delivery
-                </p>
-                <p className="mt-1 font-body text-xs text-stone">
-                  Available across Phillip Island
-                </p>
-              </div>
-            </div>
-          </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
         </section>
 
         {/* ══════════════════════════════════════════
@@ -340,10 +364,10 @@ export function StorePage() {
                 variants={fadeUp}
               >
                 <h2 className="font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
-                  Artisanal Collections
+                  Homemade Pantry Collections
                 </h2>
-                <p className="mt-2 max-w-sm font-body text-sm leading-[1.75] text-stone">
-                  Every item has been a testament to the cycles of the seasons and our commitment to artisanal heritage quality.
+                <p className="mt-2 max-w-md font-body text-sm leading-[1.75] text-stone">
+                  Organic, homemade pickles, herbs &amp; spices, chutneys and pantry favourites — crafted year-round on the farm.
                 </p>
               </motion.div>
 
@@ -642,60 +666,11 @@ export function StorePage() {
               <Wheat className="h-8 w-8 text-gold" aria-hidden />
             </div>
             <blockquote className="font-heading text-2xl font-semibold italic leading-[1.45] tracking-[-0.01em] text-charcoal md:text-3xl">
-              "We believe that the most beautiful things are those which are made slowly, with respect for the land and the hands that tend it."
+              &ldquo;The finest pantry goods are organic, homemade, and made with patience — from our farm to your table, all year round.&rdquo;
             </blockquote>
             <p className="mt-6 font-body text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-gold">
               The Omaru Philosophy
             </p>
-          </motion.div>
-        </section>
-
-        {/* ══════════════════════════════════════════
-            STAY CONNECTED — newsletter
-        ══════════════════════════════════════════ */}
-        <section className="bg-white py-20 md:py-24">
-          <motion.div
-            className="mx-auto max-w-md px-6 text-center"
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.4 }}
-            custom={0}
-            variants={fadeUp}
-          >
-            <h2 className="font-heading text-3xl font-semibold tracking-[-0.02em] text-charcoal md:text-4xl">
-              Stay Connected
-            </h2>
-            <p className="mx-auto mt-3 font-body text-sm leading-[1.75] text-stone">
-              Join our mailing list to hear about new harvests, seasonal releases and upcoming store events.
-            </p>
-
-            {subState === 'sent' ? (
-              <div className="mt-8 rounded-sm bg-surface py-8">
-                <p className="font-heading text-xl font-semibold text-charcoal">You're on the list!</p>
-                <p className="mt-1 font-body text-sm text-stone">We'll be in touch with the next harvest.</p>
-              </div>
-            ) : (
-              <form
-                className="mt-8 flex gap-0 overflow-hidden rounded-sm shadow-[0_4px_24px_rgba(26,18,8,0.07)]"
-                onSubmit={(e) => { e.preventDefault(); if (email) setSubState('sent') }}
-              >
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address"
-                  className="flex-1 border-0 bg-white px-5 py-3.5 font-body text-sm text-charcoal placeholder-stone/45 outline-none"
-                />
-                <button
-                  type="submit"
-                  className="shrink-0 px-6 py-3.5 font-body text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:brightness-105"
-                  style={{ background: GOLD_GRADIENT }}
-                >
-                  Subscribe
-                </button>
-              </form>
-            )}
           </motion.div>
         </section>
 

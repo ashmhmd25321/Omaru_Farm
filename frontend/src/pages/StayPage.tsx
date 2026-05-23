@@ -6,6 +6,8 @@ import {
   Bird,
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Leaf,
   MapPin,
   PawPrint,
@@ -13,9 +15,81 @@ import {
   UtensilsCrossed,
   Users,
   Waves,
+  X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { staticUrl } from '@/utils/staticUrl'
+
+type GalleryPhoto = { src: string; label: string }
+
+const roseSrc = (n: number) =>
+  staticUrl(`/images/holiday-homes/rose/rose-${String(n).padStart(2, '0')}.jpg`)
+
+// Ordered to match Airbnb's gallery categories: Living room → Kitchen → Dining →
+// Bedrooms → Bathrooms → Laundry → Exterior → More
+const ROSE_GALLERY: GalleryPhoto[] = [
+  { src: roseSrc(1),  label: 'Living room' },
+  { src: roseSrc(2),  label: 'Living room' },
+  { src: roseSrc(12), label: 'Living room' },
+  { src: roseSrc(17), label: 'Living room' },
+  { src: roseSrc(4),  label: 'Kitchen' },
+  { src: roseSrc(8),  label: 'Kitchen' },
+  { src: roseSrc(3),  label: 'Dining area' },
+  { src: roseSrc(5),  label: 'Dining area' },
+  { src: roseSrc(10), label: 'Bedroom 1' },
+  { src: roseSrc(13), label: 'Bedroom 1' },
+  { src: roseSrc(16), label: 'Bedroom 1' },
+  { src: roseSrc(14), label: 'Bedroom 2' },
+  { src: roseSrc(15), label: 'Bedroom 3' },
+  { src: roseSrc(6),  label: 'Bedroom 4' },
+  { src: roseSrc(9),  label: 'Bathroom 1' },
+  { src: roseSrc(11), label: 'Bathroom 1' },
+  { src: roseSrc(7),  label: 'Bathroom 2' },
+  { src: roseSrc(19), label: 'Laundry' },
+  { src: roseSrc(20), label: 'Exterior' },
+  { src: roseSrc(21), label: 'Exterior' },
+  { src: roseSrc(22), label: 'Exterior' },
+  { src: roseSrc(18), label: 'More of the home' },
+  { src: roseSrc(23), label: 'More of the home' },
+]
+
+const jasmineSrc = (n: number) =>
+  staticUrl(`/images/holiday-homes/jasmine/jasmine-${String(n).padStart(2, '0')}.jpg`)
+
+// Files were downloaded in Airbnb's gallery section order, so jasmine-NN.jpg
+// already maps 1-to-1 with the labels below.
+const JASMINE_GALLERY: GalleryPhoto[] = [
+  { src: jasmineSrc(1),  label: 'Living room' },
+  { src: jasmineSrc(2),  label: 'Living room' },
+  { src: jasmineSrc(3),  label: 'Living room' },
+  { src: jasmineSrc(4),  label: 'Kitchen' },
+  { src: jasmineSrc(5),  label: 'Kitchen' },
+  { src: jasmineSrc(6),  label: 'Kitchen' },
+  { src: jasmineSrc(7),  label: 'Dining area' },
+  { src: jasmineSrc(8),  label: 'Bedroom 1' },
+  { src: jasmineSrc(9),  label: 'Bedroom 1' },
+  { src: jasmineSrc(10), label: 'Bedroom 2' },
+  { src: jasmineSrc(11), label: 'Bedroom 2' },
+  { src: jasmineSrc(12), label: 'Bedroom 3' },
+  { src: jasmineSrc(13), label: 'Bedroom 3' },
+  { src: jasmineSrc(14), label: 'Bedroom 4' },
+  { src: jasmineSrc(15), label: 'Bedroom 4' },
+  { src: jasmineSrc(16), label: 'Bedroom 5' },
+  { src: jasmineSrc(17), label: 'Bedroom 5' },
+  { src: jasmineSrc(18), label: 'Bathroom 1' },
+  { src: jasmineSrc(19), label: 'Bathroom 2' },
+  { src: jasmineSrc(20), label: 'Bathroom 2' },
+  { src: jasmineSrc(21), label: 'Half bathroom' },
+  { src: jasmineSrc(22), label: 'Backyard' },
+  { src: jasmineSrc(23), label: 'Patio' },
+  { src: jasmineSrc(24), label: 'Front yard' },
+  { src: jasmineSrc(25), label: 'Laundry' },
+  { src: jasmineSrc(26), label: 'Exterior' },
+  { src: jasmineSrc(27), label: 'Game room' },
+  { src: jasmineSrc(28), label: 'Game room' },
+  { src: jasmineSrc(29), label: 'More of the home' },
+]
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
 
@@ -28,76 +102,110 @@ const fadeUp = {
   }),
 }
 
-const STAYS = [
+type StayGroup = 'on-farm' | 'holiday-home'
+
+const ON_FARM_STAYS = [
   {
     id: 'glass-pavilion',
+    group: 'on-farm' as StayGroup,
     name: 'The Glass Pavilion',
-    type: 'On-Farm · Self-Contained',
+    type: 'On-Farm · Self-Contained Cabin',
     badge: 'Most Popular',
     tagline: 'Wake to the sound of the farm.',
     description:
-      'Established in 1952, a quintessential open-farm pavilion. Designed for those who seek to enjoy life in the open paddock without compromising on comfort. A pure farm experience with the finest produce on your doorstep.',
+      'A self-contained cabin on Omaru Farm — established in 1952 as a quintessential open-farm pavilion. Enjoy life in the open paddock without compromising on comfort, with the finest farm produce on your doorstep.',
     amenities: [
       { Icon: BedDouble, label: 'King bed + sofa bed' },
       { Icon: Waves, label: 'Private deck, ocean views' },
       { Icon: UtensilsCrossed, label: 'Self-contained kitchen' },
     ],
     guests: '2–4',
+    bookingUrl: null,
     image: staticUrl('/images/farm/IMG_9130.jpg'),
+    gallery: undefined as GalleryPhoto[] | undefined,
     imagePosition: 'left' as const,
   },
   {
     id: 'stone-cottage',
+    group: 'on-farm' as StayGroup,
     name: 'Heritage Stone Cottage',
-    type: 'On-Farm · Heritage Stay',
+    type: 'On-Farm · Self-Contained Cabin',
     badge: null,
     tagline: 'Surrounded by olive trees and open skies.',
     description:
-      'Nestled among ancient olive groves, the Heritage Stone Cottage is a sanctuary of slow living. The stone walls carry warmth from the land while the views from the veranda stretch across the Phillip Island farmscape.',
+      'A self-contained heritage cabin on Omaru Farm, nestled among ancient olive groves. Stone walls carry warmth from the land while veranda views stretch across the Phillip Island farmscape.',
     amenities: [
       { Icon: BedDouble, label: 'Queen & twin rooms' },
       { Icon: Leaf, label: 'Olive grove outlook' },
       { Icon: PawPrint, label: 'Dog-friendly outdoors' },
     ],
     guests: '2–4',
+    bookingUrl: null,
     image: staticUrl('/images/farm/2025-01-12-8.jpg'),
-    imagePosition: 'right' as const,
-  },
-  {
-    id: 'ventnor-retreat',
-    name: 'Ventnor Retreat',
-    type: 'Holiday Home · Off-Farm',
-    badge: null,
-    tagline: 'Your private Phillip Island base.',
-    description:
-      'A beautifully furnished holiday home minutes from Omaru Farm. Perfect for families wanting the freedom of a full home — with easy access to the farm, the café, and every Phillip Island experience.',
-    amenities: [
-      { Icon: Users, label: 'Sleeps up to 6 guests' },
-      { Icon: MapPin, label: 'Minutes from Omaru Farm' },
-      { Icon: Bird, label: '5 min to Penguin Parade' },
-    ],
-    guests: '4–6',
-    image: staticUrl('/images/farm/IMG_3924.jpg'),
-    imagePosition: 'left' as const,
-  },
-  {
-    id: 'island-cottage',
-    name: 'Island Cottage',
-    type: 'Holiday Home · Off-Farm',
-    badge: null,
-    tagline: 'Phillip Island charm, close to everything.',
-    description:
-      'A charming cottage with warm interiors and a relaxed island feel. Close to Cowes and major attractions, with easy access to Omaru Farm for dining and farm experiences.',
-    amenities: [
-      { Icon: BedDouble, label: '2 bedrooms, sleeps 4' },
-      { Icon: MapPin, label: '10 minutes to Cowes' },
-      { Icon: Bird, label: 'Easy Penguin Parade access' },
-    ],
-    guests: '2–4',
-    image: staticUrl('/images/farm/20210602_130149.jpg'),
+    gallery: undefined as GalleryPhoto[] | undefined,
     imagePosition: 'right' as const,
   },
 ]
+
+const HOLIDAY_HOME_STAYS = [
+  {
+    id: 'rose-by-omaru-farm',
+    group: 'holiday-home' as StayGroup,
+    name: 'Rose by Omaru Farm',
+    type: 'Holiday Home · Phillip Island',
+    badge: null,
+    tagline: 'The perfect island getaway in Cowes.',
+    description:
+      'A spacious four-bedroom holiday home in the heart of Cowes, Phillip Island. Relax in the outdoor hot tub after exploring the island, unwind in cosy living spaces, and enjoy a fully equipped kitchen close to local beaches, cafes, shops, and the Penguin Parade.',
+    amenities: [
+      { Icon: Users, label: '10 guests' },
+      { Icon: BedDouble, label: '4 bedrooms, 5 beds, 2 baths' },
+      { Icon: Waves, label: 'Outdoor hot tub' },
+      { Icon: UtensilsCrossed, label: 'Kitchen, wifi, parking' },
+    ],
+    guests: '10',
+    bookingUrl: 'https://www.airbnb.com.au/rooms/1377277021524589149?guests=1&adults=1&s=67&unique_share_id=9414357d-89c2-4786-b862-7b94c999640f&source_impression_id=p3_1779517969_P3IRQGtTZUwYTH6T',
+    image: ROSE_GALLERY[0]!.src,
+    gallery: ROSE_GALLERY,
+    imagePosition: 'left' as const,
+  },
+  {
+    id: 'jasmine-by-omaru-farm',
+    group: 'holiday-home' as StayGroup,
+    name: 'Jasmine by Omaru Farm',
+    type: 'Holiday Home · Phillip Island',
+    badge: null,
+    tagline: 'A peaceful five-bedroom retreat near Cowes.',
+    description:
+      'A warm and welcoming five-bedroom holiday home for families or friends seeking a peaceful Phillip Island escape. Walk to Cowes town centre, cafes, and the foreshore, enjoy a game on the pool table or relaxed barbeque, and explore Red Rocks Beach, the Grand Prix Circuit, the Penguin Parade, and the Nobbies.',
+    amenities: [
+      { Icon: Users, label: '12 guests' },
+      { Icon: BedDouble, label: '5 bedrooms, 6 beds, 2.5 baths' },
+      { Icon: MapPin, label: 'Walk to Cowes and foreshore' },
+      { Icon: UtensilsCrossed, label: 'Kitchen, wifi, workspace, parking' },
+    ],
+    guests: '12',
+    bookingUrl: 'https://www.airbnb.com.au/rooms/1387952701303020884?guests=1&adults=1&s=67&unique_share_id=19c46540-f704-42d5-9848-e975de620952&source_impression_id=p3_1779517989_P34-Oun_Clb_uWZm',
+    image: JASMINE_GALLERY[0]!.src,
+    gallery: JASMINE_GALLERY,
+    imagePosition: 'right' as const,
+  },
+]
+
+const STAY_GROUPS = [
+  {
+    id: 'on-farm',
+    title: 'On the Farm',
+    lead: 'Only our self-contained cabins sit on Omaru Farm — wake to paddocks, farm sounds, and views across the land.',
+    stays: ON_FARM_STAYS,
+  },
+  {
+    id: 'holiday-homes',
+    title: 'Holiday Homes on Phillip Island',
+    lead: 'Rose and Jasmine by Omaru Farm are separate holiday homes in Cowes, available for accommodation with easy access to Omaru Farm, beaches, cafes, and island attractions.',
+    stays: HOLIDAY_HOME_STAYS,
+  },
+] as const
 
 const EXPERIENCES = [
   { Icon: Sunrise,         label: 'Taste the Life',      desc: 'Savour breakfast on your private deck as mist lifts from the paddocks at dawn.' },
@@ -117,13 +225,31 @@ export function StayPage() {
   const [guests, setGuests]     = useState('2 Guests')
   const [submitted, setSubmitted] = useState(false)
 
+  const [lightbox, setLightbox] = useState<{ images: GalleryPhoto[]; index: number; name: string } | null>(null)
+
+  useEffect(() => {
+    if (!lightbox) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightbox(null)
+      if (e.key === 'ArrowRight') setLightbox((l) => (l ? { ...l, index: (l.index + 1) % l.images.length } : l))
+      if (e.key === 'ArrowLeft') setLightbox((l) => (l ? { ...l, index: (l.index - 1 + l.images.length) % l.images.length } : l))
+    }
+    window.addEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [lightbox])
+
   return (
     <>
       <Helmet>
-        <title>Stay at Omaru Farm | Self-Contained Cabins & Holiday Homes · Phillip Island</title>
+        <title>Stay at Omaru Farm | On-Farm Cabins & Phillip Island Holiday Homes</title>
         <meta
           name="description"
-          content="Stay at Omaru Farm on Phillip Island. Self-contained cabins with breathtaking views, plus holiday homes. Perfect base for the Penguin Parade and all island attractions."
+          content="Self-contained cabins on Omaru Farm, plus separate holiday homes on Phillip Island. Farm stays, dark skies, and easy access to the Penguin Parade."
         />
       </Helmet>
 
@@ -161,7 +287,7 @@ export function StayPage() {
                 of <span className="italic text-gold">Silence</span>
               </h1>
               <p className="mt-5 font-body text-base leading-[1.78] text-white/72 md:text-lg">
-                Self-contained cabins and holiday homes nestled within Omaru Farm — breathtaking views, farm sounds, and total privacy just 5 minutes from the Penguin Parade.
+                Only our self-contained cabins are on Omaru Farm. Holiday homes are separate properties on Phillip Island — each a comfortable base minutes from the farm and the Penguin Parade.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
@@ -201,13 +327,24 @@ export function StayPage() {
                 The Stays
               </h2>
               <p className="mt-4 max-w-xl font-body text-base leading-[1.75] text-stone">
-                Each property at Omaru has been crafted to make you feel embedded in the land while allowing all the comforts that let you truly unwind on Phillip Island.
+                Stay in a self-contained cabin on the farm, or choose a holiday home elsewhere on Phillip Island — both keep you close to Omaru, the café, and island adventures.
               </p>
             </motion.div>
 
-            {/* Alternating rows */}
-            <div className="space-y-20 md:space-y-28">
-              {STAYS.map((stay, idx) => {
+            <motion.div className="space-y-24 md:space-y-32">
+              {STAY_GROUPS.map((group, groupIdx) => (
+                <motion.div key={group.id}>
+                  <div className={`mb-12 ${groupIdx > 0 ? 'border-t border-charcoal/8 pt-12' : ''}`}>
+                    <h3 className="font-heading text-2xl font-semibold tracking-[-0.02em] text-charcoal md:text-3xl">
+                      {group.title}
+                    </h3>
+                    <p className="mt-3 max-w-2xl font-body text-sm leading-[1.75] text-stone">
+                      {group.lead}
+                    </p>
+                  </div>
+
+                  <div className="space-y-20 md:space-y-28">
+              {group.stays.map((stay, idx) => {
                 const isLeft = stay.imagePosition === 'left'
                 return (
                   <motion.div
@@ -219,22 +356,74 @@ export function StayPage() {
                     custom={idx * 0.05}
                     variants={fadeUp}
                   >
-                    {/* Image */}
-                    <div className="group relative overflow-hidden rounded-sm">
-                      {stay.badge && (
-                        <span
-                          className="absolute left-4 top-4 z-10 rounded-sm px-3 py-1 font-body text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-white"
-                          style={{ background: GOLD_GRADIENT }}
-                        >
-                          {stay.badge}
-                        </span>
+                    {/* Image + optional gallery */}
+                    <div>
+                      <div className="group relative overflow-hidden rounded-sm">
+                        {stay.badge && (
+                          <span
+                            className="absolute left-4 top-4 z-10 rounded-sm px-3 py-1 font-body text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-white"
+                            style={{ background: GOLD_GRADIENT }}
+                          >
+                            {stay.badge}
+                          </span>
+                        )}
+                        {stay.gallery && stay.gallery.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => setLightbox({ images: stay.gallery!, index: 0, name: stay.name })}
+                            className="block h-72 w-full overflow-hidden md:h-[380px]"
+                            aria-label={`Open ${stay.name} photo gallery`}
+                          >
+                            <img
+                              src={stay.image}
+                              alt={`${stay.name} — ${stay.gallery[0]!.label}`}
+                              className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+                              loading="lazy"
+                            />
+                            <span className="pointer-events-none absolute bottom-3 left-3 rounded-sm bg-black/55 px-2.5 py-1 font-body text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+                              {stay.gallery[0]!.label}
+                            </span>
+                            <span className="pointer-events-none absolute bottom-3 right-3 rounded-sm bg-black/55 px-2.5 py-1 font-body text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+                              {stay.gallery.length} photos
+                            </span>
+                          </button>
+                        ) : (
+                          <img
+                            src={stay.image}
+                            alt={stay.name}
+                            className="h-72 w-full object-cover transition duration-700 group-hover:scale-[1.03] md:h-[380px]"
+                            loading="lazy"
+                          />
+                        )}
+                      </div>
+                      {stay.gallery && stay.gallery.length > 1 && (
+                        <div className="mt-3 grid grid-cols-5 gap-2">
+                          {stay.gallery.slice(1, 6).map((photo, gIdx) => (
+                            <button
+                              type="button"
+                              key={photo.src}
+                              onClick={() => setLightbox({ images: stay.gallery!, index: gIdx + 1, name: stay.name })}
+                              className="group relative overflow-hidden rounded-sm"
+                              aria-label={`Open ${photo.label} photo of ${stay.name}`}
+                            >
+                              <img
+                                src={photo.src}
+                                alt={`${stay.name} — ${photo.label}`}
+                                className="h-16 w-full object-cover transition duration-500 group-hover:scale-[1.05] md:h-20"
+                                loading="lazy"
+                              />
+                              <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-1.5 pb-1 pt-3 text-center font-body text-[0.55rem] font-semibold uppercase tracking-[0.12em] text-white">
+                                {photo.label}
+                              </span>
+                              {gIdx === 4 && stay.gallery!.length > 6 && (
+                                <span className="absolute inset-0 flex items-center justify-center bg-black/55 font-body text-xs font-semibold text-white">
+                                  +{stay.gallery!.length - 6}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
                       )}
-                      <img
-                        src={stay.image}
-                        alt={stay.name}
-                        className="h-72 w-full object-cover transition duration-700 group-hover:scale-[1.03] md:h-[380px]"
-                        loading="lazy"
-                      />
                     </div>
 
                     {/* Content */}
@@ -260,16 +449,21 @@ export function StayPage() {
 
                       {/* Enquire link */}
                       <a
-                        href="#book"
+                        href={stay.bookingUrl ?? '#book'}
+                        target={stay.bookingUrl ? '_blank' : undefined}
+                        rel={stay.bookingUrl ? 'noreferrer' : undefined}
                         className="mt-7 inline-flex items-center gap-2 font-body text-xs font-semibold uppercase tracking-[0.16em] text-gold-deep transition hover:text-gold"
                       >
-                        Enquire to Book Details <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                        {stay.bookingUrl ? 'View on Airbnb' : 'Enquire to Book Details'} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
                       </a>
                     </div>
                   </motion.div>
                 )
               })}
-            </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
         </section>
 
@@ -313,7 +507,7 @@ export function StayPage() {
               >
                 <img
                   src={staticUrl('/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG')}
-                  alt="Stargazing and silence at Omaru Farm, Phillip Island"
+                  alt="Night sky at Omaru Farm — stargazing and Aurora Australis, Phillip Island"
                   className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
                   loading="lazy"
                 />
@@ -326,8 +520,8 @@ export function StayPage() {
                   <h3 className="mt-2 font-heading text-3xl font-semibold text-white">
                     Cosmic Silence
                   </h3>
-                  <p className="mt-3 max-w-xs font-body text-sm leading-relaxed text-white/65">
-                    Experience absolute darkness and absolute quiet. Our farm sits away from all light pollution — the night sky at Omaru is extraordinary.
+                  <p className="mt-3 max-w-sm font-body text-sm leading-relaxed text-white/65">
+                    Experience absolute darkness and absolute quiet. Away from city light pollution, the night sky at Omaru is extraordinary — and on clear southern nights, guests may be fortunate enough to witness the Aurora Australis from the farm.
                   </p>
                 </div>
               </motion.div>
@@ -495,25 +689,25 @@ export function StayPage() {
                     </label>
                   </div>
 
-                  {/* Row 2: Cabin */}
+                  {/* Row 2: Accommodation */}
                   <label className="block">
                     <span className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone">
-                      Cabin
+                      Accommodation
                     </span>
                     <div className="relative mt-2">
                       <select
                         value={cabin}
                         onChange={(e) => setCabin(e.target.value)}
                         className="field w-full appearance-none pr-8"
-                        aria-label="Select cabin"
+                        aria-label="Select accommodation"
                       >
-                        <optgroup label="On-Farm Cabins">
+                        <optgroup label="On-Farm · Self-Contained Cabins">
                           <option>The Glass Pavilion</option>
                           <option>Heritage Stone Cottage</option>
                         </optgroup>
-                        <optgroup label="Holiday Homes">
-                          <option>Ventnor Retreat</option>
-                          <option>Island Cottage</option>
+                        <optgroup label="Holiday Homes · Phillip Island">
+                          <option>Rose by Omaru Farm</option>
+                          <option>Jasmine by Omaru Farm</option>
                         </optgroup>
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/55" aria-hidden />
@@ -532,7 +726,7 @@ export function StayPage() {
                         className="field w-full appearance-none pr-8"
                         aria-label="Number of guests"
                       >
-                        {[1, 2, 3, 4, 5, 6].map((n) => (
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
                           <option key={n} value={`${n} ${n === 1 ? 'Guest' : 'Guests'}`}>
                             {n} {n === 1 ? 'Guest' : 'Guests'}
                           </option>
@@ -562,6 +756,73 @@ export function StayPage() {
         </section>
 
       </main>
+
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightbox(null)}
+          >
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setLightbox(null) }}
+              className="absolute right-5 top-5 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              aria-label="Close gallery"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightbox((l) => (l ? { ...l, index: (l.index - 1 + l.images.length) % l.images.length } : l))
+              }}
+              className="absolute left-3 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 md:left-6"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightbox((l) => (l ? { ...l, index: (l.index + 1) % l.images.length } : l))
+              }}
+              className="absolute right-3 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 md:right-6"
+              aria-label="Next photo"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+
+            <motion.div
+              key={lightbox.index}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="relative mx-auto flex max-h-[90vh] max-w-[92vw] flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={lightbox.images[lightbox.index]!.src}
+                alt={`${lightbox.name} — ${lightbox.images[lightbox.index]!.label}`}
+                className="max-h-[80vh] w-auto rounded-sm object-contain shadow-[0_30px_120px_rgba(0,0,0,0.5)]"
+              />
+              <p className="mt-4 font-heading text-base font-semibold text-white">
+                {lightbox.images[lightbox.index]!.label}
+              </p>
+              <p className="mt-1 font-body text-[0.65rem] uppercase tracking-[0.22em] text-white/55">
+                {lightbox.name} · {lightbox.index + 1} / {lightbox.images.length}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }

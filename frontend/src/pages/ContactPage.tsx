@@ -41,12 +41,14 @@ const fadeUp = {
 }
 
 const SUBJECTS = [
-  'General Inquiry',
+  'General Enquiry',
+  'Group Bookings',
+  'Weddings',
+  'Events or Functions',
   'Café Booking',
   'Farm Stay',
   'Farm Store',
   'Wholesale',
-  'Events & Workshops',
   'Media & Press',
 ]
 
@@ -121,7 +123,7 @@ export function ContactPage() {
         <title>Contact | Omaru Farm · Phillip Island</title>
         <meta
           name="description"
-          content="Get in touch with Omaru Farm. Café bookings, farm stays, store enquiries and general questions — 776 Ventnor Road, Ventnor, Phillip Island VIC 3922."
+          content="Get in touch with Omaru Farm for group bookings, weddings, events, functions, café bookings, farm stays and store enquiries."
         />
       </Helmet>
 
@@ -147,7 +149,7 @@ export function ContactPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, delay: 0.08 }}
             >
-              Get in Touch
+              Contact Omaru
             </motion.p>
             <motion.h1
               className="hero-headline mx-auto max-w-3xl font-heading text-[2.65rem] font-semibold leading-[1.05] tracking-[-0.028em] text-white sm:text-5xl md:text-[3.75rem]"
@@ -155,7 +157,7 @@ export function ContactPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.72, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
             >
-              Restorative Connections
+              Get in touch
             </motion.h1>
             <motion.p
               className="mx-auto mt-6 max-w-lg font-body text-base leading-[1.78] text-white/88 md:text-lg"
@@ -163,7 +165,7 @@ export function ContactPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.58, delay: 0.28 }}
             >
-              Whether you&apos;re planning a visit or inquiring about our artisanal goods, we are here to welcome you.
+              For enquiries such as group bookings, weddings, events or functions, our team is here to welcome you.
             </motion.p>
           </div>
         </section>

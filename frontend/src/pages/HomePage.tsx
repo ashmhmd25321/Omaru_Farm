@@ -267,10 +267,11 @@ export function HomePage() {
             Left: text + stats  |  Right: dark editorial card
         ══════════════════════════════════════════ */}
         <section className="bg-surface py-24 md:py-32">
-          <div className="mx-auto grid max-w-[92vw] gap-14 px-5 md:grid-cols-2 md:gap-16 lg:gap-24">
+          <div className="mx-auto grid max-w-[92vw] grid-cols-1 gap-14 px-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-16 lg:gap-24">
 
             {/* Left column */}
             <motion.div
+              className="min-w-0"
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, amount: 0.3 }}
@@ -284,7 +285,7 @@ export function HomePage() {
                 The Meaning<br />of Omaru
               </h2>
               <p className="mt-6 font-body text-base leading-[1.78] text-stone">
-                The name <em>"Omaru"</em> comes from the Māori language and means{' '}
+                In the ancient Aboriginal and Indigenous tongue, <em>Omaru</em> means{' '}
                 <strong className="font-semibold text-bark">a beautiful view</strong>. Nestled in the rolling green hills of Phillip Island,
                 our farm earns that name every single day — with sweeping ocean outlooks, endless open skies,
                 and a landscape that restores the soul.
@@ -293,24 +294,28 @@ export function HomePage() {
                 Whether you're here for a long farm lunch, a sunset dinner, or a weekend stay in one of our self-contained cabins — the view will stay with you long after you leave.
               </p>
 
-              {/* Stats */}
-              <div className="mt-10 flex gap-14">
-                <div>
-                  <p className="font-heading text-5xl font-semibold leading-none text-charcoal md:text-6xl">
-                    70<span className="text-gold">+</span>
-                  </p>
-                  <p className="mt-2 font-body text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone">
-                    Years of Farming
-                  </p>
+              {/* Stat + supporting badge */}
+              <div className="mt-10 max-w-xl">
+                <div className="h-px w-full bg-gradient-to-r from-gold/70 via-gold/25 to-transparent" />
+                <div className="flex flex-col gap-5 py-6 sm:flex-row sm:items-center sm:gap-8">
+                  <div>
+                    <p className="font-heading text-4xl font-semibold leading-none text-charcoal md:text-5xl">
+                      70<span className="text-gold">+</span>
+                    </p>
+                    <p className="mt-2 font-body text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone">
+                      Years of Farming
+                    </p>
+                  </div>
+                  <div className="inline-flex w-fit flex-col rounded-full border border-gold/55 bg-gold/5 px-5 py-3">
+                    <p className="font-body text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-gold-deep">
+                      Panoramic View
+                    </p>
+                    <p className="mt-1 font-body text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-stone">
+                      Land &amp; Sea Outlook
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-heading text-5xl font-semibold leading-none text-charcoal md:text-6xl">
-                    360<span className="text-gold">°</span>
-                  </p>
-                  <p className="mt-2 font-body text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone">
-                    Panoramic Views
-                  </p>
-                </div>
+                <div className="h-px w-full bg-gradient-to-r from-gold/25 via-gold/12 to-transparent" />
               </div>
 
               <Link
@@ -323,7 +328,7 @@ export function HomePage() {
 
             {/* Right: dark editorial card */}
             <motion.div
-              className="flex items-stretch"
+              className="flex min-w-0 items-stretch"
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, amount: 0.2 }}

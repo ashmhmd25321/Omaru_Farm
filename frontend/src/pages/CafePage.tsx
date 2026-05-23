@@ -104,7 +104,6 @@ export function CafePage() {
   const [activeDaypart, setActiveDaypart] = useState<DaypartKey>('sunset')
   const [statsInView, setStatsInView] = useState(false)
   const [statsAnimated, setStatsAnimated] = useState(false)
-  const [panoramicCount, setPanoramicCount] = useState(0)
   const [produceCount, setProduceCount] = useState(0)
   const experienceSectionRef = useRef<HTMLElement | null>(null)
 
@@ -184,7 +183,6 @@ export function CafePage() {
       const t = Math.min(elapsed / duration, 1)
       const eased = 1 - (1 - t) ** 3
 
-      setPanoramicCount(Math.round(360 * eased))
       setProduceCount(Math.round(100 * eased))
 
       if (t < 1) {
@@ -577,7 +575,7 @@ export function CafePage() {
               custom={0}
               variants={fadeUp}
             >
-              <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['sunset', 'evening']) ? 'ring-1 ring-gold/45' : ''}`}>
+              <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['morning', 'lunch']) ? 'ring-1 ring-gold/45' : ''}`}>
                 <video
                   src={staticUrl('/images/farm/image-farm/e16abd906ce342f0bd27ac365d346401.mov')}
                   poster={staticUrl('/images/farm/image-farm/20260127_204402.jpg')}
@@ -590,7 +588,7 @@ export function CafePage() {
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-estate/48 via-transparent to-transparent" />
                 <p className="pointer-events-none absolute left-4 top-4 rounded-sm border border-white/30 bg-white/12 px-2.5 py-1 font-body text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-white/92 backdrop-blur-md">
-                  Sunset Panorama
+                  Freshly Baked
                 </p>
               </div>
 
@@ -606,11 +604,11 @@ export function CafePage() {
                     className="h-40 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.12)_contrast(1.06)_brightness(0.98)]"
                   />
                   <p className="pointer-events-none absolute left-2 top-2 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
-                    Farm Walk
+                    Farm Kitchen
                   </p>
                 </div>
 
-                <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['sunset', 'evening']) ? 'ring-1 ring-gold/45' : ''}`}>
+                <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['lunch', 'evening']) ? 'ring-1 ring-gold/45' : ''}`}>
                   <video
                     src={staticUrl('/images/farm/image-farm/IMG_0669.MOV')}
                     autoPlay
@@ -621,7 +619,7 @@ export function CafePage() {
                     className="h-40 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.12)_contrast(1.06)_brightness(0.98)]"
                   />
                   <p className="pointer-events-none absolute left-2 top-2 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
-                    Golden Hour
+                    Slow-Cooked Flavours
                   </p>
                 </div>
 
@@ -691,12 +689,12 @@ export function CafePage() {
 
               {/* Stats */}
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-sm border border-estate/10 bg-surface p-5">
-                  <p className="font-heading text-5xl font-semibold leading-none text-charcoal">
-                    {panoramicCount}<span className="text-gold">°</span>
+                <div className="flex flex-col justify-center rounded-sm border border-estate/10 bg-surface p-5">
+                  <p className="font-heading text-3xl font-semibold leading-tight tracking-[-0.02em] text-charcoal md:text-4xl">
+                    Panoramic View
                   </p>
                   <p className="mt-2 font-body text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone">
-                    Panoramic Views
+                    Land &amp; Sea Outlook
                   </p>
                 </div>
                 <div className="rounded-sm border border-estate/10 bg-surface p-5">
