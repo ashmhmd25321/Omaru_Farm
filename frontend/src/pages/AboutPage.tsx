@@ -388,7 +388,7 @@ export function AboutPage() {
                   </div>
                   <div>
                     <h3 className="font-heading text-[2rem] font-semibold leading-none text-charcoal">
-                      Restorative Stay
+                      Tranquil Farm Escape
                     </h3>
                     <p className="mt-2 font-body text-base leading-relaxed text-stone">
                       Our cabins are built with sustainably sourced timber, designed to frame the horizon.
