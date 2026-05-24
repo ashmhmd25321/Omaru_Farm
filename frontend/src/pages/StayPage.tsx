@@ -251,6 +251,15 @@ export function StayPage() {
           name="description"
           content="Self-contained cabins on Omaru Farm, plus separate holiday homes on Phillip Island. Farm stays, dark skies, and easy access to the Penguin Parade."
         />
+        <link rel="canonical" href="https://omarufarms.com.au/stay" />
+        <meta property="og:title" content="Stay at Omaru Farm | Cabins & Holiday Homes" />
+        <meta property="og:description" content="Self-contained farm cabins and Phillip Island holiday homes close to Penguin Parade, Cowes, and island attractions." />
+        <meta property="og:url" content="https://omarufarms.com.au/stay" />
+        <meta property="og:image" content="/images/farm/image-farm/7CD1DA41BA7E970B38EA4E75B43CD7CD.JPG" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Stay at Omaru Farm | Cabins & Holiday Homes" />
+        <meta name="twitter:description" content="Self-contained farm cabins and Phillip Island holiday homes close to Penguin Parade, Cowes, and island attractions." />
+        <meta name="twitter:image" content="/images/farm/image-farm/7CD1DA41BA7E970B38EA4E75B43CD7CD.JPG" />
       </Helmet>
 
       <main>
@@ -397,7 +406,7 @@ export function StayPage() {
                         )}
                       </div>
                       {stay.gallery && stay.gallery.length > 1 && (
-                        <div className="mt-3 grid grid-cols-5 gap-2">
+                        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
                           {stay.gallery.slice(1, 6).map((photo, gIdx) => (
                             <button
                               type="button"
@@ -409,7 +418,7 @@ export function StayPage() {
                               <img
                                 src={photo.src}
                                 alt={`${stay.name} — ${photo.label}`}
-                                className="h-16 w-full object-cover transition duration-500 group-hover:scale-[1.05] md:h-20"
+                                className="h-20 w-full object-cover transition duration-500 group-hover:scale-[1.05] md:h-20"
                                 loading="lazy"
                               />
                               <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-1.5 pb-1 pt-3 text-center font-body text-[0.55rem] font-semibold uppercase tracking-[0.12em] text-white">
@@ -468,9 +477,9 @@ export function StayPage() {
         </section>
 
         {/* ══════════════════════════════════════════
-            THE EXPERIENCE — dark estate, editorial grid
+            THE EXPERIENCE — light editorial grid
         ══════════════════════════════════════════ */}
-        <section className="bg-estate py-24 md:py-32">
+        <section className="bg-surface py-24 md:py-32">
           <div className="mx-auto max-w-[92vw] px-5">
 
             {/* Heading */}
@@ -485,10 +494,10 @@ export function StayPage() {
               <p className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold/70">
                 More Than a Place to Sleep
               </p>
-              <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-white md:text-5xl">
+              <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
                 The Experience
               </h2>
-              <p className="mx-auto mt-4 max-w-lg font-body text-base leading-[1.75] text-white/50">
+              <p className="mx-auto mt-4 max-w-lg font-body text-base leading-[1.75] text-stone">
                 Slow mornings, farm encounters, and paddock views that reset the soul.
               </p>
             </motion.div>
@@ -537,25 +546,24 @@ export function StayPage() {
               >
                 {/* Heritage estate card */}
                 <div
-                  className="relative flex min-h-[220px] flex-col justify-between overflow-hidden rounded-sm p-7"
-                  style={{ background: 'linear-gradient(150deg, #1a1208 0%, #2c1f0a 60%, #1a1208 100%)' }}
+                  className="relative flex min-h-[220px] flex-col justify-between overflow-hidden rounded-sm border border-parchment/70 bg-white p-7 shadow-[0_8px_30px_rgba(26,18,8,0.04)]"
                 >
                   <div
                     className="pointer-events-none absolute inset-0"
-                    style={{ backgroundImage: 'radial-gradient(circle at 70% 30%, rgba(197,160,89,0.14) 0%, transparent 55%)' }}
+                    style={{ backgroundImage: 'radial-gradient(circle at 70% 30%, rgba(197,160,89,0.12) 0%, transparent 55%)' }}
                   />
                   <div className="relative">
-                    <p className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.36em] text-gold/55">
+                    <p className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.36em] text-gold-deep">
                       Farm Heritage
                     </p>
-                    <h3 className="mt-2 font-heading text-2xl font-semibold tracking-[0.06em] text-white/90">
+                    <h3 className="mt-2 font-heading text-2xl font-semibold tracking-[0.06em] text-charcoal">
                       Omaru Farm
                     </h3>
-                    <p className="mt-0.5 font-body text-[0.6rem] uppercase tracking-[0.24em] text-gold/40">Est. 1954 · Phillip Island</p>
+                    <p className="mt-0.5 font-body text-[0.6rem] uppercase tracking-[0.24em] text-stone">Est. 1954 · Phillip Island</p>
                   </div>
                   <div className="relative mt-4">
                     <div className="h-px w-full" style={{ background: 'linear-gradient(to right, transparent, rgba(197,160,89,0.25), transparent)' }} />
-                    <p className="mt-4 font-heading text-lg italic font-normal text-white/70">
+                    <p className="mt-4 font-heading text-lg italic font-normal text-bark">
                       "Where the land speaks and silence is the luxury."
                     </p>
                   </div>
@@ -564,15 +572,15 @@ export function StayPage() {
                 {/* Two small experience icon cards */}
                 <div className="grid grid-cols-2 gap-4">
                   {EXPERIENCES.map(({ Icon, label, desc }) => (
-                    <div key={label} className="rounded-sm bg-white/[0.05] p-6 backdrop-blur-sm">
+                    <div key={label} className="rounded-sm border border-parchment/70 bg-white p-6 shadow-[0_8px_30px_rgba(26,18,8,0.04)]">
                       <div
                         className="mb-4 flex h-9 w-9 items-center justify-center rounded-sm"
                         style={{ background: GOLD_GRADIENT }}
                       >
                         <Icon className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
                       </div>
-                      <p className="font-heading text-base font-semibold text-white">{label}</p>
-                      <p className="mt-1.5 font-body text-xs leading-relaxed text-white/48">{desc}</p>
+                      <p className="font-heading text-base font-semibold text-charcoal">{label}</p>
+                      <p className="mt-1.5 font-body text-xs leading-relaxed text-stone">{desc}</p>
                     </div>
                   ))}
                 </div>
@@ -594,7 +602,7 @@ export function StayPage() {
                 { Icon: PawPrint, text: 'Farm animals on-site' },
                 { Icon: MapPin,  text: '776 Ventnor Road, Ventnor, Phillip Island VIC 3922' },
               ].map(({ Icon, text }) => (
-                <span key={text} className="inline-flex items-center gap-2 font-body text-xs text-white/38">
+                <span key={text} className="inline-flex items-center gap-2 font-body text-xs text-stone">
                   <Icon className="h-3.5 w-3.5 text-gold/55" aria-hidden />
                   {text}
                 </span>

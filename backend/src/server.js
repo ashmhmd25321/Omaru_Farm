@@ -12,10 +12,38 @@ dotenv.config()
 
 const app = express()
 const port = Number(process.env.PORT ?? 4000)
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin123'
+const NODE_ENV = process.env.NODE_ENV ?? 'development'
+const isProduction = NODE_ENV === 'production'
+
+function requiredEnv(name) {
+  const value = process.env[name]
+  if (isProduction && !value) {
+    throw new Error(`${name} must be set in production`)
+  }
+  return value
+}
+
+const ADMIN_PASSWORD = requiredEnv('ADMIN_PASSWORD') ?? 'dev-only-admin-password'
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME ?? 'admin'
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET ?? 'change_me_in_production'
+const ADMIN_JWT_SECRET = requiredEnv('ADMIN_JWT_SECRET') ?? 'dev_admin_jwt_secret_change_me'
 const ADMIN_JWT_EXPIRES = process.env.ADMIN_JWT_EXPIRES ?? '8h'
+const ADMIN_COOKIE_NAME = process.env.ADMIN_COOKIE_NAME ?? 'omaru_admin_session'
+const PUBLIC_SITE_URL = process.env.PUBLIC_SITE_URL ?? 'http://localhost:5173'
+const COOKIE_SECURE = process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : isProduction
+const corsOrigins = (process.env.CORS_ORIGIN ?? (isProduction ? '' : 'http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173'))
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+
+if (isProduction && corsOrigins.length === 0) {
+  throw new Error('CORS_ORIGIN must be set in production')
+}
+if (isProduction && ADMIN_JWT_SECRET.length < 32) {
+  throw new Error('ADMIN_JWT_SECRET must be at least 32 characters in production')
+}
+if (isProduction && ADMIN_PASSWORD.length < 12) {
+  throw new Error('ADMIN_PASSWORD must be at least 12 characters in production')
+}
 const UPLOAD_DIR = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
   : path.resolve(process.cwd(), '../frontend/public/images/uploads')
@@ -128,7 +156,14 @@ const ADMIN_LOGIN_WINDOW_MS = Number(process.env.ADMIN_LOGIN_WINDOW_MS ?? 10 * 6
 const ADMIN_LOGIN_MAX_ATTEMPTS = Number(process.env.ADMIN_LOGIN_MAX_ATTEMPTS ?? 8)
 const loginAttemptMap = new Map()
 
-app.use(cors())
+app.set('trust proxy', 1)
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || corsOrigins.includes(origin)) return callback(null, true)
+    return callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true,
+}))
 app.use(express.json({ limit: '1mb' }))
 
 const storage = multer.diskStorage({
@@ -220,8 +255,86 @@ function isRateLimited(ip) {
   return null
 }
 
+
+const bookingAttemptMap = new Map()
+const BOOKING_WINDOW_MS = Number(process.env.BOOKING_WINDOW_MS ?? 15 * 60 * 1000)
+const BOOKING_MAX_ATTEMPTS = Number(process.env.BOOKING_MAX_ATTEMPTS ?? 8)
+
+function consumeWindowedAttempt(store, key, windowMs) {
+  const now = Date.now()
+  const current = store.get(key) ?? { count: 0, resetAt: now + windowMs }
+  if (now > current.resetAt) {
+    current.count = 0
+    current.resetAt = now + windowMs
+  }
+  current.count += 1
+  store.set(key, current)
+  return current
+}
+
+function checkWindowedLimit(store, key, maxAttempts) {
+  const now = Date.now()
+  const current = store.get(key)
+  if (!current) return null
+  if (now > current.resetAt) {
+    store.delete(key)
+    return null
+  }
+  if (current.count >= maxAttempts) return Math.ceil((current.resetAt - now) / 1000)
+  return null
+}
+
+function parseCookies(req) {
+  return String(req.headers.cookie ?? '')
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce((cookies, part) => {
+      const eq = part.indexOf('=')
+      if (eq === -1) return cookies
+      const key = decodeURIComponent(part.slice(0, eq).trim())
+      const value = decodeURIComponent(part.slice(eq + 1).trim())
+      cookies[key] = value
+      return cookies
+    }, {})
+}
+
+function adminCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: COOKIE_SECURE,
+    sameSite: COOKIE_SECURE ? 'none' : 'lax',
+    path: '/',
+    maxAge: 1000 * 60 * 60 * 8,
+  }
+}
+
+function getAdminToken(req) {
+  const cookies = parseCookies(req)
+  const cookieToken = cookies[ADMIN_COOKIE_NAME]
+  if (cookieToken) return cookieToken
+  // Header token is kept only for local development tooling; production uses httpOnly cookies.
+  if (!isProduction) return String(req.headers['x-admin-token'] ?? '')
+  return ''
+}
+
+function truncateText(value, maxLength) {
+  const text = String(value ?? '').trim()
+  return text.length > maxLength ? text.slice(0, maxLength) : text
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value ?? '').trim())
+}
+
+function isValidISODate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value ?? ''))) return false
+  const date = new Date(`${value}T00:00:00Z`)
+  return !Number.isNaN(date.getTime())
+}
+
 function requireAdmin(req, res, next) {
-  const token = String(req.headers['x-admin-token'] ?? '')
+  const token = getAdminToken(req)
   if (!token) {
     return res.status(401).json({ message: 'Unauthorized admin request' })
   }
@@ -396,14 +509,12 @@ async function ensureSchemaAndSeed() {
     'SELECT id, password_hash AS passwordHash FROM admin_users WHERE username = ? LIMIT 1',
     [ADMIN_USERNAME],
   )
-  const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12)
   if (!adminRows[0]?.id) {
+    const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12)
     await pool.query(
       'INSERT INTO admin_users (username, password_hash, is_active) VALUES (?, ?, 1)',
       [ADMIN_USERNAME, passwordHash],
     )
-  } else {
-    await pool.query('UPDATE admin_users SET password_hash = ?, is_active = 1 WHERE id = ?', [passwordHash, adminRows[0].id])
   }
 }
 
@@ -494,23 +605,44 @@ app.get('/api/content/site-settings', async (_req, res) => {
 })
 
 app.post('/api/bookings', async (req, res) => {
-  const { fullName, email, bookingDate, message, source, guestCount, timeFrom, timeUntil } = req.body
-  if (!fullName || !email || !bookingDate) {
+  const ip = getClientIp(req)
+  const retryAfter = checkWindowedLimit(bookingAttemptMap, ip, BOOKING_MAX_ATTEMPTS)
+  if (retryAfter !== null) {
+    res.setHeader('Retry-After', String(retryAfter))
+    return res.status(429).json({ message: `Too many booking requests. Try again in ${retryAfter}s.` })
+  }
+  consumeWindowedAttempt(bookingAttemptMap, ip, BOOKING_WINDOW_MS)
+
+  const { fullName, email, bookingDate, message, source, guestCount, timeFrom, timeUntil, website } = req.body ?? {}
+  if (website) {
+    return res.status(202).json({ message: 'Booking submitted' })
+  }
+
+  const cleanName = truncateText(fullName, 120)
+  const cleanEmail = truncateText(email, 160).toLowerCase()
+  const cleanDate = truncateText(bookingDate, 20)
+  if (!cleanName || !cleanEmail || !cleanDate) {
     return res.status(400).json({ message: 'fullName, email, and bookingDate are required.' })
+  }
+  if (!isValidEmail(cleanEmail)) {
+    return res.status(400).json({ message: 'Please enter a valid email address.' })
+  }
+  if (!isValidISODate(cleanDate)) {
+    return res.status(400).json({ message: 'Please enter a valid booking date.' })
   }
 
   try {
     const [result] = await pool.query(
       'INSERT INTO bookings (full_name, email, booking_date, message, source, guest_count, time_from, time_until, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "new")',
       [
-        String(fullName),
-        String(email),
-        String(bookingDate),
-        message ? String(message) : null,
-        source ? String(source) : 'website',
-        guestCount ? toNumber(guestCount, 1) : null,
-        timeFrom ? String(timeFrom) : null,
-        timeUntil ? String(timeUntil) : null,
+        cleanName,
+        cleanEmail,
+        cleanDate,
+        message ? truncateText(message, 2000) : null,
+        source ? truncateText(source, 40) : 'website',
+        guestCount ? Math.min(Math.max(toNumber(guestCount, 1), 1), 50) : null,
+        timeFrom ? truncateText(timeFrom, 20) : null,
+        timeUntil ? truncateText(timeUntil, 20) : null,
       ],
     )
     res.status(201).json({ message: 'Booking submitted', bookingId: result.insertId })
@@ -577,8 +709,8 @@ app.post('/api/admin/login', async (req, res) => {
       ADMIN_JWT_SECRET,
       { expiresIn: ADMIN_JWT_EXPIRES },
     )
+    res.cookie(ADMIN_COOKIE_NAME, token, adminCookieOptions())
     res.json({
-      token,
       user: { id: user.id, username: user.username },
     })
   } catch (error) {
@@ -590,8 +722,8 @@ app.get('/api/admin/me', requireAdmin, (req, res) => {
   res.json({ user: req.admin })
 })
 
-app.post('/api/admin/logout', requireAdmin, (_req, res) => {
-  // JWT is stateless; frontend removes token client-side.
+app.post('/api/admin/logout', (_req, res) => {
+  res.clearCookie(ADMIN_COOKIE_NAME, { ...adminCookieOptions(), maxAge: undefined })
   res.json({ ok: true })
 })
 

@@ -26,6 +26,7 @@ import { Link } from 'react-router-dom'
 import { featuredProducts } from '@/data/content'
 import { productImageUrl } from '@/utils/productImage'
 import { staticUrl } from '@/utils/staticUrl'
+import { apiUrl } from '@/utils/api'
 
 type Product = {
   id?: number
@@ -128,7 +129,7 @@ export function HomePage() {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/products`, { signal: controller.signal })
+    fetch(apiUrl('/api/products'), { signal: controller.signal })
       .then((r) => r.json())
       .then((rows) => {
         if (!Array.isArray(rows) || rows.length === 0) return
@@ -143,7 +144,9 @@ export function HomePage() {
         const featuredOnly = mapped.filter((x) => x.featured)
         setProducts(featuredOnly.length > 0 ? featuredOnly.slice(0, 4) : mapped.slice(0, 4))
       })
-      .catch(() => {})
+      .catch((error) => {
+        console.warn('Unable to load featured products', error)
+      })
     return () => controller.abort()
   }, [])
 
@@ -160,6 +163,15 @@ export function HomePage() {
           name="description"
           content="Omaru means 'a beautiful view' — farm-to-table dining, cabin stays, and a premium farm store on Phillip Island, just 5 minutes from the Penguin Parade."
         />
+        <link rel="canonical" href="https://omarufarms.com.au/" />
+        <meta property="og:title" content="Omaru Farm | A Beautiful View on Phillip Island" />
+        <meta property="og:description" content="Farm-to-table dining, stays, farm life, and farm store goods in Ventnor, Phillip Island." />
+        <meta property="og:url" content="https://omarufarms.com.au/" />
+        <meta property="og:image" content="/images/farm/image-farm/20260127_204402.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Omaru Farm | A Beautiful View on Phillip Island" />
+        <meta name="twitter:description" content="Farm-to-table dining, stays, farm life, and farm store goods in Ventnor, Phillip Island." />
+        <meta name="twitter:image" content="/images/farm/image-farm/20260127_204402.jpg" />
       </Helmet>
 
       <main>

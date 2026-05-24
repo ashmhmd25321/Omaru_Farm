@@ -22,10 +22,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { API_BASE } from '@/utils/api'
 import { productImageUrl } from '@/utils/productImage'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'
-const ADMIN_TOKEN_KEY = 'omaru_admin_token'
 
 type Product = {
   id: number
@@ -122,15 +120,15 @@ const MENU_SECTIONS = ['Lunch', 'Dinner', 'Beverages'] as const
 
 async function request<T>(
   path: string,
-  token: string,
+  _session: string,
   init: RequestInit = {},
 ): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(init.headers ?? {}),
-      ...(token ? { 'x-admin-token': token } : {}),
     },
   })
 
@@ -143,12 +141,12 @@ async function request<T>(
   return res.json() as Promise<T>
 }
 
-async function uploadProductImage(token: string, file: File): Promise<string> {
+async function uploadProductImage(_session: string, file: File): Promise<string> {
   const fd = new FormData()
   fd.append('file', file)
   const res = await fetch(`${API_BASE}/api/admin/media/upload`, {
     method: 'POST',
-    headers: token ? { 'x-admin-token': token } : {},
+    credentials: 'include',
     body: fd,
   })
   const payload = (await res.json().catch(() => null)) as { message?: string; name?: string } | null
@@ -441,7 +439,8 @@ function ProductImageField({
 }
 
 export function AdminDashboardPage() {
-  const [token, setToken] = useState<string>(() => localStorage.getItem(ADMIN_TOKEN_KEY) ?? '')
+  const [token, setToken] = useState('')
+  const [checkingSession, setCheckingSession] = useState(true)
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('')
   const [tab, setTab] = useState<TabKey>('products')
@@ -593,6 +592,24 @@ export function AdminDashboardPage() {
   }, [token])
 
   useEffect(() => {
+    let cancelled = false
+    fetch(`${API_BASE}/api/admin/me`, { credentials: 'include' })
+      .then((res) => {
+        if (!res.ok) throw new Error('No active session')
+        if (!cancelled) setToken('cookie-session')
+      })
+      .catch(() => {
+        if (!cancelled) setToken('')
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingSession(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     loadAll()
   }, [loadAll])
 
@@ -603,13 +620,12 @@ export function AdminDashboardPage() {
     try {
       const res = await fetch(`${API_BASE}/api/admin/login`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       })
       if (!res.ok) throw new Error('Invalid admin credentials')
-      const payload = (await res.json()) as { token: string }
-      localStorage.setItem(ADMIN_TOKEN_KEY, payload.token)
-      setToken(payload.token)
+      setToken('cookie-session')
       setPassword('')
       setMessage('Logged in')
     } catch (err) {
@@ -626,9 +642,21 @@ export function AdminDashboardPage() {
     } catch {
       // best effort
     }
-    localStorage.removeItem(ADMIN_TOKEN_KEY)
     setToken('')
     setMessage('Logged out')
+  }
+
+  if (checkingSession) {
+    return (
+      <main className="admin-shell flex min-h-screen items-center justify-center bg-surface px-5 py-12">
+        <Card className="w-full max-w-sm text-center">
+          <CardContent className="p-6">
+            <Loader2 className="mx-auto h-6 w-6 animate-spin text-gold" aria-hidden />
+            <p className="mt-3 text-sm text-stone">Checking admin session…</p>
+          </CardContent>
+        </Card>
+      </main>
+    )
   }
 
   if (!token) {
@@ -2165,7 +2193,7 @@ export function AdminDashboardPage() {
                           formData.append('file', uploadFile)
                           const res = await fetch(`${API_BASE}/api/admin/media/upload`, {
                             method: 'POST',
-                            headers: token ? { 'x-admin-token': token } : {},
+                            credentials: 'include',
                             body: formData,
                           })
                           if (!res.ok) {

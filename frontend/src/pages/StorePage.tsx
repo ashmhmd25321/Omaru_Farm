@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom'
 import { productCatalog } from '@/data/productCatalog'
 import { productImageUrl } from '@/utils/productImage'
 import { staticUrl } from '@/utils/staticUrl'
+import { apiUrl } from '@/utils/api'
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
 
@@ -117,7 +118,7 @@ export function StorePage() {
   /* ── API fetch: category order ── */
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/product-categories`, {
+    fetch(apiUrl('/api/product-categories'), {
       signal: controller.signal,
     })
       .then((r) => r.json())
@@ -127,14 +128,14 @@ export function StorePage() {
           rows.map((r) => String((r as { name?: string }).name ?? '').trim()).filter(Boolean),
         )
       })
-      .catch(() => { /* keeps catalog-derived categories */ })
+      .catch((error) => { console.warn('Unable to load product categories', error) })
     return () => controller.abort()
   }, [])
 
   /* ── API fetch: products ── */
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/products`, {
+    fetch(apiUrl('/api/products'), {
       signal: controller.signal,
     })
       .then((r) => r.json())
@@ -154,7 +155,7 @@ export function StorePage() {
           }),
         )
       })
-      .catch(() => { /* keep local fallback */ })
+      .catch((error) => { console.warn('Unable to load products', error) })
     return () => controller.abort()
   }, [])
 

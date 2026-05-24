@@ -6,7 +6,7 @@ Modern full-stack website for Omaru Farm using:
 
 ## Project Structure
 
-- `frontend` - premium black/gold/white farm-to-table themed UI
+- `frontend` - warm, light, premium farm-to-table destination UI
 - `backend` - REST API for products, bookings, and reviews
 - `Farm_images` - source hero/brand images used in frontend public assets
 - `Farm Store products 2026` - source product images used in frontend public assets
@@ -55,7 +55,13 @@ This project is dockerized with:
 cp .env.docker.example .env
 ```
 
-Edit `.env` values (especially `ADMIN_PASSWORD`, `ADMIN_JWT_SECRET`).
+Edit `.env` values before starting. Production-like runs require:
+
+- `ADMIN_PASSWORD` — at least 12 characters
+- `ADMIN_JWT_SECRET` — at least 32 characters
+- `CORS_ORIGIN` — allowed frontend origin, for example `https://omarufarms.com.au`
+- `PUBLIC_SITE_URL` — canonical public site URL
+- `COOKIE_SECURE=true` when serving admin over HTTPS
 
 ### 2) Build and start
 
@@ -79,6 +85,17 @@ To remove DB/upload volumes too:
 ```bash
 docker compose down -v
 ```
+
+### Align existing CMS data
+
+If an older database was seeded before the current address, hours, and lunch/dinner menu changes, run:
+
+```bash
+cd backend
+npm run align:live-data
+```
+
+This updates contact details/hours and hides legacy Breakfast or Afternoon Tea menu rows without deleting historical records.
 
 ## Free Hosting Options
 

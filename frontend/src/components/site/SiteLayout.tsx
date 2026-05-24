@@ -4,13 +4,14 @@ import { MessageCircle } from 'lucide-react'
 import { ScrollToTop } from '@/components/site/ScrollToTop'
 import { SiteFooter } from '@/components/site/SiteFooter'
 import { SiteHeader } from '@/components/site/SiteHeader'
+import { apiUrl } from '@/utils/api'
 
 export function SiteLayout() {
   const [whatsappUrl, setWhatsappUrl] = useState('https://wa.me/61000000000')
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/content/site-settings`, {
+    fetch(apiUrl('/api/content/site-settings'), {
       signal: controller.signal,
     })
       .then((res) => res.json())
@@ -19,17 +20,25 @@ export function SiteLayout() {
         const value = data as Record<string, unknown>
         if (value.whatsappUrl) setWhatsappUrl(String(value.whatsappUrl))
       })
-      .catch(() => {
-        // keep fallback
+      .catch((error) => {
+        console.warn('Unable to load site settings', error)
       })
     return () => controller.abort()
   }, [])
 
   return (
     <div className="min-h-screen bg-white text-charcoal">
+      <a
+        href="#main-content"
+        className="sr-only z-[100] rounded-sm bg-white px-4 py-2 text-sm font-semibold text-charcoal shadow focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Skip to main content
+      </a>
       <ScrollToTop />
       <SiteHeader />
-      <Outlet />
+      <div id="main-content">
+        <Outlet />
+      </div>
       <SiteFooter />
 
       <a

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, BedDouble, ChevronLeft, ChevronRight, Sun } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { staticUrl } from '@/utils/staticUrl'
+import { apiUrl } from '@/utils/api'
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
 
@@ -56,14 +57,14 @@ export function AboutPage() {
     },
     {
       src: staticUrl('/images/farm/image-farm/IMG_7807.jpg'),
-      alt: 'Afternoon tea selection at Omaru',
-      label: 'Afternoon Tea on the Deck',
+      alt: 'Lunch and dinner table setting at Omaru',
+      label: 'Dining on the Deck',
     },
   ]
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/content/about`, {
+    fetch(apiUrl('/api/content/about'), {
       signal: controller.signal,
     })
       .then((res) => res.json())
@@ -77,7 +78,9 @@ export function AboutPage() {
           foundationDescription: String(value.foundationDescription ?? prev.foundationDescription),
         }))
       })
-      .catch(() => {})
+      .catch((error) => {
+        console.warn('Unable to load about content', error)
+      })
     return () => controller.abort()
   }, [])
 
@@ -98,6 +101,15 @@ export function AboutPage() {
           name="description"
           content="Discover the story of Omaru Farm — a premium farm-to-table destination rooted in sustainability, heritage, and breathtaking views on Phillip Island."
         />
+        <link rel="canonical" href="https://omarufarms.com.au/about" />
+        <meta property="og:title" content="About Omaru Farm | A Beautiful View" />
+        <meta property="og:description" content="Discover Omaru Farm, a tranquil Phillip Island destination shaped by beautiful views, farm life, and warm hospitality." />
+        <meta property="og:url" content="https://omarufarms.com.au/about" />
+        <meta property="og:image" content="/images/farm/20211027_195611.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="About Omaru Farm | A Beautiful View" />
+        <meta name="twitter:description" content="Discover Omaru Farm, a tranquil Phillip Island destination shaped by beautiful views, farm life, and warm hospitality." />
+        <meta name="twitter:image" content="/images/farm/20211027_195611.jpg" />
       </Helmet>
 
       <main>
@@ -141,7 +153,7 @@ export function AboutPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.65, delay: 0.35 }}
             >
-              In the ancient tongue, Omaru signifies "Place of Shelter". We have cultivated this land to be a sanctuary for the modern agrarian soul.
+              Omaru means "a beautiful view". We have cultivated this land as a tranquil farm escape where open skies, paddocks, and warm hospitality meet.
             </motion.p>
           </div>
         </section>

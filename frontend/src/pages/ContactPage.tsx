@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async'
 import { motion } from 'framer-motion'
 import { ArrowUpRight, ChevronDown, Clock3, Mail, MapPin, Phone } from 'lucide-react'
 import { staticUrl } from '@/utils/staticUrl'
+import { apiUrl } from '@/utils/api'
 
 const OLIVE_BTN = '#6B5E0D'
 
@@ -58,11 +59,12 @@ export function ContactPage() {
   const [email, setEmail] = useState('')
   const [subject, setSubject] = useState(SUBJECTS[0]!)
   const [message, setMessage] = useState('')
+  const [website, setWebsite] = useState('')
   const [state, setState] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/content/contact`, {
+    fetch(apiUrl('/api/content/contact'), {
       signal: controller.signal,
     })
       .then((r) => r.json())
@@ -79,7 +81,9 @@ export function ContactPage() {
           hoursStore: String(row.hoursStore ?? FALLBACK_CONTACT.hoursStore),
         })
       })
-      .catch(() => {})
+      .catch((error) => {
+        console.warn('Unable to load contact content', error)
+      })
     return () => controller.abort()
   }, [])
 
@@ -99,7 +103,7 @@ export function ContactPage() {
     setState('loading')
     const bookingDate = new Date().toISOString().slice(0, 10)
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/bookings`, {
+      const res = await fetch(apiUrl('/api/bookings'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -108,12 +112,14 @@ export function ContactPage() {
           bookingDate,
           source: 'contact',
           message: `Subject: ${subject}. ${message}`,
+          website,
         }),
       })
-      if (!res.ok) throw new Error()
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.message ?? 'Could not send message')
       setState('sent')
+      setWebsite('')
     } catch {
-      setState('sent')
+      setState('error')
     }
   }
 
@@ -125,6 +131,15 @@ export function ContactPage() {
           name="description"
           content="Get in touch with Omaru Farm for group bookings, weddings, events, functions, café bookings, farm stays and store enquiries."
         />
+        <link rel="canonical" href="https://omarufarms.com.au/contact" />
+        <meta property="og:title" content="Contact Omaru Farm | Phillip Island" />
+        <meta property="og:description" content="Contact Omaru Farm for café bookings, accommodation, group bookings, farm store enquiries, events, and functions." />
+        <meta property="og:url" content="https://omarufarms.com.au/contact" />
+        <meta property="og:image" content="/images/farm/image-farm/IMG_7318.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Contact Omaru Farm | Phillip Island" />
+        <meta name="twitter:description" content="Contact Omaru Farm for café bookings, accommodation, group bookings, farm store enquiries, events, and functions." />
+        <meta name="twitter:image" content="/images/farm/image-farm/IMG_7318.jpg" />
       </Helmet>
 
       <main className="bg-surface">
@@ -385,6 +400,7 @@ export function ContactPage() {
                       className="field mt-2 min-h-[140px] w-full resize-none rounded-md border border-parchment/40 bg-surface-low/50 px-3 py-2.5 focus:border-gold"
                     />
                   </label>
+                  <input className="hidden" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" />
 
                   <div className="pt-1">
                     <button

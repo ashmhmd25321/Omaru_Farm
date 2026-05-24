@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { apiUrl } from '@/utils/api'
 
 export function BookPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [bookingDate, setBookingDate] = useState('')
   const [details, setDetails] = useState('')
+  const [website, setWebsite] = useState('')
   const [submitState, setSubmitState] = useState<{ loading: boolean; message: string; error: string }>({
     loading: false,
     message: '',
@@ -19,6 +21,15 @@ export function BookPage() {
       <Helmet>
         <title>Book Now | Omaru Farm</title>
         <meta name="description" content="Book a cafe table or submit an accommodation request at Omaru Farm." />
+        <link rel="canonical" href="https://omarufarms.com.au/book" />
+        <meta property="og:title" content="Book Omaru Farm | Café & Accommodation Requests" />
+        <meta property="og:description" content="Submit a café table or accommodation booking request for Omaru Farm on Phillip Island." />
+        <meta property="og:url" content="https://omarufarms.com.au/book" />
+        <meta property="og:image" content="/images/farm/image-farm/IMG_0674.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Book Omaru Farm | Café & Accommodation Requests" />
+        <meta name="twitter:description" content="Submit a café table or accommodation booking request for Omaru Farm on Phillip Island." />
+        <meta name="twitter:image" content="/images/farm/image-farm/IMG_0674.jpg" />
       </Helmet>
 
       <main className="mx-auto max-w-[92vw] px-5 py-12">
@@ -39,7 +50,7 @@ export function BookPage() {
                   e.preventDefault()
                   setSubmitState({ loading: true, message: '', error: '' })
                   try {
-                    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/bookings`, {
+                    const res = await fetch(apiUrl('/api/bookings'), {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
@@ -48,6 +59,7 @@ export function BookPage() {
                         bookingDate,
                         message: details,
                         source: 'book-page',
+                        website,
                       }),
                     })
                     if (!res.ok) {
@@ -59,6 +71,7 @@ export function BookPage() {
                     setEmail('')
                     setBookingDate('')
                     setDetails('')
+                    setWebsite('')
                   } catch (err) {
                     setSubmitState({
                       loading: false,
@@ -71,6 +84,7 @@ export function BookPage() {
                 <input className="field" placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
                 <input className="field" placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 <input className="field" type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} required />
+                <input className="hidden" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" />
                 <textarea className="field min-h-24" placeholder="Cafe table / accommodation request details" value={details} onChange={(e) => setDetails(e.target.value)} />
                 <Button type="submit" className="w-full" disabled={submitState.loading}>
                   {submitState.loading ? 'Submitting...' : 'Submit Request'}

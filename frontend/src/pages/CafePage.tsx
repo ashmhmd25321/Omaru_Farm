@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
   ArrowRight,
   CalendarDays,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { productImageUrl } from '@/utils/productImage'
 import { staticUrl } from '@/utils/staticUrl'
+import { apiUrl } from '@/utils/api'
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
 
@@ -101,6 +102,7 @@ export function CafePage() {
   const [name,     setName]     = useState('')
   const [email,    setEmail]    = useState('')
   const [notes,    setNotes]    = useState('')
+  const [website, setWebsite] = useState('')
   const [formState, setFormState] = useState({ loading: false, success: false, error: '' })
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>(fallbackMenu)
@@ -109,6 +111,7 @@ export function CafePage() {
   const [statsAnimated, setStatsAnimated] = useState(false)
   const [produceCount, setProduceCount] = useState(0)
   const experienceSectionRef = useRef<HTMLElement | null>(null)
+  const prefersReducedMotion = useReducedMotion()
 
   const prettyDate = useMemo(() => {
     const [y, m, d] = selectedDate.split('-').map(Number)
@@ -120,7 +123,7 @@ export function CafePage() {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/menu`, {
+    fetch(apiUrl('/api/menu'), {
       signal: controller.signal,
     })
       .then((r) => r.json())
@@ -176,6 +179,30 @@ export function CafePage() {
   }, [])
 
   useEffect(() => {
+    const section = experienceSectionRef.current
+    if (!section) return
+    const videos = Array.from(section.querySelectorAll('video'))
+    if (prefersReducedMotion) {
+      videos.forEach((video) => video.pause())
+      return
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        videos.forEach((video) => {
+          if (entry?.isIntersecting) {
+            void video.play().catch(() => {})
+          } else {
+            video.pause()
+          }
+        })
+      },
+      { threshold: 0.2 },
+    )
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [prefersReducedMotion])
+
+  useEffect(() => {
     if (!statsInView || statsAnimated) return
 
     const duration = 1300
@@ -204,18 +231,19 @@ export function CafePage() {
     e.preventDefault()
     setFormState({ loading: true, success: false, error: '' })
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'}/api/bookings`, {
+      const res = await fetch(apiUrl('/api/bookings'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fullName: name, email, bookingDate: selectedDate, source: 'cafe',
           guestCount: parseInt(guests) || 2,
           message: `Time: ${timeSlot}. ${notes}`.trim(),
+          website,
         }),
       })
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.message ?? 'Could not submit')
       setFormState({ loading: false, success: true, error: '' })
-      setName(''); setEmail(''); setNotes('')
+      setName(''); setEmail(''); setNotes(''); setWebsite('')
     } catch (err) {
       setFormState({ loading: false, success: false, error: err instanceof Error ? err.message : 'Could not submit' })
     }
@@ -229,6 +257,15 @@ export function CafePage() {
           name="description"
           content="Sri Lankan flavours meet Phillip Island charm at Café Omaru. Lunch and dinner only — no breakfast. Set menu featuring authentic Sri Lankan cuisine, fully licensed bar, local wines. Dog friendly. Open Thu–Sun."
         />
+        <link rel="canonical" href="https://omarufarms.com.au/cafe" />
+        <meta property="og:title" content="Café Omaru | Lunch, Dinner & Phillip Island Views" />
+        <meta property="og:description" content="Lunch and dinner only at Café Omaru, with Sri Lankan flavours, barista coffee, licensed beverages, and Phillip Island wines." />
+        <meta property="og:url" content="https://omarufarms.com.au/cafe" />
+        <meta property="og:image" content="/images/farm/image-farm/IMG_0674.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Café Omaru | Lunch, Dinner & Phillip Island Views" />
+        <meta name="twitter:description" content="Lunch and dinner only at Café Omaru, with Sri Lankan flavours, barista coffee, licensed beverages, and Phillip Island wines." />
+        <meta name="twitter:image" content="/images/farm/image-farm/IMG_0674.jpg" />
       </Helmet>
 
       <main>
@@ -507,9 +544,9 @@ export function CafePage() {
         </section>
 
         {/* ══════════════════════════════════════════
-            FULL MENU — dark estate, 3 numbered columns
+            FULL MENU — light set-menu cards
         ══════════════════════════════════════════ */}
-        <section id="full-menu" className="bg-estate py-24 md:py-32">
+        <section id="full-menu" className="bg-surface-low py-24 md:py-32">
           <div className="mx-auto max-w-[92vw] px-5">
 
             <motion.div
@@ -520,10 +557,10 @@ export function CafePage() {
               custom={0}
               variants={fadeUp}
             >
-              <h2 className="font-heading text-5xl font-semibold italic tracking-[-0.02em] text-white md:text-6xl">
+              <h2 className="font-heading text-5xl font-semibold italic tracking-[-0.02em] text-charcoal md:text-6xl">
                 The Menu
               </h2>
-              <p className="mt-3 font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold/65">
+              <p className="mt-3 font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold-deep">
                 Sri Lankan Set Menu
               </p>
             </motion.div>
@@ -539,16 +576,16 @@ export function CafePage() {
                   variants={fadeUp}
                 >
                   <div className="mb-8 flex items-baseline gap-3">
-                    <span className="font-body text-[0.58rem] font-semibold text-gold/45">{col.num}</span>
-                    <h3 className="font-heading text-2xl font-semibold text-white">{col.key}</h3>
+                    <span className="font-body text-[0.58rem] font-semibold text-gold/70">{col.num}</span>
+                    <h3 className="font-heading text-2xl font-semibold text-charcoal">{col.key}</h3>
                   </div>
                   <div className="space-y-7">
                     {col.items.map((item) => {
                       const imageSrc = menuImageUrl(item.image)
                       return (
-                      <div key={`${col.key}-${item.itemName}`} className="overflow-hidden rounded-sm border border-white/8 bg-white/[0.03]">
+                      <div key={`${col.key}-${item.itemName}`} className="overflow-hidden rounded-sm border border-parchment/70 bg-white shadow-[0_8px_30px_rgba(26,18,8,0.05)]">
                         {imageSrc ? (
-                          <div className="relative h-36 overflow-hidden border-b border-white/8">
+                          <div className="relative h-36 overflow-hidden border-b border-parchment/60">
                             <img
                               src={imageSrc}
                               alt={item.itemName}
@@ -559,7 +596,7 @@ export function CafePage() {
                         ) : null}
                         <div className="p-4">
                         <div className="flex items-start justify-between gap-4">
-                          <p className="font-body text-sm font-semibold leading-snug text-white/90">
+                          <p className="font-body text-sm font-semibold leading-snug text-charcoal">
                             {item.itemName}
                           </p>
                           <span
@@ -569,7 +606,7 @@ export function CafePage() {
                             ${Number(item.price).toFixed(0)}
                           </span>
                         </div>
-                        <p className="mt-1.5 font-body text-xs leading-relaxed text-white/42">
+                        <p className="mt-1.5 font-body text-xs leading-relaxed text-stone">
                           {item.description}
                         </p>
                         </div>
@@ -603,11 +640,11 @@ export function CafePage() {
                 <video
                   src={staticUrl('/images/farm/image-farm/e16abd906ce342f0bd27ac365d346401.mov')}
                   poster={staticUrl('/images/farm/image-farm/20260127_204402.jpg')}
-                  autoPlay
+                  autoPlay={!prefersReducedMotion}
                   loop
                   muted
                   playsInline
-                  preload="metadata"
+                  preload={prefersReducedMotion ? 'none' : 'metadata'}
                   className="h-[320px] w-full object-cover transition duration-700 group-hover:scale-[1.02] md:h-[420px] [filter:saturate(1.14)_contrast(1.08)_brightness(0.95)]"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-estate/48 via-transparent to-transparent" />
@@ -620,11 +657,11 @@ export function CafePage() {
                 <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['morning', 'lunch']) ? 'ring-1 ring-gold/45' : ''}`}>
                   <video
                     src={staticUrl('/images/farm/image-farm/IMG_0659.MOV')}
-                    autoPlay
+                    autoPlay={!prefersReducedMotion}
                     loop
                     muted
                     playsInline
-                    preload="metadata"
+                    preload={prefersReducedMotion ? 'none' : 'metadata'}
                     className="h-40 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.12)_contrast(1.06)_brightness(0.98)]"
                   />
                   <p className="pointer-events-none absolute left-2 top-2 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
@@ -634,12 +671,12 @@ export function CafePage() {
 
                 <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['lunch', 'evening']) ? 'ring-1 ring-gold/45' : ''}`}>
                   <video
-                    src={staticUrl('/images/farm/image-farm/IMG_0669.MOV')}
-                    autoPlay
+                    src={staticUrl('/images/farm/image-farm/IMG_0669.mp4')}
+                    autoPlay={!prefersReducedMotion}
                     loop
                     muted
                     playsInline
-                    preload="metadata"
+                    preload={prefersReducedMotion ? 'none' : 'metadata'}
                     className="h-40 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.12)_contrast(1.06)_brightness(0.98)]"
                   />
                   <p className="pointer-events-none absolute left-2 top-2 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
@@ -804,6 +841,7 @@ export function CafePage() {
                   onSubmit={handleReserve}
                   className="space-y-5 rounded-sm bg-white p-8 shadow-[0_8px_40px_rgba(26,18,8,0.06)] md:p-10"
                 >
+                  <input className="hidden" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" />
                   {/* Row 1: Date + Guests */}
                   <div className="grid gap-5 sm:grid-cols-2">
                     <label className="block">

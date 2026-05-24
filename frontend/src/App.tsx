@@ -1,31 +1,43 @@
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { SiteLayout } from '@/components/site/SiteLayout'
-import { AboutPage } from '@/pages/AboutPage'
-import { BookPage } from '@/pages/BookPage'
-import { CafePage } from '@/pages/CafePage'
-import { ContactPage } from '@/pages/ContactPage'
-import { HomePage } from '@/pages/HomePage'
-import { StayPage } from '@/pages/StayPage'
-import { StorePage } from '@/pages/StorePage'
-import { TermsPage } from '@/pages/TermsPage'
-import { PrivacyPage } from '@/pages/PrivacyPage'
-import { AdminDashboardPage } from '@/pages/AdminDashboardPage'
+
+const AboutPage = lazy(() => import('@/pages/AboutPage').then((m) => ({ default: m.AboutPage })))
+const AdminDashboardPage = lazy(() => import('@/pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })))
+const BookPage = lazy(() => import('@/pages/BookPage').then((m) => ({ default: m.BookPage })))
+const CafePage = lazy(() => import('@/pages/CafePage').then((m) => ({ default: m.CafePage })))
+const ContactPage = lazy(() => import('@/pages/ContactPage').then((m) => ({ default: m.ContactPage })))
+const HomePage = lazy(() => import('@/pages/HomePage').then((m) => ({ default: m.HomePage })))
+const PrivacyPage = lazy(() => import('@/pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })))
+const StayPage = lazy(() => import('@/pages/StayPage').then((m) => ({ default: m.StayPage })))
+const StorePage = lazy(() => import('@/pages/StorePage').then((m) => ({ default: m.StorePage })))
+const TermsPage = lazy(() => import('@/pages/TermsPage').then((m) => ({ default: m.TermsPage })))
+
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center bg-surface px-5 text-sm text-stone">
+      Loading Omaru Farm…
+    </div>
+  )
+}
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/admin" element={<AdminDashboardPage />} />
-      <Route element={<SiteLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/cafe" element={<CafePage />} />
-        <Route path="/stay" element={<StayPage />} />
-        <Route path="/store" element={<StorePage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/book" element={<BookPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-      </Route>
-    </Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route element={<SiteLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/cafe" element={<CafePage />} />
+          <Route path="/stay" element={<StayPage />} />
+          <Route path="/store" element={<StorePage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/book" element={<BookPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+        </Route>
+      </Routes>
+    </Suspense>
   )
 }

@@ -28,6 +28,7 @@ services:
       db:
         condition: service_healthy
     environment:
+      NODE_ENV: production
       PORT: 4000
       DB_HOST: db
       DB_PORT: 3306
@@ -35,9 +36,12 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-omaru_password}
       DB_NAME: ${DB_NAME:-omaru_farm}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change_this_admin_password}
-      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-change_me_in_production}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?ADMIN_JWT_SECRET must be set}
       ADMIN_JWT_EXPIRES: ${ADMIN_JWT_EXPIRES:-8h}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:5173}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
       ADMIN_LOGIN_WINDOW_MS: ${ADMIN_LOGIN_WINDOW_MS:-600000}
       ADMIN_LOGIN_MAX_ATTEMPTS: ${ADMIN_LOGIN_MAX_ATTEMPTS:-8}
       UPLOAD_DIR: /app/uploads
