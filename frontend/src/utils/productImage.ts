@@ -11,8 +11,7 @@ export function productImageUrl(image: string | undefined | null): string {
   if (!raw) return FALLBACK_PRODUCT_IMAGE
   if (/^https?:\/\//i.test(raw)) return raw
   const s = raw.replace(/^\/+/, '')
-  if (s.startsWith('images/uploads/')) return staticUrl(`/${s}`)
+  if (s.startsWith('images/')) return staticUrl(`/${s}`)
   if (s.startsWith('uploads/')) return staticUrl(`/images/${s}`)
-  if (s.startsWith('images/products/')) return staticUrl(`/${s}`)
   return staticUrl(`/images/products/${s}`)
 }

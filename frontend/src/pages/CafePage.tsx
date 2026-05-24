@@ -10,7 +10,9 @@ import {
   MapPin,
   UtensilsCrossed,
   Users,
+  Wine,
 } from 'lucide-react'
+import { productImageUrl } from '@/utils/productImage'
 import { staticUrl } from '@/utils/staticUrl'
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
@@ -38,14 +40,9 @@ type DaypartKey = 'morning' | 'lunch' | 'sunset' | 'evening'
 
 const daypartOptions: { key: DaypartKey; label: string; blurb: string }[] = [
   {
-    key: 'morning',
-    label: 'Morning',
-    blurb: 'Start slow with fresh coffee, warm bakes, and bright paddock light.',
-  },
-  {
     key: 'lunch',
     label: 'Lunch',
-    blurb: 'Seasonal farm plates and relaxed country dining at midday.',
+    blurb: 'Authentic Sri Lankan set menu with fresh farm produce in relaxed country dining.',
   },
   {
     key: 'sunset',
@@ -54,22 +51,28 @@ const daypartOptions: { key: DaypartKey; label: string; blurb: string }[] = [
   },
   {
     key: 'evening',
-    label: 'Evening',
-    blurb: 'A warm dining room, curated pours, and a slower farm rhythm.',
+    label: 'Dinner',
+    blurb: 'Set menu Sri Lankan dinner in a warm dining room with curated pours.',
   },
 ]
 
 const fallbackMenu: MenuItem[] = [
-  { section: 'Breakfast', itemName: 'Heritage Grain Porridge', description: 'Oat porridge, stone-fruit compote, crème fraîche, honey and toasted farm seeds', price: 19, image: '' },
-  { section: 'Breakfast', itemName: 'Poached Farm Eggs', description: 'Free-range eggs on sourdough with hollandaise, shaved garden greens and chilli oil', price: 24, image: '' },
-  { section: 'Breakfast', itemName: 'Smashed Garden Peas', description: 'Herb-smashed peas on grilled sourdough, whipped ricotta, lemon oil and micro-herbs', price: 21, image: '' },
-  { section: 'Lunch', itemName: 'Roasted Root Medley', description: 'Seasonal roasted vegetables, feta, herb dressing, cold-pressed olive oil from our grove', price: 22, image: '' },
-  { section: 'Lunch', itemName: 'Omaru Lamb Ragu', description: 'Slow-cooked ragu with pappardelle, parmesan, gremolata and braised garden onions', price: 28, image: '' },
-  { section: 'Lunch', itemName: 'Wild Mushroom Risotto', description: 'Creamy arborio, seasonal mushrooms, thyme oil, truffle and aged parmesan', price: 26, image: '' },
-  { section: 'Afternoon Tea', itemName: 'Devonshire Scones', description: 'House-baked scones with clotted cream, house-made strawberry preserve and local honey', price: 18, image: '' },
-  { section: 'Afternoon Tea', itemName: 'Lavender Lemon Tart', description: 'Buttery pastry shell, garden lavender curd, meringue and candied lemon peel', price: 16, image: '' },
-  { section: 'Afternoon Tea', itemName: 'The Omaru Tea Set', description: 'Three sandwiches, petit fours and your choice of loose-leaf tea', price: 44, image: '' },
+  { section: 'Lunch', itemName: 'Sri Lankan Rice & Curry', description: 'Traditional rice and curry with coconut sambol, dhal curry, and seasonal vegetables', price: 28, image: 'images/farm/image-farm/IMG_0869.jpg' },
+  { section: 'Lunch', itemName: 'Kottu Roti', description: 'Chopped roti stir-fried with vegetables, egg, and choice of chicken or vegetables', price: 24, image: 'images/farm/image-farm/IMG_0642.jpg' },
+  { section: 'Lunch', itemName: 'Fish Ambul Thiyal', description: 'Sour fish curry with goraka, onions, and aromatic spices, served with rice', price: 32, image: 'images/farm/image-farm/IMG_4672.JPG' },
+  { section: 'Dinner', itemName: 'Lampries Set', description: 'Traditional Dutch Burgher meal with rice, curries, and accompaniments wrapped in banana leaf', price: 45, image: 'images/farm/image-farm/IMG_0674.jpg' },
+  { section: 'Dinner', itemName: 'Seafood Curry Feast', description: 'Fresh Phillip Island seafood in rich coconut curry with string hoppers', price: 42, image: 'images/farm/image-farm/IMG_0781.jpg' },
+  { section: 'Dinner', itemName: 'Devilled Prawns', description: 'Spicy stir-fried prawns with capsicum, onions, and Sri Lankan spices', price: 38, image: 'images/farm/image-farm/IMG_4682.jpg' },
+  { section: 'Beverages', itemName: 'Barista Coffee', description: 'Freshly ground single-origin coffee, espresso and milk-based drinks', price: 6, image: 'images/farm/image-farm/IMG_0641.jpg' },
+  { section: 'Beverages', itemName: 'Phillip Island Wine Selection', description: 'Regional varietals from Phillip Island and Mornington Peninsula', price: 14, image: 'images/farm/image-farm/IMG_6051.jpg' },
+  { section: 'Beverages', itemName: 'Fully Licensed Bar', description: 'Beer, spirits, and cocktails — fully licensed dining with curated pours', price: 12, image: 'images/farm/image-farm/IMG_6051.jpg' },
 ]
+
+function menuImageUrl(image: string | undefined | null): string | null {
+  const raw = String(image ?? '').trim()
+  if (!raw) return null
+  return productImageUrl(raw)
+}
 
 export function CafePage() {
   const pad2 = (n: number) => `${n}`.padStart(2, '0')
@@ -94,7 +97,7 @@ export function CafePage() {
   }
 
   const [guests,   setGuests]   = useState('2 Guests')
-  const [timeSlot, setTimeSlot] = useState('Breakfast 10:00 – 13:00')
+  const [timeSlot, setTimeSlot] = useState('Lunch 12:00 – 15:00')
   const [name,     setName]     = useState('')
   const [email,    setEmail]    = useState('')
   const [notes,    setNotes]    = useState('')
@@ -142,13 +145,14 @@ export function CafePage() {
   }, [])
 
   const menuColumns = useMemo(() => {
-    const order = ['Breakfast', 'Lunch', 'Afternoon Tea', 'Dinner', 'Beverages']
-    const sections = Array.from(new Set(menuItems.map((i) => i.section)))
-    const ordered = [...order.filter((s) => sections.includes(s)), ...sections.filter((s) => !order.includes(s))]
+    const allowedSections = ['Lunch', 'Dinner', 'Beverages']
+    const filteredItems = menuItems.filter((item) => allowedSections.includes(item.section))
+    const sections = Array.from(new Set(filteredItems.map((i) => i.section)))
+    const ordered = allowedSections.filter((s) => sections.includes(s))
     return ordered.map((section, idx) => ({
       key: section,
       num: String(idx + 1).padStart(2, '0'),
-      items: menuItems.filter((x) => x.section === section).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+      items: filteredItems.filter((x) => x.section === section).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     }))
   }, [menuItems])
 
@@ -223,7 +227,7 @@ export function CafePage() {
         <title>Café Omaru | Farm-to-Table Dining on Phillip Island</title>
         <meta
           name="description"
-          content="Premium farm-to-table breakfast, lunch and afternoon tea at Café Omaru, Phillip Island. Fully licensed bar, local wines, barista coffee. Dog friendly. Open Thu–Sun."
+          content="Sri Lankan flavours meet Phillip Island charm at Café Omaru. Lunch and dinner only — no breakfast. Set menu featuring authentic Sri Lankan cuisine, fully licensed bar, local wines. Dog friendly. Open Thu–Sun."
         />
       </Helmet>
 
@@ -262,7 +266,7 @@ export function CafePage() {
               transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             >
               A Beautiful View,<br />
-              <span className="italic text-gold">A Restorative Plate.</span>
+              <span className="italic text-gold">Authentic Flavour.</span>
             </motion.h1>
             <motion.div
               className="mt-8 flex flex-wrap items-center justify-center gap-3"
@@ -291,15 +295,21 @@ export function CafePage() {
             INFO STRIP — hours, dog-friendly, address
         ══════════════════════════════════════════ */}
         <section className="bg-white">
-          <div className="mx-auto grid max-w-[92vw] gap-6 px-5 py-8 sm:grid-cols-3">
+          <div className="mx-auto grid max-w-[92vw] gap-6 px-5 py-8 sm:grid-cols-2 lg:grid-cols-4">
             <div className="flex items-start gap-3">
               <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
               <div>
                 <p className="font-body text-xs font-semibold text-charcoal">
                   Thu–Fri: 10am–2pm &amp; 5–8pm
                 </p>
-                <p className="mt-0.5 font-body text-xs text-stone">Sat–Sun: 10am–8pm</p>
+                <p className="mt-0.5 font-body text-xs text-stone">Sat–Sun: 10am–8pm · Lunch &amp; dinner only</p>
               </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Wine className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
+              <p className="font-body text-xs text-stone">
+                Fully licensed bar with barista coffee, craft beer, spirits, and Phillip Island wines.
+              </p>
             </div>
             <div className="flex items-start gap-3">
               <Dog className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
@@ -358,13 +368,13 @@ export function CafePage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-estate/88 via-estate/35 to-black/10" />
                 <div className="absolute inset-x-0 bottom-0 p-7 md:p-9">
                   <p className="font-body text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-gold">
-                    Featured Story
+                    Set Menu Dinner
                   </p>
                   <h3 className="mt-3 font-heading text-3xl font-semibold text-white md:text-4xl">
-                    Farm Dinner
+                    Sunset Dining
                   </h3>
                   <p className="mt-3 max-w-xl font-body text-sm leading-relaxed text-white/78">
-                    An elevated sunset dining journey through Omaru&apos;s best produce, paired with warm hospitality and uninterrupted paddock views.
+                    An elevated dinner set menu with authentic Sri Lankan flavours, curated pours, and uninterrupted paddock views at golden hour.
                   </p>
                   <div className="mt-5 grid max-w-xl grid-cols-3 gap-2">
                     <div className="relative overflow-hidden rounded-sm border border-white/20">
@@ -422,11 +432,11 @@ export function CafePage() {
                     </div>
                     <div className="p-5">
                       <p className="font-body text-[0.58rem] font-semibold uppercase tracking-[0.27em] text-gold">
-                        Midday Magic
+                        Set Menu Lunch
                       </p>
-                      <h3 className="mt-2 font-heading text-xl font-semibold text-charcoal">Artisan Lunch</h3>
+                      <h3 className="mt-2 font-heading text-xl font-semibold text-charcoal">Lunch at Omaru</h3>
                       <p className="mt-2 font-body text-xs leading-relaxed text-stone">
-                        Seasonal dishes crafted from our farm produce and trusted local makers.
+                        Authentic Sri Lankan set menu with fresh farm produce — lunch only, no breakfast.
                       </p>
                     </div>
                   </div>
@@ -452,11 +462,11 @@ export function CafePage() {
                     </div>
                     <div className="p-5">
                       <p className="font-body text-[0.58rem] font-semibold uppercase tracking-[0.27em] text-gold">
-                        Morning Ritual
+                        Freshly Ground
                       </p>
                       <h3 className="mt-2 font-heading text-xl font-semibold text-charcoal">Barista Coffee</h3>
                       <p className="mt-2 font-body text-xs leading-relaxed text-stone">
-                        Freshly ground single-origin coffee with house-made bites and relaxed country warmth.
+                        Single-origin espresso and milk-based drinks, served throughout lunch and dinner service.
                       </p>
                     </div>
                   </div>
@@ -482,11 +492,11 @@ export function CafePage() {
                     </div>
                     <div className="p-5">
                       <p className="font-body text-[0.58rem] font-semibold uppercase tracking-[0.27em] text-gold">
-                        Cellar Selection
+                        Fully Licensed
                       </p>
                       <h3 className="mt-2 font-heading text-xl font-semibold text-charcoal">Phillip Island Wines</h3>
                       <p className="mt-2 font-body text-xs leading-relaxed text-stone">
-                        Regional varietals from Phillip Island and Mornington Peninsula, chosen to complement our menu.
+                        Fully licensed bar with regional Phillip Island and Mornington Peninsula wines, beer, and spirits.
                       </p>
                     </div>
                   </div>
@@ -514,7 +524,7 @@ export function CafePage() {
                 The Menu
               </h2>
               <p className="mt-3 font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold/65">
-                A Seasonal Synthesis
+                Sri Lankan Set Menu
               </p>
             </motion.div>
 
@@ -533,8 +543,21 @@ export function CafePage() {
                     <h3 className="font-heading text-2xl font-semibold text-white">{col.key}</h3>
                   </div>
                   <div className="space-y-7">
-                    {col.items.map((item) => (
-                      <div key={`${col.key}-${item.itemName}`}>
+                    {col.items.map((item) => {
+                      const imageSrc = menuImageUrl(item.image)
+                      return (
+                      <div key={`${col.key}-${item.itemName}`} className="overflow-hidden rounded-sm border border-white/8 bg-white/[0.03]">
+                        {imageSrc ? (
+                          <div className="relative h-36 overflow-hidden border-b border-white/8">
+                            <img
+                              src={imageSrc}
+                              alt={item.itemName}
+                              className="h-full w-full object-cover [filter:saturate(1.12)_contrast(1.06)_brightness(1.02)]"
+                              loading="lazy"
+                            />
+                          </div>
+                        ) : null}
+                        <div className="p-4">
                         <div className="flex items-start justify-between gap-4">
                           <p className="font-body text-sm font-semibold leading-snug text-white/90">
                             {item.itemName}
@@ -549,8 +572,9 @@ export function CafePage() {
                         <p className="mt-1.5 font-body text-xs leading-relaxed text-white/42">
                           {item.description}
                         </p>
+                        </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </motion.div>
               ))}
@@ -678,10 +702,13 @@ export function CafePage() {
               </div>
               <p className="mt-3 font-body text-sm leading-relaxed text-stone">{activeDaypartBlurb}</p>
               <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
-                Where the Paddock<br />Meets the Plate.
+                Where Sri Lankan Flavours<br />Meet Phillip Island Charm.
               </h2>
               <p className="mt-6 font-body text-base leading-[1.78] text-stone">
-                The best dining experiences leave you closer to the ocean, closer to the land. At Omaru, our food is literally steps from where it grows — the soil, the grove, the free-range paddock.
+                We serve lunch and dinner only — no breakfast. Our set menu features authentic Sri Lankan flavours paired with the finest farm produce grown steps from your table. Each dish celebrates the spices and traditions of Sri Lanka alongside fresh ingredients from the soil, the grove, and the free-range paddock of Phillip Island.
+              </p>
+              <p className="mt-4 font-body text-base leading-[1.78] text-stone">
+                Our fully licensed bar serves barista coffee, Phillip Island wines, craft beer, and spirits — the perfect accompaniment to lunch or sunset dinner with a view.
               </p>
               <p className="mt-4 font-body text-base leading-[1.78] text-stone">
                 From an olive oil as green and grassy as the view itself, to an egg so orange it seems to hold the sunrise — every element on your plate is a reminder of where you are.
@@ -839,9 +866,7 @@ export function CafePage() {
                         className="field w-full appearance-none pr-8"
                         aria-label="Time slot"
                       >
-                        <option>Breakfast 10:00 – 13:00</option>
-                        <option>Lunch 10:00 – 14:00</option>
-                        <option>Afternoon Tea 13:00 – 16:00</option>
+                        <option>Lunch 12:00 – 15:00</option>
                         <option>Dinner 17:00 – 20:00</option>
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/55" aria-hidden />

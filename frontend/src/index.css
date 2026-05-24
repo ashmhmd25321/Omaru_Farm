@@ -74,10 +74,19 @@
            focus:border-gold;
   }
 
-  /* Admin form fields (dark) */
-  .field-dark {
-    @apply w-full rounded border border-gold/30 bg-white/5 px-3 py-2 text-sm text-white outline-none transition
-           focus:border-gold focus:ring-2 focus:ring-gold/20;
+  /* Admin dashboard — bordered fields on light surfaces */
+  .admin-shell .field {
+    @apply w-full rounded-sm border border-parchment/80 bg-white px-3 py-2.5 text-sm text-charcoal outline-none transition
+           placeholder:text-stone/50
+           focus:border-gold focus:ring-2 focus:ring-gold/15;
+  }
+
+  .admin-shell select.field {
+    @apply cursor-pointer;
+  }
+
+  .admin-shell textarea.field {
+    @apply min-h-[2.5rem] resize-y;
   }
 
   /* Warm section divider — use sparingly, prefer background shifts */

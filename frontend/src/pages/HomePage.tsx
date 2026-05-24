@@ -6,17 +6,21 @@ import {
   ArrowRight,
   Beef,
   Bird,
+  Car,
   ChevronLeft,
   ChevronRight,
   CircleX,
   Clock3,
+  Flag,
   Footprints,
   Leaf,
   MapPin,
   Mountain,
   PawPrint,
   Rabbit,
+  Ship,
   Squirrel,
+  Waves,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { featuredProducts } from '@/data/content'
@@ -42,6 +46,16 @@ const fadeUp = {
 }
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
+
+const nearbyAttractions: { Icon: LucideIcon; title: string; detail: string }[] = [
+  { Icon: Bird, title: 'Penguin Parade', detail: 'Just 5 minutes drive — one of Phillip Island\'s most iconic experiences.' },
+  { Icon: Flag, title: 'Grand Prix Circuit', detail: 'Home of the Australian Motorcycle Grand Prix and world-class motorsport.' },
+  { Icon: Waves, title: 'Nobbies Boardwalk', detail: 'Dramatic coastal cliffs, blowholes, and sweeping Southern Ocean views.' },
+  { Icon: Bird, title: 'Swan Lake', detail: 'A peaceful wildlife sanctuary and birdwatching destination nearby.' },
+  { Icon: Ship, title: 'Kitty Miller Bay', detail: 'Historic shipwreck coastline and rugged bay walks close to Ventnor.' },
+  { Icon: Car, title: 'Cowes', detail: 'Only 10 minutes to Phillip Island\'s main town, beaches, shops, and foreshore.' },
+  { Icon: MapPin, title: 'Island Base', detail: 'Close to all key attractions, beaches, cafes, and local amenities.' },
+]
 
 export function HomePage() {
   const [, setProducts] = useState<Product[]>(featuredProducts.slice(0, 4))
@@ -635,6 +649,50 @@ export function HomePage() {
               </Link>
             </motion.div>
 
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════
+            NEARBY ATTRACTIONS — tourism base positioning
+        ══════════════════════════════════════════ */}
+        <section className="bg-surface py-24 md:py-32">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.div
+              className="mx-auto max-w-2xl text-center"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.4 }}
+              custom={0}
+              variants={fadeUp}
+            >
+              <p className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold">
+                Explore Phillip Island
+              </p>
+              <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
+                Your Ideal Island Base
+              </h2>
+              <p className="mt-5 font-body text-base leading-[1.78] text-stone">
+                Omaru Farm sits in Ventnor with easy access to Phillip Island&apos;s best attractions — making us the perfect dining, stay, and day-trip base for families and visitors.
+              </p>
+            </motion.div>
+
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {nearbyAttractions.map((spot, idx) => (
+                <motion.article
+                  key={spot.title}
+                  className="rounded-sm border border-estate/10 bg-white p-6 shadow-[0_8px_30px_rgba(22,14,4,0.04)]"
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.2 }}
+                  custom={idx * 0.06}
+                  variants={fadeUp}
+                >
+                  <spot.Icon className="h-6 w-6 text-gold" strokeWidth={1.75} aria-hidden />
+                  <h3 className="mt-4 font-heading text-xl font-semibold text-charcoal">{spot.title}</h3>
+                  <p className="mt-2 font-body text-sm leading-relaxed text-stone">{spot.detail}</p>
+                </motion.article>
+              ))}
+            </div>
           </div>
         </section>
 

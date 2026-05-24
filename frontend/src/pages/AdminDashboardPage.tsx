@@ -118,6 +118,8 @@ type Booking = {
 
 type TabKey = 'products' | 'testimonials' | 'about' | 'menu' | 'bookings' | 'contact' | 'media' | 'settings'
 
+const MENU_SECTIONS = ['Lunch', 'Dinner', 'Beverages'] as const
+
 async function request<T>(
   path: string,
   token: string,
@@ -169,13 +171,13 @@ function FieldGroup({
   return (
     <div
       className={cn(
-        'rounded-xl border border-gold/12 bg-[linear-gradient(145deg,rgba(0,0,0,0.45)_0%,rgba(20,18,14,0.35)_100%)] p-4 shadow-[inset_0_1px_0_rgba(205,163,73,0.06)]',
+        'rounded-xl border border-parchment/70 bg-white p-4 shadow-[0_4px_24px_rgba(26,18,8,0.04)]',
         className,
       )}
     >
       <div className="mb-3 flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold/65">{title}</p>
-        {description ? <p className="text-[11px] text-white/40">{description}</p> : null}
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-deep">{title}</p>
+        {description ? <p className="text-[11px] text-stone">{description}</p> : null}
       </div>
       {children}
     </div>
@@ -184,7 +186,7 @@ function FieldGroup({
 
 function AdminLabel({ htmlFor, children }: { htmlFor?: string; children: ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-xs font-medium text-white/75">
+    <label htmlFor={htmlFor} className="mb-1.5 block text-xs font-medium text-bark">
       {children}
     </label>
   )
@@ -192,17 +194,17 @@ function AdminLabel({ htmlFor, children }: { htmlFor?: string; children: ReactNo
 
 function AboutContentPreview({ content }: { content: AboutContent }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-gold/20 bg-[#0b0b0b] shadow-[inset_0_1px_0_rgba(205,163,73,0.06)]">
-      <div className="border-b border-gold/10 bg-black/35 px-4 py-3">
+    <div className="overflow-hidden rounded-2xl border border-gold/20 bg-surface shadow-[inset_0_1px_0_rgba(205,163,73,0.06)]">
+      <div className="border-b border-gold/10 bg-surface-low px-4 py-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/65">Live preview</p>
-        <p className="text-xs text-white/45">Updates as you type — matches the legacy and “Living Earth” blocks on the public About page.</p>
+        <p className="text-xs text-stone">Updates as you type — matches the legacy and “Living Earth” blocks on the public About page.</p>
       </div>
       <div className="max-h-[min(720px,72vh)] overflow-y-auto overscroll-contain">
         <section className="border-b border-gold/10">
           <div className="grid gap-6 px-4 py-8 md:grid-cols-12 md:items-center md:px-5">
             <div className="md:col-span-5">
-              <div className="overflow-hidden rounded-2xl border border-gold/15 bg-black/30 shadow-[0_24px_70px_rgba(0,0,0,0.45)]">
-                <div className="aspect-[4/3] bg-black/40">
+              <div className="overflow-hidden rounded-2xl border border-parchment/60 bg-surface shadow-[0_8px_28px_rgba(26,18,8,0.06)]">
+                <div className="aspect-[4/3] bg-surface-low">
                   <img
                     src="/images/farm/IMG_6144.jpg"
                     alt=""
@@ -211,36 +213,36 @@ function AboutContentPreview({ content }: { content: AboutContent }) {
                 </div>
                 <div className="p-4">
                   <p className="text-xs uppercase tracking-[0.26em] text-gold/70">Omaru Farm</p>
-                  <p className="mt-1 font-heading text-xl leading-tight text-[#f5efe2]">
+                  <p className="mt-1 font-heading text-xl leading-tight text-charcoal">
                     {content.legacyTitle.trim() || 'Legacy title'}
                   </p>
                 </div>
               </div>
             </div>
             <div className="md:col-span-7 md:pl-1">
-              <h2 className="font-heading text-3xl leading-[1.05] text-[#f5efe2] md:text-4xl md:leading-[1]">
+              <h2 className="font-heading text-3xl leading-[1.05] text-charcoal md:text-4xl md:leading-[1]">
                 {content.legacyTitle.trim() || 'Legacy title'}
               </h2>
-              <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-white/70 md:text-base">
+              <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-stone md:text-base">
                 {content.legacyDescription.trim() || 'Legacy description will appear here.'}
               </p>
             </div>
           </div>
         </section>
         <section className="px-4 py-8 md:px-5">
-          <div className="mx-auto max-w-2xl rounded-[24px] border border-gold/15 bg-[#111113] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+          <div className="mx-auto max-w-2xl rounded-[24px] border border-parchment/60 bg-surface-low p-6 shadow-[0_8px_28px_rgba(26,18,8,0.06)]">
             <p className="text-xs uppercase tracking-[0.24em] text-gold/70">Living Earth</p>
-            <h2 className="mt-3 font-heading text-3xl leading-[0.98] text-[#f5efe2] sm:text-4xl">
+            <h2 className="mt-3 font-heading text-3xl leading-[0.98] text-charcoal sm:text-4xl">
               {content.foundationTitle.trim() || 'Foundation title'}
             </h2>
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-white/70 md:text-base">
+            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-stone md:text-base">
               {content.foundationDescription.trim() || 'Foundation description will appear here.'}
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               {['Seasonal harvests', 'Small-batch craft', 'Natural ingredients'].map((t) => (
                 <span
                   key={t}
-                  className="rounded-full border border-gold/15 bg-black/25 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/55"
+                  className="rounded-full border border-gold/15 bg-surface px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-stone"
                 >
                   {t}
                 </span>
@@ -314,7 +316,7 @@ function FeaturedToggle({
       onClick={() => onCheckedChange(!checked)}
       className={cn(
         'relative h-8 w-[3.35rem] shrink-0 rounded-full border transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 disabled:cursor-not-allowed disabled:opacity-45',
-        checked ? 'border-gold/45 bg-gold/20 shadow-[0_0_20px_rgba(205,163,73,0.12)]' : 'border-white/18 bg-black/40',
+        checked ? 'border-gold/45 bg-gold/20 shadow-[0_0_20px_rgba(205,163,73,0.12)]' : 'border-parchment/80 bg-surface-low',
       )}
     >
       <span
@@ -398,7 +400,7 @@ function ProductImageField({
           compact ? 'min-h-[72px] py-2.5' : 'min-h-[100px] py-4',
           dragOver
             ? 'border-gold bg-gold/[0.12] text-gold shadow-[0_0_24px_rgba(205,163,73,0.15)]'
-            : 'border-gold/30 text-white/55 hover:border-gold/50 hover:bg-white/[0.03] hover:text-white/75',
+            : 'border-gold/30 text-stone hover:border-gold/50 hover:bg-surface hover:text-bark',
           disabled || uploading ? 'pointer-events-none opacity-50' : '',
         )}
       >
@@ -410,7 +412,7 @@ function ProductImageField({
         <span className="text-xs font-medium">
           {uploading ? 'Uploading…' : compact ? 'Drop or click to upload' : 'Drop an image here, or click to browse'}
         </span>
-        <span className="text-[10px] leading-snug text-white/40">
+        <span className="text-[10px] leading-snug text-stone">
           {compact ? 'JPG · PNG · WebP' : 'JPEG, PNG, WebP or GIF · saved to Media Library'}
         </span>
       </div>
@@ -432,7 +434,7 @@ function ProductImageField({
           placeholder="e.g. 20260311_130334.jpg or uploads/your-file.jpg"
           disabled={disabled}
         />
-        <p className="mt-1 text-[11px] text-white/35">Legacy files use the filename only; new uploads use the uploads/… path.</p>
+        <p className="mt-1 text-[11px] text-stone/80">Legacy files use the filename only; new uploads use the uploads/… path.</p>
       </div>
     </div>
   )
@@ -507,7 +509,7 @@ export function AdminDashboardPage() {
     visitDate: '',
   })
   const [newMenuItem, setNewMenuItem] = useState({
-    section: 'Breakfast',
+    section: 'Lunch',
     itemName: '',
     description: '',
     price: '',
@@ -635,13 +637,13 @@ export function AdminDashboardPage() {
         <Helmet>
           <title>Admin Login | Omaru Farm</title>
         </Helmet>
-        <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-5 py-12">
-          <Card variant="dark" className="w-full max-w-lg">
+        <main className="admin-shell mx-auto flex min-h-screen w-full max-w-5xl items-center bg-surface px-5 py-12">
+          <Card className="w-full max-w-lg">
             <CardHeader>
-              <CardTitle variant="dark">Omaru Admin Login</CardTitle>
+              <CardTitle>Omaru Admin Login</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-white/70">Enter admin credentials from backend `.env` (`ADMIN_USERNAME` / `ADMIN_PASSWORD`).</p>
+              <p className="text-sm text-stone">Enter admin credentials from backend `.env` (`ADMIN_USERNAME` / `ADMIN_PASSWORD`).</p>
               <input
                 className="field"
                 value={username}
@@ -658,7 +660,7 @@ export function AdminDashboardPage() {
               <Button disabled={busy || !username || !password} onClick={login} className="w-full">
                 {busy ? 'Signing in...' : 'Sign in'}
               </Button>
-              {error ? <p className="text-sm text-red-300">{error}</p> : null}
+              {error ? <p className="text-sm text-red-600">{error}</p> : null}
             </CardContent>
           </Card>
         </main>
@@ -672,12 +674,12 @@ export function AdminDashboardPage() {
         <title>Admin Dashboard | Omaru Farm</title>
       </Helmet>
 
-      <main className="bg-[#0b0b0b] pb-14">
-        <section className="border-b border-gold/20 bg-black/40">
+      <main className="admin-shell min-h-screen bg-surface pb-14">
+        <section className="border-b border-parchment/60 bg-white shadow-[0_1px_0_rgba(26,18,8,0.04)]">
           <div className="mx-auto flex max-w-[96vw] flex-col gap-4 px-4 py-6 sm:px-5 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-gold/75">Website Control</p>
-              <h1 className="mt-2 font-heading text-4xl text-[#f5efe2] md:text-5xl">Admin Dashboard</h1>
+              <h1 className="mt-2 font-heading text-4xl text-charcoal md:text-5xl">Admin Dashboard</h1>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={loadAll} disabled={busy}>
@@ -693,9 +695,9 @@ export function AdminDashboardPage() {
         <section className="mx-auto max-w-[96vw] px-4 pt-6 sm:px-5">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {stats.map((s) => (
-              <Card variant="dark" key={s.label}>
+              <Card key={s.label}>
                 <CardContent className="p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/50">{s.label}</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-stone">{s.label}</p>
                   <p className="mt-2 text-2xl font-semibold text-gold">{s.value}</p>
                 </CardContent>
               </Card>
@@ -719,8 +721,8 @@ export function AdminDashboardPage() {
                 onClick={() => setTab(x.id as TabKey)}
                 className={`rounded-full border px-4 py-2 text-sm transition ${
                   tab === x.id
-                    ? 'border-gold bg-gold/20 text-gold'
-                    : 'border-white/25 text-white/75 hover:border-gold/60 hover:text-gold'
+                    ? 'border-gold bg-gold/15 text-gold-deep'
+                    : 'border-parchment bg-white text-stone hover:border-gold/50 hover:text-gold-deep'
                 }`}
               >
                 {x.label}
@@ -728,21 +730,21 @@ export function AdminDashboardPage() {
             ))}
           </div>
 
-          {message ? <p className="mt-4 text-sm text-emerald-300">{message}</p> : null}
-          {error ? <p className="mt-4 text-sm text-red-300">{error}</p> : null}
+          {message ? <p className="mt-4 text-sm text-emerald-700">{message}</p> : null}
+          {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
 
           {tab === 'products' && (
             <section className="mt-6 space-y-8">
-              <div className="rounded-2xl border border-gold/15 bg-[linear-gradient(125deg,rgba(205,163,73,0.07)_0%,transparent_42%,rgba(0,0,0,0.2)_100%)] px-4 py-5 sm:px-6">
+              <div className="rounded-2xl border border-parchment/60 bg-[linear-gradient(125deg,rgba(205,163,73,0.08)_0%,transparent_55%,rgba(249,249,247,0.9)_100%)] px-4 py-5 sm:px-6">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.22em] text-gold/70">Store catalog</p>
-                    <h2 className="mt-1 font-heading text-3xl text-[#f5efe2] sm:text-4xl">Product management</h2>
-                    <p className="mt-2 max-w-2xl text-sm text-white/55">
+                    <h2 className="mt-1 font-heading text-3xl text-charcoal sm:text-4xl">Product management</h2>
+                    <p className="mt-2 max-w-2xl text-sm text-stone">
                       Organise store categories, add products, upload photos, and mark home-page highlights. Preview on the store anytime.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 rounded-full border border-gold/20 bg-black/30 px-4 py-2 text-sm text-white/70">
+                  <div className="flex items-center gap-2 rounded-full border border-gold/20 bg-surface px-4 py-2 text-sm text-stone">
                     <Package className="h-4 w-4 text-gold" aria-hidden />
                     <span>
                       <span className="font-semibold text-gold">{products.length}</span> in catalog
@@ -751,14 +753,14 @@ export function AdminDashboardPage() {
                 </div>
               </div>
 
-              <Card variant="dark" className="overflow-hidden border-gold/20 shadow-[0_20px_70px_rgba(0,0,0,0.3)]">
-                <CardHeader className="border-b border-gold/10 bg-black/25 pb-5">
+              <Card className="overflow-hidden border-gold/20 shadow-[0_8px_32px_rgba(26,18,8,0.06)]">
+                <CardHeader className="border-b border-gold/10 bg-surface pb-5">
                   <div>
-                    <CardTitle variant="dark" className="flex items-center gap-2 text-gold">
+                    <CardTitle className="flex items-center gap-2 text-gold">
                       <FolderTree className="h-6 w-6 text-gold/90" aria-hidden />
                       Store categories
                     </CardTitle>
-                    <p className="mt-2 text-sm text-white/50">
+                    <p className="mt-2 text-sm text-stone">
                       These labels power product assignment and the category chips on the public store. Renaming a category updates every product that
                       used the old name. Delete only works when no products reference the category.
                     </p>
@@ -828,7 +830,7 @@ export function AdminDashboardPage() {
                       All categories ({productCategories.length})
                     </p>
                     {productCategories.length === 0 ? (
-                      <p className="rounded-xl border border-dashed border-gold/20 bg-black/20 py-8 text-center text-sm text-white/45">
+                      <p className="rounded-xl border border-dashed border-gold/20 bg-surface py-8 text-center text-sm text-stone">
                         No categories loaded. Refresh the page after the API migrates the database.
                       </p>
                     ) : (
@@ -836,7 +838,7 @@ export function AdminDashboardPage() {
                         {productCategories.map((cat) => (
                           <li
                             key={cat.id}
-                            className="flex flex-col gap-3 rounded-xl border border-gold/12 bg-black/30 p-3 sm:flex-row sm:items-center sm:gap-3"
+                            className="flex flex-col gap-3 rounded-xl border border-gold/12 bg-surface p-3 sm:flex-row sm:items-center sm:gap-3"
                           >
                             <div className="min-w-0 flex-1">
                               <AdminLabel htmlFor={`cat-name-${cat.id}`}>Display name</AdminLabel>
@@ -902,7 +904,7 @@ export function AdminDashboardPage() {
                               <Button
                                 type="button"
                                 variant="outline"
-                                className="gap-1.5 border-red-500/35 px-3 py-1.5 text-xs text-red-300 hover:border-red-400/50 hover:bg-red-950/30 hover:text-red-200"
+                                className="gap-1.5 border-red-500/35 px-3 py-1.5 text-xs text-red-600 hover:border-red-400/50 hover:bg-red-950/30 hover:text-red-200"
                                 onClick={async () => {
                                   if (!window.confirm(`Delete category “${cat.name}”? Only allowed if no products use it.`)) return
                                   setError('')
@@ -927,15 +929,15 @@ export function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card variant="dark" className="overflow-hidden border-gold/20 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
-                <CardHeader className="border-b border-gold/10 bg-black/25 pb-5">
+              <Card className="overflow-hidden border-gold/20 shadow-[0_8px_32px_rgba(26,18,8,0.06)]">
+                <CardHeader className="border-b border-gold/10 bg-surface pb-5">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <CardTitle variant="dark" className="flex items-center gap-2 text-gold">
+                      <CardTitle className="flex items-center gap-2 text-gold">
                         <Plus className="h-6 w-6 text-gold/90" aria-hidden />
                         Add a product
                       </CardTitle>
-                      <p className="mt-1 text-sm text-white/50">Required: name and category. Price defaults to 0 if left blank.</p>
+                      <p className="mt-1 text-sm text-stone">Required: name and category. Price defaults to 0 if left blank.</p>
                     </div>
                   </div>
                 </CardHeader>
@@ -996,20 +998,20 @@ export function AdminDashboardPage() {
                                 onChange={(v) => setNewProduct((x) => ({ ...x, category: v }))}
                               />
                             </div>
-                            <p className="mt-1 text-[11px] text-white/40">Add or reorder categories in “Store categories” above.</p>
+                            <p className="mt-1 text-[11px] text-stone">Add or reorder categories in “Store categories” above.</p>
                           </div>
                         </div>
                       </FieldGroup>
 
                       <FieldGroup title="Visibility" description="Featured items fill the home page grid (up to six)">
-                        <div className="flex flex-col gap-3 rounded-lg border border-gold/10 bg-black/25 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-3 rounded-lg border border-gold/10 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex items-center gap-3">
                             <Sparkles className="h-8 w-8 shrink-0 text-gold/80" aria-hidden />
                             <div>
-                              <p id="new-featured-label" className="text-sm font-medium text-[#f5efe2]">
+                              <p id="new-featured-label" className="text-sm font-medium text-charcoal">
                                 Featured on home page
                               </p>
-                              <p className="text-xs text-white/45">Leave off if this is a supporting catalog item only.</p>
+                              <p className="text-xs text-stone">Leave off if this is a supporting catalog item only.</p>
                             </div>
                           </div>
                           <FeaturedToggle
@@ -1034,8 +1036,8 @@ export function AdminDashboardPage() {
 
                     <div className="space-y-3 xl:col-span-4">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/55">Live preview</p>
-                      <div className="sticky top-6 overflow-hidden rounded-2xl border border-gold/25 bg-black/40 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-                        <div className="aspect-square w-full overflow-hidden bg-black/50">
+                      <div className="sticky top-6 overflow-hidden rounded-2xl border border-gold/25 bg-surface-low shadow-[0_8px_28px_rgba(26,18,8,0.06)]">
+                        <div className="aspect-square w-full overflow-hidden bg-surface-low">
                           <img
                             src={productImageUrl(newProduct.image)}
                             alt=""
@@ -1043,10 +1045,10 @@ export function AdminDashboardPage() {
                           />
                         </div>
                         <div className="space-y-1 border-t border-gold/15 p-4">
-                          <p className="font-heading text-lg leading-tight text-[#f5efe2] line-clamp-2">
+                          <p className="font-heading text-lg leading-tight text-charcoal line-clamp-2">
                             {newProduct.name || 'Product name'}
                           </p>
-                          <p className="text-xs text-white/50">{newProduct.category || 'Category'} · {newProduct.size || 'Size'}</p>
+                          <p className="text-xs text-stone">{newProduct.category || 'Category'} · {newProduct.size || 'Size'}</p>
                           <p className="pt-1 text-xl font-semibold text-gold">${Number(newProduct.price || 0).toFixed(2)}</p>
                         </div>
                         <div className="flex flex-col gap-2 border-t border-gold/10 p-3">
@@ -1095,7 +1097,7 @@ export function AdminDashboardPage() {
                       )}
                       Add to catalog
                     </Button>
-                    <p className="text-xs text-white/40">Tip: save first, then use “Preview on store” from the list.</p>
+                    <p className="text-xs text-stone">Tip: save first, then use “Preview on store” from the list.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -1104,12 +1106,12 @@ export function AdminDashboardPage() {
                 <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <h3 className="font-heading text-2xl text-gold">Your products</h3>
-                    <p className="text-sm text-white/45">
+                    <p className="text-sm text-stone">
                       List view — click a row to open details, image, and actions.
                       {products.length > 0 ? (
                         <>
                           {' '}
-                          <span className="text-white/35">
+                          <span className="text-stone/80">
                             {productListFiltersActive
                               ? `Showing ${filteredAdminProducts.length} of ${products.length}.`
                               : `${products.length} total.`}
@@ -1121,14 +1123,14 @@ export function AdminDashboardPage() {
                 </div>
 
                 {products.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-gold/25 bg-black/25 py-16 text-center">
+                  <div className="rounded-2xl border border-dashed border-gold/25 bg-surface py-16 text-center">
                     <Package className="mx-auto h-12 w-12 text-gold/30" aria-hidden />
-                    <p className="mt-4 font-heading text-xl text-white/70">No products yet</p>
-                    <p className="mx-auto mt-2 max-w-sm text-sm text-white/45">Use the form above to add your first item. It will appear on the public store immediately.</p>
+                    <p className="mt-4 font-heading text-xl text-stone">No products yet</p>
+                    <p className="mx-auto mt-2 max-w-sm text-sm text-stone">Use the form above to add your first item. It will appear on the public store immediately.</p>
                   </div>
                 ) : (
                   <>
-                    <div className="mb-4 rounded-xl border border-gold/15 bg-black/35 p-4 shadow-[inset_0_1px_0_rgba(205,163,73,0.05)]">
+                    <div className="mb-4 rounded-xl border border-gold/15 bg-surface-low p-4 shadow-[inset_0_1px_0_rgba(205,163,73,0.05)]">
                       <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/65">
                         <Filter className="h-4 w-4 text-gold/80" aria-hidden />
                         Filter products
@@ -1193,10 +1195,10 @@ export function AdminDashboardPage() {
                     </div>
 
                     {filteredAdminProducts.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-gold/25 bg-black/20 py-14 text-center">
+                      <div className="rounded-2xl border border-dashed border-gold/25 bg-surface py-14 text-center">
                         <Filter className="mx-auto h-10 w-10 text-gold/25" aria-hidden />
-                        <p className="mt-3 font-heading text-lg text-white/70">No products match these filters</p>
-                        <p className="mx-auto mt-1 max-w-sm text-sm text-white/45">Try a different search or clear filters to show the full catalog again.</p>
+                        <p className="mt-3 font-heading text-lg text-stone">No products match these filters</p>
+                        <p className="mx-auto mt-1 max-w-sm text-sm text-stone">Try a different search or clear filters to show the full catalog again.</p>
                         <Button
                           type="button"
                           variant="outline"
@@ -1211,24 +1213,24 @@ export function AdminDashboardPage() {
                         </Button>
                       </div>
                     ) : (
-                  <div className="overflow-hidden rounded-2xl border border-gold/18 bg-black/25 shadow-[0_16px_50px_rgba(0,0,0,0.22)]">
+                  <div className="overflow-hidden rounded-2xl border border-gold/18 bg-surface shadow-[0_8px_28px_rgba(26,18,8,0.05)]">
                     <ul className="divide-y divide-gold/10" role="list">
                       {filteredAdminProducts.map((p) => {
                         const isOpen = expandedProductId === p.id
                         return (
-                          <li key={p.id} className="bg-[linear-gradient(165deg,rgba(255,255,255,0.02)_0%,transparent_50%)]">
+                          <li key={p.id} className="bg-[linear-gradient(165deg,rgba(249,249,247,0.8)_0%,transparent_50%)]">
                             <button
                               type="button"
                               className={cn(
                                 'flex w-full items-center gap-3 px-3 py-3 text-left transition sm:gap-4 sm:px-4 sm:py-3.5',
-                                isOpen ? 'bg-gold/[0.07]' : 'hover:bg-white/[0.04]',
+                                isOpen ? 'bg-gold/[0.07]' : 'hover:bg-surface',
                               )}
                               aria-expanded={isOpen}
                               aria-controls={`product-panel-${p.id}`}
                               id={`product-row-${p.id}`}
                               onClick={() => setExpandedProductId((id) => (id === p.id ? null : p.id))}
                             >
-                              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-gold/20 bg-black/50 sm:h-16 sm:w-16">
+                              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-gold/20 bg-surface-low sm:h-16 sm:w-16">
                                 <img src={productImageUrl(p.image)} alt="" className="h-full w-full object-cover" />
                               </div>
                               <div className="min-w-0 flex-1">
@@ -1243,12 +1245,12 @@ export function AdminDashboardPage() {
                                     </span>
                                   ) : null}
                                 </div>
-                                <p className="mt-1 truncate font-heading text-base text-[#f5efe2] sm:text-lg">{p.name || 'Untitled product'}</p>
-                                <p className="truncate text-xs text-white/45 sm:text-sm">
-                                  <span className="text-white/55">{p.category || 'No category'}</span>
-                                  <span className="text-white/30"> · </span>
+                                <p className="mt-1 truncate font-heading text-base text-charcoal sm:text-lg">{p.name || 'Untitled product'}</p>
+                                <p className="truncate text-xs text-stone sm:text-sm">
+                                  <span className="text-stone">{p.category || 'No category'}</span>
+                                  <span className="text-stone/70"> · </span>
                                   {p.size || '—'}
-                                  <span className="text-white/30"> · </span>
+                                  <span className="text-stone/70"> · </span>
                                   <span className="font-medium text-gold">${Number(p.price).toFixed(2)}</span>
                                 </p>
                               </div>
@@ -1263,7 +1265,7 @@ export function AdminDashboardPage() {
                                 id={`product-panel-${p.id}`}
                                 role="region"
                                 aria-labelledby={`product-row-${p.id}`}
-                                className="border-t border-gold/10 bg-black/35 px-3 pb-5 pt-4 sm:px-5"
+                                className="border-t border-gold/10 bg-surface-low px-3 pb-5 pt-4 sm:px-5"
                               >
                                 <div className="grid gap-5 lg:grid-cols-12">
                                   <div className="space-y-4 lg:col-span-5">
@@ -1328,10 +1330,10 @@ export function AdminDashboardPage() {
                                     <FieldGroup title="Home page" className="!p-3 sm:!p-4">
                                       <div className="flex items-center justify-between gap-3">
                                         <div>
-                                          <p id={`prod-${p.id}-feat-label`} className="text-sm text-[#f5efe2]">
+                                          <p id={`prod-${p.id}-feat-label`} className="text-sm text-charcoal">
                                             Feature on home
                                           </p>
-                                          <p className="text-xs text-white/40">Shown in the home “store” section (max 6).</p>
+                                          <p className="text-xs text-stone">Shown in the home “store” section (max 6).</p>
                                         </div>
                                         <FeaturedToggle
                                           id={`prod-${p.id}-featured`}
@@ -1358,13 +1360,13 @@ export function AdminDashboardPage() {
                                           }
                                           onError={setError}
                                         />
-                                        <div className="overflow-hidden rounded-xl border border-gold/20 bg-black/40">
+                                        <div className="overflow-hidden rounded-xl border border-gold/20 bg-surface-low">
                                           <img
                                             src={productImageUrl(p.image)}
                                             alt=""
                                             className="aspect-video w-full object-cover sm:aspect-square"
                                           />
-                                          <p className="border-t border-gold/10 px-3 py-2 text-center text-[11px] text-white/40">Preview</p>
+                                          <p className="border-t border-gold/10 px-3 py-2 text-center text-[11px] text-stone">Preview</p>
                                         </div>
                                       </div>
                                     </FieldGroup>
@@ -1372,7 +1374,7 @@ export function AdminDashboardPage() {
                                 </div>
 
                                 <div className="mt-5 flex flex-col gap-3 border-t border-gold/10 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                                  <p className="text-xs text-white/35">
+                                  <p className="text-xs text-stone/80">
                                     <Store className="mr-1 inline h-3.5 w-3.5 text-gold/50" aria-hidden />
                                     Changes are not live until you save.
                                   </p>
@@ -1426,7 +1428,7 @@ export function AdminDashboardPage() {
                                     </Button>
                                     <Button
                                       variant="outline"
-                                      className="gap-1.5 border-red-500/35 px-3 py-1.5 text-xs text-red-300 hover:border-red-400/50 hover:bg-red-950/30 hover:text-red-200"
+                                      className="gap-1.5 border-red-500/35 px-3 py-1.5 text-xs text-red-600 hover:border-red-400/50 hover:bg-red-950/30 hover:text-red-200"
                                       type="button"
                                       onClick={async (e) => {
                                         e.stopPropagation()
@@ -1464,19 +1466,19 @@ export function AdminDashboardPage() {
                   role="dialog"
                   aria-modal="true"
                   aria-labelledby="draft-preview-title"
-                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md"
+                  className="fixed inset-0 z-[100] flex items-center justify-center bg-charcoal/50 p-4 backdrop-blur-md"
                   onClick={() => setDraftPreviewOpen(false)}
                   onKeyDown={(e) => {
                     if (e.key === 'Escape') setDraftPreviewOpen(false)
                   }}
                 >
                   <div
-                    className="relative w-full max-w-md rounded-2xl border border-gold/30 bg-[#0c0c0c] p-6 shadow-[0_28px_100px_rgba(0,0,0,0.65)]"
+                    className="relative w-full max-w-md rounded-2xl border border-gold/30 bg-white p-6 shadow-[0_16px_48px_rgba(26,18,8,0.12)]"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
                       type="button"
-                      className="absolute right-4 top-4 rounded-md border border-white/15 px-2 py-1 text-xs text-white/60 transition hover:border-gold/40 hover:text-gold"
+                      className="absolute right-4 top-4 rounded-md border border-parchment/60 px-2 py-1 text-xs text-stone transition hover:border-gold/40 hover:text-gold"
                       onClick={() => setDraftPreviewOpen(false)}
                     >
                       Esc
@@ -1484,13 +1486,13 @@ export function AdminDashboardPage() {
                     <p id="draft-preview-title" className="text-xs uppercase tracking-[0.22em] text-gold/75">
                       Draft preview
                     </p>
-                    <p className="mt-2 text-sm text-white/50">Approximates how the card will look on the store. Save the product to open the real store page.</p>
-                    <div className="mt-5 overflow-hidden rounded-xl border border-gold/20 bg-black/50">
+                    <p className="mt-2 text-sm text-stone">Approximates how the card will look on the store. Save the product to open the real store page.</p>
+                    <div className="mt-5 overflow-hidden rounded-xl border border-gold/20 bg-surface-low">
                       <img src={productImageUrl(newProduct.image)} alt="" className="h-52 w-full object-cover" />
                       <div className="p-4">
-                        <p className="font-heading text-2xl text-[#f5efe2]">{newProduct.name || 'Product name'}</p>
-                        <p className="mt-1 text-sm text-white/55">{newProduct.category || 'Category'}</p>
-                        <p className="mt-1 text-sm text-white/55">{newProduct.size || 'Size'}</p>
+                        <p className="font-heading text-2xl text-charcoal">{newProduct.name || 'Product name'}</p>
+                        <p className="mt-1 text-sm text-stone">{newProduct.category || 'Category'}</p>
+                        <p className="mt-1 text-sm text-stone">{newProduct.size || 'Size'}</p>
                         <p className="mt-3 text-2xl font-semibold text-gold">${Number(newProduct.price || 0).toFixed(2)}</p>
                       </div>
                     </div>
@@ -1505,8 +1507,8 @@ export function AdminDashboardPage() {
 
           {tab === 'testimonials' && (
             <section className="mt-5 space-y-4">
-              <Card variant="dark">
-                <CardHeader><CardTitle variant="dark">Add Testimonial</CardTitle></CardHeader>
+              <Card>
+                <CardHeader><CardTitle>Add Testimonial</CardTitle></CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-2">
                   <input className="field" placeholder="Guest name" value={newTestimonial.guestName} onChange={(e) => setNewTestimonial((v) => ({ ...v, guestName: e.target.value }))} />
                   <input className="field" placeholder="Location" value={newTestimonial.location} onChange={(e) => setNewTestimonial((v) => ({ ...v, location: e.target.value }))} />
@@ -1536,11 +1538,11 @@ export function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card variant="dark">
-                <CardHeader><CardTitle variant="dark">Testimonials ({testimonials.length})</CardTitle></CardHeader>
+              <Card>
+                <CardHeader><CardTitle>Testimonials ({testimonials.length})</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {testimonials.map((t) => (
-                    <div key={t.id} className="rounded-xl border border-gold/15 bg-black/20 p-3">
+                    <div key={t.id} className="rounded-xl border border-gold/15 bg-surface p-3">
                       <div className="grid gap-2 md:grid-cols-4">
                         <input className="field" value={t.guestName} onChange={(e) => setTestimonials((rows) => rows.map((x) => (x.id === t.id ? { ...x, guestName: e.target.value } : x)))} />
                         <input className="field" value={t.location} onChange={(e) => setTestimonials((rows) => rows.map((x) => (x.id === t.id ? { ...x, location: e.target.value } : x)))} />
@@ -1549,7 +1551,7 @@ export function AdminDashboardPage() {
                         <textarea className="field min-h-20 md:col-span-4" value={t.comment} onChange={(e) => setTestimonials((rows) => rows.map((x) => (x.id === t.id ? { ...x, comment: e.target.value } : x)))} />
                       </div>
                       <div className="mt-3 flex items-center gap-3">
-                        <label className="inline-flex items-center gap-2 text-sm text-white/70">
+                        <label className="inline-flex items-center gap-2 text-sm text-stone">
                           <input
                             type="checkbox"
                             checked={t.isPublished}
@@ -1584,18 +1586,18 @@ export function AdminDashboardPage() {
 
           {tab === 'menu' && (
             <section className="mt-6 space-y-6">
-              <div className="rounded-2xl border border-gold/15 bg-[linear-gradient(125deg,rgba(205,163,73,0.06)_0%,transparent_45%)] px-4 py-5 sm:px-6">
+              <div className="rounded-2xl border border-parchment/60 bg-[linear-gradient(125deg,rgba(205,163,73,0.08)_0%,transparent_55%)] px-4 py-5 sm:px-6">
                 <p className="text-xs uppercase tracking-[0.22em] text-gold/70">Café menu</p>
-                <h2 className="mt-1 font-heading text-3xl text-[#f5efe2] sm:text-4xl">Menu management</h2>
-                <p className="mt-2 max-w-2xl text-sm text-white/55">
+                <h2 className="mt-1 font-heading text-3xl text-charcoal sm:text-4xl">Menu management</h2>
+                <p className="mt-2 max-w-2xl text-sm text-stone">
                   Add dishes below, then use the list to expand any row for full editing, image upload, and publish toggle.
                 </p>
               </div>
 
-              <Card variant="dark" className="overflow-hidden border-gold/20">
-                <CardHeader className="border-b border-gold/10 bg-black/25">
-                  <CardTitle variant="dark">Add menu item</CardTitle>
-                  <p className="text-sm font-normal text-white/50">Creates a new row — open it from the list to add a photo or tweak details.</p>
+              <Card className="overflow-hidden border-gold/20">
+                <CardHeader className="border-b border-gold/10 bg-surface">
+                  <CardTitle>Add menu item</CardTitle>
+                  <p className="text-sm font-normal text-stone">Creates a new row — open it from the list to add a photo or tweak details.</p>
                 </CardHeader>
                 <CardContent className="grid gap-4 pt-6 md:grid-cols-3">
                   <div>
@@ -1606,7 +1608,7 @@ export function AdminDashboardPage() {
                       value={newMenuItem.section}
                       onChange={(e) => setNewMenuItem((v) => ({ ...v, section: e.target.value }))}
                     >
-                      {['Breakfast', 'Lunch', 'Afternoon Tea'].map((s) => (
+                      {MENU_SECTIONS.map((s) => (
                         <option key={s} value={s}>
                           {s}
                         </option>
@@ -1680,7 +1682,7 @@ export function AdminDashboardPage() {
                               sortOrder: Number(newMenuItem.sortOrder || 0),
                             }),
                           })
-                          setNewMenuItem({ section: 'Breakfast', itemName: '', description: '', price: '', image: '', sortOrder: '0' })
+                          setNewMenuItem({ section: 'Lunch', itemName: '', description: '', price: '', image: '', sortOrder: '0' })
                           setMessage('Menu item added')
                           await loadAll()
                         } catch (err) {
@@ -1698,36 +1700,36 @@ export function AdminDashboardPage() {
               <div>
                 <div className="mb-4">
                   <h3 className="font-heading text-2xl text-gold">All menu items</h3>
-                  <p className="text-sm text-white/45">
+                  <p className="text-sm text-stone">
                     {menuItems.length} total — click a row to edit. Lower sort numbers appear earlier within a section on the café page.
                   </p>
                 </div>
 
                 {menuItems.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-gold/25 bg-black/25 py-16 text-center">
+                  <div className="rounded-2xl border border-dashed border-gold/25 bg-surface py-16 text-center">
                     <UtensilsCrossed className="mx-auto h-12 w-12 text-gold/30" aria-hidden />
-                    <p className="mt-4 font-heading text-xl text-white/70">No menu items yet</p>
-                    <p className="mx-auto mt-2 max-w-sm text-sm text-white/45">Use the form above to add dishes for Breakfast, Lunch, or Afternoon Tea.</p>
+                    <p className="mt-4 font-heading text-xl text-stone">No menu items yet</p>
+                    <p className="mx-auto mt-2 max-w-sm text-sm text-stone">Use the form above to add dishes for Lunch, Dinner, or Beverages.</p>
                   </div>
                 ) : (
-                  <div className="overflow-hidden rounded-2xl border border-gold/18 bg-black/25 shadow-[0_16px_50px_rgba(0,0,0,0.22)]">
+                  <div className="overflow-hidden rounded-2xl border border-gold/18 bg-surface shadow-[0_8px_28px_rgba(26,18,8,0.05)]">
                     <ul className="divide-y divide-gold/10" role="list">
                       {menuItems.map((m) => {
                         const isOpen = expandedMenuItemId === m.id
                         return (
-                          <li key={m.id} className="bg-[linear-gradient(165deg,rgba(255,255,255,0.02)_0%,transparent_50%)]">
+                          <li key={m.id} className="bg-[linear-gradient(165deg,rgba(249,249,247,0.8)_0%,transparent_50%)]">
                             <button
                               type="button"
                               className={cn(
                                 'flex w-full items-center gap-3 px-3 py-3 text-left transition sm:gap-4 sm:px-4 sm:py-3.5',
-                                isOpen ? 'bg-gold/[0.07]' : 'hover:bg-white/[0.04]',
+                                isOpen ? 'bg-gold/[0.07]' : 'hover:bg-surface',
                               )}
                               aria-expanded={isOpen}
                               aria-controls={`menu-panel-${m.id}`}
                               id={`menu-row-${m.id}`}
                               onClick={() => setExpandedMenuItemId((id) => (id === m.id ? null : m.id))}
                             >
-                              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-gold/20 bg-black/50 sm:h-16 sm:w-16">
+                              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-gold/20 bg-surface-low sm:h-16 sm:w-16">
                                 <img
                                   src={productImageUrl(m.image)}
                                   alt=""
@@ -1739,25 +1741,25 @@ export function AdminDashboardPage() {
                                   <span className="rounded border border-gold/25 bg-gold/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gold/90 sm:text-[11px]">
                                     {m.section}
                                   </span>
-                                  <span className="rounded border border-white/15 px-1.5 py-0.5 font-mono text-[10px] text-white/50 sm:text-[11px]">
+                                  <span className="rounded border border-parchment/60 px-1.5 py-0.5 font-mono text-[10px] text-stone sm:text-[11px]">
                                     #{m.id}
                                   </span>
                                   {m.isPublished ? (
-                                    <span className="rounded-full border border-emerald-500/30 bg-emerald-950/40 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+                                    <span className="rounded-full border border-emerald-500/30 bg-emerald-950/40 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
                                       Published
                                     </span>
                                   ) : (
-                                    <span className="rounded-full border border-white/15 bg-black/40 px-2 py-0.5 text-[10px] text-white/45">
+                                    <span className="rounded-full border border-parchment/60 bg-surface-low px-2 py-0.5 text-[10px] text-stone">
                                       Draft
                                     </span>
                                   )}
-                                  <span className="text-[10px] text-white/35 sm:text-[11px]">sort {m.sortOrder}</span>
+                                  <span className="text-[10px] text-stone/80 sm:text-[11px]">sort {m.sortOrder}</span>
                                 </div>
-                                <p className="mt-1 truncate font-heading text-base text-[#f5efe2] sm:text-lg">{m.itemName || 'Untitled dish'}</p>
-                                <p className="truncate text-xs text-white/45 sm:text-sm">
+                                <p className="mt-1 truncate font-heading text-base text-charcoal sm:text-lg">{m.itemName || 'Untitled dish'}</p>
+                                <p className="truncate text-xs text-stone sm:text-sm">
                                   <span className="font-medium text-gold">${Number(m.price).toFixed(2)}</span>
-                                  <span className="text-white/30"> · </span>
-                                  <span className="text-white/55">{m.description ? `${m.description.slice(0, 72)}${m.description.length > 72 ? '…' : ''}` : 'No description'}</span>
+                                  <span className="text-stone/70"> · </span>
+                                  <span className="text-stone">{m.description ? `${m.description.slice(0, 72)}${m.description.length > 72 ? '…' : ''}` : 'No description'}</span>
                                 </p>
                               </div>
                               <ChevronDown
@@ -1771,7 +1773,7 @@ export function AdminDashboardPage() {
                                 id={`menu-panel-${m.id}`}
                                 role="region"
                                 aria-labelledby={`menu-row-${m.id}`}
-                                className="border-t border-gold/10 bg-black/35 px-3 pb-5 pt-4 sm:px-5"
+                                className="border-t border-gold/10 bg-surface-low px-3 pb-5 pt-4 sm:px-5"
                               >
                                 <div className="grid gap-5 lg:grid-cols-12">
                                   <div className="space-y-4 lg:col-span-5">
@@ -1787,7 +1789,7 @@ export function AdminDashboardPage() {
                                               setMenuItems((rows) => rows.map((x) => (x.id === m.id ? { ...x, section: e.target.value } : x)))
                                             }
                                           >
-                                            {['Breakfast', 'Lunch', 'Afternoon Tea'].map((s) => (
+                                            {MENU_SECTIONS.map((s) => (
                                               <option key={s} value={s}>
                                                 {s}
                                               </option>
@@ -1851,10 +1853,10 @@ export function AdminDashboardPage() {
                                     </FieldGroup>
 
                                     <FieldGroup title="Visibility" className="!p-3 sm:!p-4">
-                                      <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-gold/10 bg-black/25 p-3">
+                                      <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-gold/10 bg-surface p-3">
                                         <input
                                           type="checkbox"
-                                          className="h-4 w-4 rounded border-gold/40 bg-black/40 text-gold focus:ring-gold"
+                                          className="h-4 w-4 rounded border-gold/40 bg-surface-low text-gold focus:ring-gold"
                                           checked={m.isPublished}
                                           onChange={(e) =>
                                             setMenuItems((rows) =>
@@ -1863,8 +1865,8 @@ export function AdminDashboardPage() {
                                           }
                                         />
                                         <div>
-                                          <p className="text-sm font-medium text-[#f5efe2]">Published on café menu</p>
-                                          <p className="text-xs text-white/45">Draft items stay hidden from the public API.</p>
+                                          <p className="text-sm font-medium text-charcoal">Published on café menu</p>
+                                          <p className="text-xs text-stone">Draft items stay hidden from the public API.</p>
                                         </div>
                                       </label>
                                     </FieldGroup>
@@ -1883,13 +1885,13 @@ export function AdminDashboardPage() {
                                           }
                                           onError={setError}
                                         />
-                                        <div className="overflow-hidden rounded-xl border border-gold/20 bg-black/40">
+                                        <div className="overflow-hidden rounded-xl border border-gold/20 bg-surface-low">
                                           <img
                                             src={productImageUrl(m.image)}
                                             alt=""
                                             className="aspect-video w-full object-cover sm:aspect-square"
                                           />
-                                          <p className="border-t border-gold/10 px-3 py-2 text-center text-[11px] text-white/40">Preview</p>
+                                          <p className="border-t border-gold/10 px-3 py-2 text-center text-[11px] text-stone">Preview</p>
                                         </div>
                                       </div>
                                     </FieldGroup>
@@ -1897,7 +1899,7 @@ export function AdminDashboardPage() {
                                 </div>
 
                                 <div className="mt-5 flex flex-col gap-3 border-t border-gold/10 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                                  <p className="text-xs text-white/35">
+                                  <p className="text-xs text-stone/80">
                                     <Store className="mr-1 inline h-3.5 w-3.5 text-gold/50" aria-hidden />
                                     Save to push changes to the live café page.
                                   </p>
@@ -1929,7 +1931,7 @@ export function AdminDashboardPage() {
                                     </Button>
                                     <Button
                                       variant="outline"
-                                      className="gap-1.5 border-red-500/35 px-3 py-1.5 text-xs text-red-300 hover:border-red-400/50 hover:bg-red-950/30 hover:text-red-200"
+                                      className="gap-1.5 border-red-500/35 px-3 py-1.5 text-xs text-red-600 hover:border-red-400/50 hover:bg-red-950/30 hover:text-red-200"
                                       type="button"
                                       onClick={async (e) => {
                                         e.stopPropagation()
@@ -1965,10 +1967,10 @@ export function AdminDashboardPage() {
           {tab === 'about' && (
             <section className="mt-5 space-y-6">
               <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
-                <Card variant="dark" className="overflow-hidden border-gold/20">
-                  <CardHeader className="border-b border-gold/10 bg-black/20">
-                    <CardTitle variant="dark">About page copy</CardTitle>
-                    <p className="text-sm font-normal text-white/50">
+                <Card className="overflow-hidden border-gold/20">
+                  <CardHeader className="border-b border-gold/10 bg-surface">
+                    <CardTitle>About page copy</CardTitle>
+                    <p className="text-sm font-normal text-stone">
                       These fields feed the legacy story column and the “Living Earth” card on{' '}
                       <span className="text-gold/80">/about</span>. Save to publish.
                     </p>
@@ -2035,8 +2037,8 @@ export function AdminDashboardPage() {
 
           {tab === 'contact' && (
             <section className="mt-5">
-              <Card variant="dark">
-                <CardHeader><CardTitle variant="dark">Contact Details</CardTitle></CardHeader>
+              <Card>
+                <CardHeader><CardTitle>Contact Details</CardTitle></CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-2">
                   <input className="field" value={contact.farmName} onChange={(e) => setContact((v) => ({ ...v, farmName: e.target.value }))} placeholder="Farm name" />
                   <input className="field" value={contact.email} onChange={(e) => setContact((v) => ({ ...v, email: e.target.value }))} placeholder="Email" />
@@ -2065,25 +2067,25 @@ export function AdminDashboardPage() {
 
           {tab === 'bookings' && (
             <section className="mt-5">
-              <Card variant="dark">
-                <CardHeader><CardTitle variant="dark">Bookings ({bookings.length})</CardTitle></CardHeader>
+              <Card>
+                <CardHeader><CardTitle>Bookings ({bookings.length})</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {bookings.length === 0 ? (
-                    <p className="text-sm text-white/65">No bookings yet.</p>
+                    <p className="text-sm text-stone">No bookings yet.</p>
                   ) : (
                     bookings.map((b) => (
-                      <div key={b.id} className="rounded-xl border border-gold/15 bg-black/20 p-3">
-                        <p className="text-sm text-white/85">
-                          <span className="text-white/55">Name:</span> {b.fullName || '—'}
+                      <div key={b.id} className="rounded-xl border border-gold/15 bg-surface p-3">
+                        <p className="text-sm text-charcoal">
+                          <span className="text-stone">Name:</span> {b.fullName || '—'}
                         </p>
-                        <p className="text-sm text-white/85">
-                          <span className="text-white/55">Email:</span> {b.email || '—'}
+                        <p className="text-sm text-charcoal">
+                          <span className="text-stone">Email:</span> {b.email || '—'}
                         </p>
-                        <p className="text-sm text-white/85">
-                          <span className="text-white/55">Date:</span> {b.bookingDate || '—'}
+                        <p className="text-sm text-charcoal">
+                          <span className="text-stone">Date:</span> {b.bookingDate || '—'}
                         </p>
-                        <p className="mt-1 text-sm text-white/75">{b.message || 'No message'}</p>
-                        <p className="mt-1 text-xs text-white/55">
+                        <p className="mt-1 text-sm text-bark">{b.message || 'No message'}</p>
+                        <p className="mt-1 text-xs text-stone">
                           {b.source || 'website'}
                           {b.guestCount ? ` · ${b.guestCount} guests` : ''}
                           {b.timeFrom && b.timeUntil ? ` · ${b.timeFrom}-${b.timeUntil}` : ''}
@@ -2139,8 +2141,8 @@ export function AdminDashboardPage() {
 
           {tab === 'media' && (
             <section className="mt-5 space-y-4">
-              <Card variant="dark">
-                <CardHeader><CardTitle variant="dark">Upload Image</CardTitle></CardHeader>
+              <Card>
+                <CardHeader><CardTitle>Upload Image</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   <input
                     type="file"
@@ -2192,27 +2194,27 @@ export function AdminDashboardPage() {
                       Clear
                     </Button>
                   </div>
-                  <p className="text-xs text-white/60">
+                  <p className="text-xs text-stone">
                     Uploaded files become available at paths like `/images/uploads/your-file.jpg`.
                   </p>
                 </CardContent>
               </Card>
 
-              <Card variant="dark">
-                <CardHeader><CardTitle variant="dark">Media Library ({media.length})</CardTitle></CardHeader>
+              <Card>
+                <CardHeader><CardTitle>Media Library ({media.length})</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {media.length === 0 ? (
-                    <p className="text-sm text-white/65">No uploaded files yet.</p>
+                    <p className="text-sm text-stone">No uploaded files yet.</p>
                   ) : (
                     media.map((m) => (
-                      <div key={m.name} className="rounded-xl border border-gold/15 bg-black/20 p-3">
+                      <div key={m.name} className="rounded-xl border border-gold/15 bg-surface p-3">
                         <div className="grid gap-3 md:grid-cols-12 md:items-center">
                           <div className="md:col-span-2">
                             <img src={m.url} alt={m.name} className="h-16 w-16 rounded-lg border border-gold/20 object-cover" loading="lazy" />
                           </div>
                           <div className="md:col-span-7">
-                            <p className="text-sm text-white/85">{m.name}</p>
-                            <p className="mt-1 text-xs text-white/55">
+                            <p className="text-sm text-charcoal">{m.name}</p>
+                            <p className="mt-1 text-xs text-stone">
                               {Math.ceil(m.size / 1024)} KB · {new Date(m.updatedAt).toLocaleString()}
                             </p>
                             <p className="mt-1 text-xs text-gold/85">{m.url}</p>
@@ -2257,8 +2259,8 @@ export function AdminDashboardPage() {
 
           {tab === 'settings' && (
             <section className="mt-5">
-              <Card variant="dark">
-                <CardHeader><CardTitle variant="dark">Site Settings</CardTitle></CardHeader>
+              <Card>
+                <CardHeader><CardTitle>Site Settings</CardTitle></CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-2">
                   <input className="field" value={siteSettings.brandName} onChange={(e) => setSiteSettings((v) => ({ ...v, brandName: e.target.value }))} placeholder="Brand name" />
                   <input className="field" value={siteSettings.footerTagline} onChange={(e) => setSiteSettings((v) => ({ ...v, footerTagline: e.target.value }))} placeholder="Footer tagline" />

@@ -341,7 +341,7 @@ export function StorePage() {
                   Find Us
                 </p>
                 <p className="mt-1 font-body text-xs text-stone">
-                  776 Ventnor Road, Ventnor, VIC 3922
+                  776 Ventnor Road, Ventnor, Phillip Island VIC 3922
                 </p>
               </motion.div>
             </motion.div>

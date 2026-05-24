@@ -592,7 +592,7 @@ export function StayPage() {
                 { Icon: Bird,   text: '5 min to Penguin Parade' },
                 { Icon: Waves,  text: 'Ocean views from the paddock' },
                 { Icon: PawPrint, text: 'Farm animals on-site' },
-                { Icon: MapPin,  text: '776 Ventnor Road, Phillip Island' },
+                { Icon: MapPin,  text: '776 Ventnor Road, Ventnor, Phillip Island VIC 3922' },
               ].map(({ Icon, text }) => (
                 <span key={text} className="inline-flex items-center gap-2 font-body text-xs text-white/38">
                   <Icon className="h-3.5 w-3.5 text-gold/55" aria-hidden />

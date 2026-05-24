@@ -2,7 +2,7 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 type CardProps = React.HTMLAttributes<HTMLDivElement> & {
-  /** Default: light cards for the public site; use `dark` for the admin dashboard. */
+  /** Default: light cards for the public site and admin dashboard. */
   variant?: 'light' | 'dark'
 }
 
