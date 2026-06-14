@@ -105,11 +105,11 @@ export function AboutPage() {
         <meta property="og:title" content="About Omaru Farm | A Beautiful View" />
         <meta property="og:description" content="Discover Omaru Farm, a tranquil Phillip Island destination shaped by beautiful views, farm life, and warm hospitality." />
         <meta property="og:url" content="https://omarufarms.com.au/about" />
-        <meta property="og:image" content="/images/farm/20211027_195611.jpg" />
+        <meta property="og:image" content="/images/farm/image-farm/DC543FC904F0A78254E08248B5D588EC.JPG" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="About Omaru Farm | A Beautiful View" />
         <meta name="twitter:description" content="Discover Omaru Farm, a tranquil Phillip Island destination shaped by beautiful views, farm life, and warm hospitality." />
-        <meta name="twitter:image" content="/images/farm/20211027_195611.jpg" />
+        <meta name="twitter:image" content="/images/farm/image-farm/DC543FC904F0A78254E08248B5D588EC.JPG" />
       </Helmet>
 
       <main>
@@ -119,20 +119,19 @@ export function AboutPage() {
         ══════════════════════════════════════════ */}
         <section className="relative flex min-h-[82vh] items-center justify-center overflow-hidden bg-surface">
           <img
-            src={staticUrl('/images/farm/20211027_195611.jpg')}
-            alt="Rolling countryside at Omaru Farm, Phillip Island"
-            className="absolute inset-0 h-full w-full object-cover"
+            src={staticUrl('/images/farm/image-farm/DC543FC904F0A78254E08248B5D588EC.JPG')}
+            alt="Aerial view of Omaru Farm paddocks, cabins, and Phillip Island countryside"
+            className="absolute inset-0 h-full w-full object-cover object-[center_58%]"
             loading="eager"
             fetchPriority="high"
           />
-          {/* Layered overlays */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/25 to-black/35" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/8 via-transparent to-black/6" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.34)_0%,rgba(0,0,0,0.16)_38%,transparent_72%)]" />
+          {/* Light scrim — keeps text readable without darkening the photo */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-charcoal/10 to-charcoal/38" />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal/5 via-transparent to-charcoal/4" />
 
           <div className="relative z-10 mx-auto w-full max-w-[92vw] px-5 text-center">
             <motion.p
-              className="mb-4 font-body text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-gold"
+              className="mb-4 font-body text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-gold-deep drop-shadow-[0_1px_8px_rgba(255,255,255,0.85)]"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -140,7 +139,7 @@ export function AboutPage() {
               Est. 2024
             </motion.p>
             <motion.h1
-              className="hero-headline mx-auto max-w-3xl font-heading text-[2.7rem] font-semibold leading-[1.04] tracking-[-0.03em] text-white sm:text-5xl md:text-[4.6rem]"
+              className="hero-headline mx-auto max-w-3xl font-heading text-[2.7rem] font-semibold leading-[1.04] tracking-[-0.03em] text-white drop-shadow-[0_2px_24px_rgba(22,14,4,0.45)] sm:text-5xl md:text-[4.6rem]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
@@ -148,7 +147,7 @@ export function AboutPage() {
               The Spirit of Omaru
             </motion.h1>
             <motion.p
-              className="mx-auto mt-5 max-w-2xl font-body text-base leading-[1.75] text-white/92 md:text-[1.45rem]"
+              className="mx-auto mt-5 max-w-2xl font-body text-base leading-[1.75] text-white/95 drop-shadow-[0_2px_16px_rgba(22,14,4,0.4)] md:text-[1.45rem]"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.65, delay: 0.35 }}

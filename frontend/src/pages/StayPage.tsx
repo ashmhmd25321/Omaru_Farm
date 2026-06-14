@@ -255,31 +255,29 @@ export function StayPage() {
         <meta property="og:title" content="Stay at Omaru Farm | Cabins & Holiday Homes" />
         <meta property="og:description" content="Self-contained farm cabins and Phillip Island holiday homes close to Penguin Parade, Cowes, and island attractions." />
         <meta property="og:url" content="https://omarufarms.com.au/stay" />
-        <meta property="og:image" content="/images/farm/image-farm/7CD1DA41BA7E970B38EA4E75B43CD7CD.JPG" />
+        <meta property="og:image" content="/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Stay at Omaru Farm | Cabins & Holiday Homes" />
         <meta name="twitter:description" content="Self-contained farm cabins and Phillip Island holiday homes close to Penguin Parade, Cowes, and island attractions." />
-        <meta name="twitter:image" content="/images/farm/image-farm/7CD1DA41BA7E970B38EA4E75B43CD7CD.JPG" />
+        <meta name="twitter:image" content="/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.png" />
       </Helmet>
 
       <main>
 
         {/* ══════════════════════════════════════════
-            HERO — full-viewport image, bottom-left text
+            HERO — sunset patio retreat, bottom-left text
         ══════════════════════════════════════════ */}
-        <section className="relative flex min-h-[80vh] items-end overflow-hidden">
+        <section className="relative flex min-h-[80vh] items-end overflow-hidden bg-surface">
           <img
-            src={staticUrl('/images/farm/image-farm/7CD1DA41BA7E970B38EA4E75B43CD7CD.JPG')}
-            alt="Farm accommodation at Omaru, Phillip Island"
-            className="absolute inset-0 h-full w-full object-cover [filter:saturate(1.14)_contrast(1.1)_brightness(0.9)]"
+            src={staticUrl('/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.png')}
+            alt="Terrace dining at Omaru Farm overlooking Phillip Island coastline at sunset"
+            className="absolute inset-0 h-full w-full object-cover object-[center_45%]"
             loading="eager"
             fetchPriority="high"
           />
-          {/* Cinematic layering: improves contrast and keeps headline readable */}
-          <div className="absolute inset-0 bg-gradient-to-r from-estate/82 via-estate/36 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/68 via-estate/24 to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.12)_0%,rgba(0,0,0,0.34)_72%,rgba(0,0,0,0.5)_100%)]" />
-          <div className="absolute inset-0 opacity-[0.14] [background:repeating-linear-gradient(0deg,rgba(255,255,255,0.07)_0px,rgba(255,255,255,0.07)_1px,transparent_1px,transparent_3px)]" />
+          {/* Light scrim — readable text without heavy darkening */}
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal/48 via-charcoal/18 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-charcoal/52 via-charcoal/12 to-white/8" />
 
           <div className="relative z-10 mx-auto w-full max-w-[92vw] px-5 pb-20 md:pb-28">
             <motion.div
@@ -288,14 +286,14 @@ export function StayPage() {
               transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
               className="max-w-xl"
             >
-              <p className="mb-4 font-body text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-gold/80">
+              <p className="mb-4 font-body text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-gold drop-shadow-[0_1px_10px_rgba(255,255,255,0.75)]">
                 Welcome to Omaru
               </p>
-              <h1 className="hero-headline font-heading text-[2.6rem] font-semibold leading-[1.04] tracking-[-0.03em] text-white sm:text-5xl md:text-[3.5rem] lg:text-[4rem]">
+              <h1 className="hero-headline font-heading text-[2.6rem] font-semibold leading-[1.04] tracking-[-0.03em] text-white drop-shadow-[0_2px_24px_rgba(22,14,4,0.48)] sm:text-5xl md:text-[3.5rem] lg:text-[4rem]">
                 A Sanctuary<br />
                 of <span className="italic text-gold">Silence</span>
               </h1>
-              <p className="mt-5 font-body text-base leading-[1.78] text-white/72 md:text-lg">
+              <p className="mt-5 font-body text-base leading-[1.78] text-white/92 drop-shadow-[0_2px_16px_rgba(22,14,4,0.42)] md:text-lg">
                 Only our self-contained cabins are on Omaru Farm. Holiday homes are separate properties on Phillip Island — each a comfortable base minutes from the farm and the Penguin Parade.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">

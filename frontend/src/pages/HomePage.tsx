@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
   ArrowRight,
@@ -46,10 +46,65 @@ const fadeUp = {
   }),
 }
 
+const meaningStagger = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.09, delayChildren: 0.04 },
+  },
+}
+
+const meaningItem = {
+  hidden: { opacity: 0, y: 22 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.58, ease: [0.22, 1, 0.36, 1] as const },
+  },
+}
+
+const meaningCardEnter = {
+  hidden: { opacity: 0, x: 36, scale: 0.97 },
+  show: (delay = 0) => ({
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: { duration: 0.78, delay, ease: [0.22, 1, 0.36, 1] as const },
+  }),
+}
+
+const meaningSeal = {
+  hidden: { opacity: 0, scale: 0.82, rotate: -6 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    rotate: 0,
+    transition: { duration: 0.62, delay: 0.22, ease: [0.22, 1, 0.36, 1] as const },
+  },
+}
+
+const meaningDividerLine = {
+  hidden: { scaleX: 0, opacity: 0 },
+  show: (delay = 0) => ({
+    scaleX: 1,
+    opacity: 1,
+    transition: { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] as const },
+  }),
+}
+
+const meaningDividerGem = {
+  hidden: { opacity: 0, scale: 0 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.35, delay: 0.48, ease: [0.22, 1, 0.36, 1] as const },
+  },
+}
+
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
 
 const nearbyAttractions: { Icon: LucideIcon; title: string; detail: string }[] = [
   { Icon: Bird, title: 'Penguin Parade', detail: 'Just 5 minutes drive — one of Phillip Island\'s most iconic experiences.' },
+  { Icon: Leaf, title: 'Phillip Island Nature Parks', detail: 'Koala Conservation Reserve, Churchill Island Heritage Farm, the Nobbies Centre, and protected coastal wildlife across the island.' },
   { Icon: Flag, title: 'Grand Prix Circuit', detail: 'Home of the Australian Motorcycle Grand Prix and world-class motorsport.' },
   { Icon: Waves, title: 'Nobbies Boardwalk', detail: 'Dramatic coastal cliffs, blowholes, and sweeping Southern Ocean views.' },
   { Icon: Bird, title: 'Swan Lake', detail: 'A peaceful wildlife sanctuary and birdwatching destination nearby.' },
@@ -59,6 +114,8 @@ const nearbyAttractions: { Icon: LucideIcon; title: string; detail: string }[] =
 ]
 
 export function HomePage() {
+  const prefersReducedMotion = useReducedMotion()
+  const motionInstant = prefersReducedMotion ? { duration: 0 } : undefined
   const [, setProducts] = useState<Product[]>(featuredProducts.slice(0, 4))
   const [currentSlide, setCurrentSlide] = useState(0)
   const [residentGalleryIndex, setResidentGalleryIndex] = useState(0)
@@ -66,10 +123,9 @@ export function HomePage() {
 
   const heroImages = useMemo(
     () => [
-      staticUrl('/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG'),
       staticUrl('/images/farm/IMG_3924.jpg'),
-      staticUrl('/images/farm/20210606_172356.jpg'),
       staticUrl('/images/farm/20210602_130149.jpg'),
+      staticUrl('/images/farm/IMG_9130.jpg'),
     ],
     [],
   )
@@ -151,9 +207,20 @@ export function HomePage() {
   }, [])
 
   useEffect(() => {
-    const timer = window.setInterval(() => setCurrentSlide((p) => (p + 1) % heroImages.length), 6000)
+    heroImages.forEach((src) => {
+      const img = new window.Image()
+      img.src = src
+    })
+  }, [heroImages])
+
+  useEffect(() => {
+    const intervalMs = prefersReducedMotion ? 8000 : 6000
+    const timer = window.setInterval(
+      () => setCurrentSlide((p) => (p + 1) % heroImages.length),
+      intervalMs,
+    )
     return () => window.clearInterval(timer)
-  }, [heroImages.length])
+  }, [heroImages.length, prefersReducedMotion])
 
   return (
     <>
@@ -167,11 +234,11 @@ export function HomePage() {
         <meta property="og:title" content="Omaru Farm | A Beautiful View on Phillip Island" />
         <meta property="og:description" content="Farm-to-table dining, stays, farm life, and farm store goods in Ventnor, Phillip Island." />
         <meta property="og:url" content="https://omarufarms.com.au/" />
-        <meta property="og:image" content="/images/farm/image-farm/20260127_204402.jpg" />
+        <meta property="og:image" content="/images/farm/IMG_3924.jpg" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Omaru Farm | A Beautiful View on Phillip Island" />
         <meta name="twitter:description" content="Farm-to-table dining, stays, farm life, and farm store goods in Ventnor, Phillip Island." />
-        <meta name="twitter:image" content="/images/farm/image-farm/20260127_204402.jpg" />
+        <meta name="twitter:image" content="/images/farm/IMG_3924.jpg" />
       </Helmet>
 
       <main>
@@ -181,41 +248,49 @@ export function HomePage() {
         ══════════════════════════════════════════ */}
         <section className="relative flex min-h-svh items-center justify-center overflow-hidden">
 
-          {/* Slideshow */}
-          {heroImages.map((img, idx) => (
+          {/* Slideshow — horizontal slide track */}
+          <div className="absolute inset-0 overflow-hidden">
             <div
-              key={img}
-              className={`absolute inset-0 transition-opacity duration-[1500ms] ${idx === currentSlide ? 'opacity-100' : 'opacity-0'}`}
-              aria-hidden={idx !== currentSlide}
+              className={`flex h-full min-h-svh ease-[cubic-bezier(0.22,1,0.36,1)] ${prefersReducedMotion ? '' : 'transition-transform duration-[1200ms]'}`}
+              style={{ transform: `translate3d(-${currentSlide * 100}vw, 0, 0)` }}
             >
-              <img
-                src={img}
-                alt="Omaru Farm, Phillip Island"
-                className={`absolute inset-0 h-full w-full object-cover transition-transform duration-[8000ms] ease-out ${idx === currentSlide ? 'scale-[1.05]' : 'scale-100'}`}
-                loading={idx === 0 ? 'eager' : 'lazy'}
-                fetchPriority={idx === 0 ? 'high' : 'auto'}
-              />
+              {heroImages.map((img, idx) => (
+                <div
+                  key={img}
+                  className="relative h-full min-h-svh min-w-full shrink-0"
+                  aria-hidden={idx !== currentSlide}
+                >
+                  <img
+                    src={img}
+                    alt="Omaru Farm, Phillip Island"
+                    className={`absolute inset-0 h-full w-full object-cover ${prefersReducedMotion ? '' : 'transition-transform duration-[8000ms] ease-out'} ${idx === currentSlide ? 'scale-[1.05]' : 'scale-100'}`}
+                    loading="eager"
+                    fetchPriority={idx === 0 ? 'high' : 'auto'}
+                    draggable={false}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
 
-          {/* Overlays */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-black/28 to-black/52" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/12 via-transparent to-black/8" />
+          {/* Overlays — light scrim for text legibility without muddying photos */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/6 via-charcoal/10 to-charcoal/34" />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal/5 via-transparent to-charcoal/4" />
 
           {/* Content — centered */}
           <div className="relative z-10 flex flex-col items-center px-6 pb-36 pt-20 text-center">
             <motion.span
-              className="mb-6 inline-flex items-center gap-2 rounded-sm border border-white/18 bg-black/28 px-4 py-2 font-body text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-gold backdrop-blur-md"
+              className="mb-6 inline-flex items-center gap-2 rounded-sm border border-white/40 bg-white/24 px-4 py-2 font-body text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-charcoal shadow-[0_4px_24px_rgba(26,18,8,0.1)] backdrop-blur-md"
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.12 }}
             >
-              <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-gold-deep" aria-hidden />
               Phillip Island, Victoria
             </motion.span>
 
             <motion.h1
-              className="hero-headline max-w-4xl font-heading text-[2.75rem] font-semibold leading-[1.02] tracking-[-0.03em] text-white sm:text-5xl md:text-[5rem] lg:text-[6rem]"
+              className="hero-headline max-w-4xl font-heading text-[2.75rem] font-semibold leading-[1.02] tracking-[-0.03em] text-white drop-shadow-[0_2px_24px_rgba(22,14,4,0.45)] sm:text-5xl md:text-[5rem] lg:text-[6rem]"
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
@@ -224,7 +299,7 @@ export function HomePage() {
             </motion.h1>
 
             <motion.p
-              className="mt-6 max-w-lg font-body text-base leading-[1.78] text-white/88 md:text-lg"
+              className="mt-6 max-w-lg font-body text-base leading-[1.78] text-white/95 drop-shadow-[0_2px_16px_rgba(22,14,4,0.4)] md:text-lg"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.65, delay: 0.38 }}
@@ -269,9 +344,9 @@ export function HomePage() {
             ))}
           </div>
 
-          {/* Bottom info bar — dark glass so the hero image stays visible (no white fade) */}
-          <div className="absolute inset-x-0 bottom-0 z-10 border-t border-white/10 bg-black/45 backdrop-blur-md">
-            <div className="mx-auto flex max-w-[92vw] flex-wrap items-center justify-between gap-3 px-5 py-3 font-body text-xs text-white/85">
+          {/* Bottom info bar — light glass so bright hero photos read through */}
+          <div className="absolute inset-x-0 bottom-0 z-10 border-t border-white/20 bg-white/12 backdrop-blur-md">
+            <div className="mx-auto flex max-w-[92vw] flex-wrap items-center justify-between gap-3 px-5 py-3 font-body text-xs text-white/92">
               <span className="flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5 shrink-0 text-gold" />
                 776 Ventnor Road, Ventnor, Phillip Island VIC 3922
@@ -290,134 +365,241 @@ export function HomePage() {
 
         {/* ══════════════════════════════════════════
             THE MEANING OF OMARU
-            Left: text + stats  |  Right: dark editorial card
+            Eyebrow above · headline aligns with card · card extends below
         ══════════════════════════════════════════ */}
-        <section className="bg-surface py-24 md:py-32">
-          <div className="mx-auto grid max-w-[92vw] grid-cols-1 gap-14 px-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-16 lg:gap-24">
-
-            {/* Left column */}
-            <motion.div
-              className="min-w-0"
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.3 }}
-              custom={0}
-              variants={fadeUp}
+        <section className="overflow-hidden bg-surface py-24 md:py-32">
+          <div className="mx-auto max-w-[92vw] px-5">
+            <motion.p
+              className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.5 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
-              <p className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold">
-                Welcome to Omaru
-              </p>
-              <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
-                The Meaning<br />of Omaru
-              </h2>
-              <p className="mt-6 font-body text-base leading-[1.78] text-stone">
-                In the ancient Aboriginal and Indigenous tongue, <em>Omaru</em> means{' '}
-                <strong className="font-semibold text-bark">a beautiful view</strong>. Nestled in the rolling green hills of Phillip Island,
-                our farm earns that name every single day — with sweeping ocean outlooks, endless open skies,
-                and a landscape that restores the soul.
-              </p>
-              <p className="mt-4 font-body text-base leading-[1.78] text-stone">
-                Whether you're here for a long farm lunch, a sunset dinner, or a weekend stay in one of our self-contained cabins — the view will stay with you long after you leave.
-              </p>
+              Welcome to Omaru
+            </motion.p>
 
-              {/* Stat + supporting badge */}
-              <div className="mt-10 max-w-xl">
-                <div className="h-px w-full bg-gradient-to-r from-gold/70 via-gold/25 to-transparent" />
-                <div className="flex flex-col gap-5 py-6 sm:flex-row sm:items-center sm:gap-8">
-                  <div>
-                    <p className="font-heading text-4xl font-semibold leading-none text-charcoal md:text-5xl">
-                      70<span className="text-gold">+</span>
-                    </p>
-                    <p className="mt-2 font-body text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone">
-                      Years of Farming
-                    </p>
-                  </div>
-                  <div className="inline-flex w-fit flex-col rounded-full border border-gold/55 bg-gold/5 px-5 py-3">
-                    <p className="font-body text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-gold-deep">
-                      Panoramic View
-                    </p>
-                    <p className="mt-1 font-body text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-stone">
-                      Land &amp; Sea Outlook
-                    </p>
-                  </div>
-                </div>
-                <div className="h-px w-full bg-gradient-to-r from-gold/25 via-gold/12 to-transparent" />
-              </div>
-
-              <Link
-                to="/about"
-                className="mt-9 inline-flex items-center gap-2 font-body text-sm font-semibold text-gold-deep transition hover:text-gold"
+            <div className="mt-5 flex flex-col gap-14 md:mt-6 md:flex-row md:items-start md:gap-16 lg:gap-24">
+              {/* Left column — headline through CTA */}
+              <motion.div
+                className="min-w-0 md:flex-1"
+                variants={meaningStagger}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.22 }}
               >
-                Discover our story <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-            </motion.div>
+                <motion.h2
+                  variants={meaningItem}
+                  transition={motionInstant}
+                  className="font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl"
+                >
+                  The Meaning<br />of Omaru
+                </motion.h2>
+                <motion.p
+                  variants={meaningItem}
+                  transition={motionInstant}
+                  className="mt-6 font-body text-base leading-[1.78] text-stone"
+                >
+                  In the ancient Aboriginal and Indigenous tongue, <em>Omaru</em> means{' '}
+                  <strong className="font-semibold text-bark">a beautiful view</strong>. Nestled in the rolling green hills of Phillip Island,
+                  our farm earns that name every single day — with sweeping ocean outlooks, endless open skies,
+                  and a landscape that restores the soul.
+                </motion.p>
+                <motion.p
+                  variants={meaningItem}
+                  transition={motionInstant}
+                  className="mt-4 font-body text-base leading-[1.78] text-stone"
+                >
+                  Whether you're here for a long farm lunch, a sunset dinner, or a weekend stay in one of our self-contained cabins — the view will stay with you long after you leave.
+                </motion.p>
 
-            {/* Right: dark editorial card */}
-            <motion.div
-              className="flex min-w-0 items-stretch"
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.2 }}
-              custom={0.15}
-              variants={fadeUp}
-            >
-              <div
-                className="relative flex w-full flex-col justify-between overflow-hidden rounded-sm p-10 md:p-12"
-                style={{ background: 'linear-gradient(150deg, #1a1208 0%, #2c1f0a 55%, #1a1208 100%)' }}
+                {/* Stat + supporting badge */}
+                <motion.div variants={meaningItem} transition={motionInstant} className="mt-10 max-w-xl">
+                  <motion.div
+                    className="h-px w-full origin-left bg-gradient-to-r from-gold/70 via-gold/25 to-transparent"
+                    initial={prefersReducedMotion ? false : { scaleX: 0, opacity: 0 }}
+                    whileInView={{ scaleX: 1, opacity: 1 }}
+                    viewport={{ once: true, amount: 0.6 }}
+                    transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                  <div className="flex flex-col gap-5 py-6 sm:flex-row sm:items-center sm:gap-8">
+                    <motion.div
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.5 }}
+                      transition={{ duration: 0.55, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <p className="font-heading text-4xl font-semibold leading-none text-charcoal md:text-5xl">
+                        70<span className="text-gold">+</span>
+                      </p>
+                      <p className="mt-2 font-body text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone">
+                        Years of Farming
+                      </p>
+                    </motion.div>
+                    <motion.div
+                      className="inline-flex w-fit flex-col rounded-full border border-gold/55 bg-gold/5 px-5 py-3"
+                      initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.92 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true, amount: 0.5 }}
+                      transition={{ duration: 0.5, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <p className="font-body text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-gold-deep">
+                        Panoramic View
+                      </p>
+                      <p className="mt-1 font-body text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-stone">
+                        Land &amp; Sea Outlook
+                      </p>
+                    </motion.div>
+                  </div>
+                  <motion.div
+                    className="h-px w-full origin-left bg-gradient-to-r from-gold/25 via-gold/12 to-transparent"
+                    initial={prefersReducedMotion ? false : { scaleX: 0, opacity: 0 }}
+                    whileInView={{ scaleX: 1, opacity: 1 }}
+                    viewport={{ once: true, amount: 0.6 }}
+                    transition={{ duration: 0.7, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </motion.div>
+
+                <motion.div variants={meaningItem} transition={motionInstant}>
+                  <Link
+                    to="/about"
+                    className="group mt-9 inline-flex items-center gap-2 font-body text-sm font-semibold text-gold-deep transition hover:text-gold"
+                  >
+                    Discover our story
+                    <ArrowRight
+                      className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+                      aria-hidden
+                    />
+                  </Link>
+                </motion.div>
+              </motion.div>
+
+              {/* Right card — top aligns with headline, extends below text column */}
+              <motion.div
+                className="flex min-w-0 md:flex-1 md:self-stretch md:pb-8"
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.18 }}
+                custom={0.1}
+                variants={meaningCardEnter}
               >
-                {/* Ambient glow */}
-                <div
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    backgroundImage: 'radial-gradient(circle at 72% 22%, rgba(197,160,89,0.12) 0%, transparent 55%)',
-                  }}
-                />
+                <motion.div
+                  className="relative flex w-full min-h-full flex-col justify-between overflow-hidden rounded-sm border border-parchment/70 bg-white p-10 shadow-[0_12px_48px_rgba(26,18,8,0.06)] md:min-h-[calc(100%+5rem)] md:p-12 md:shadow-[0_16px_56px_rgba(26,18,8,0.07)]"
+                  style={{ background: 'linear-gradient(150deg, #fdfaf5 0%, #ffffff 45%, #f7f3ec 100%)' }}
+                  whileHover={
+                    prefersReducedMotion
+                      ? undefined
+                      : { y: -3, boxShadow: '0 22px 64px rgba(26,18,8,0.1)' }
+                  }
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {/* Ambient glow */}
+                  <motion.div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      backgroundImage: 'radial-gradient(circle at 72% 22%, rgba(197,160,89,0.14) 0%, transparent 55%)',
+                    }}
+                    initial={prefersReducedMotion ? false : { opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.1, delay: 0.35 }}
+                  />
 
-                {/* Top: seal / badge */}
-                <div className="relative flex flex-col items-center text-center">
-                  <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-sm border border-gold/25 bg-gold/10">
-                    <img
-                      src={staticUrl('/images/farm/omaru-logo.png')}
-                      alt="Omaru Farm"
-                      className="h-12 w-12 opacity-85"
+                  {/* Top: seal / badge */}
+                  <div className="relative flex flex-col items-center text-center">
+                    <motion.div
+                      className="mb-5 flex h-20 w-20 items-center justify-center rounded-sm border border-gold/35 bg-gold/8 md:h-24 md:w-24"
+                      variants={meaningSeal}
+                      initial="hidden"
+                      whileInView="show"
+                      viewport={{ once: true, amount: 0.4 }}
+                      transition={motionInstant}
+                    >
+                      <img
+                        src={staticUrl('/images/farm/omaru-logo.png')}
+                        alt="Omaru Farm"
+                        className="h-12 w-12 opacity-90 md:h-14 md:w-14"
+                      />
+                    </motion.div>
+                    <motion.p
+                      className="font-body text-[0.62rem] font-semibold uppercase tracking-[0.38em] text-gold-deep"
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.45, delay: 0.3 }}
+                    >
+                      The Estate
+                    </motion.p>
+                    <motion.p
+                      className="mt-2 font-heading text-2xl font-semibold tracking-[0.08em] text-charcoal"
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.45, delay: 0.36 }}
+                    >
+                      Omaru Farm
+                    </motion.p>
+                    <motion.p
+                      className="mt-0.5 font-body text-[0.62rem] font-medium uppercase tracking-[0.28em] text-stone"
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.45, delay: 0.42 }}
+                    >
+                      Phillip Island, Victoria
+                    </motion.p>
+                  </div>
+
+                  {/* Ornamental divider */}
+                  <div className="relative my-7 flex items-center gap-3 md:my-8">
+                    <motion.div
+                      className="h-px flex-1 origin-right"
+                      style={{ background: 'linear-gradient(to right, transparent, rgba(197,160,89,0.45), transparent)' }}
+                      variants={meaningDividerLine}
+                      custom={0.28}
+                      initial="hidden"
+                      whileInView="show"
+                      viewport={{ once: true }}
+                      transition={motionInstant}
+                    />
+                    <motion.div
+                      className="h-1.5 w-1.5 rotate-45 bg-gold/70"
+                      variants={meaningDividerGem}
+                      initial="hidden"
+                      whileInView="show"
+                      viewport={{ once: true }}
+                      transition={motionInstant}
+                    />
+                    <motion.div
+                      className="h-px flex-1 origin-left"
+                      style={{ background: 'linear-gradient(to right, transparent, rgba(197,160,89,0.45), transparent)' }}
+                      variants={meaningDividerLine}
+                      custom={0.34}
+                      initial="hidden"
+                      whileInView="show"
+                      viewport={{ once: true }}
+                      transition={motionInstant}
                     />
                   </div>
-                  <p className="font-body text-[0.62rem] font-semibold uppercase tracking-[0.38em] text-gold/65">
-                    The Estate
-                  </p>
-                  <p className="mt-2 font-heading text-2xl font-semibold tracking-[0.08em] text-white/95">
-                    Omaru Farm
-                  </p>
-                  <p className="mt-0.5 font-body text-[0.62rem] font-medium uppercase tracking-[0.28em] text-gold/50">
-                    Phillip Island, Victoria
-                  </p>
-                </div>
 
-                {/* Ornamental divider */}
-                <div className="relative my-9 flex items-center gap-3">
-                  <div
-                    className="h-px flex-1"
-                    style={{ background: 'linear-gradient(to right, transparent, rgba(197,160,89,0.28), transparent)' }}
-                  />
-                  <div className="h-1.5 w-1.5 rotate-45 bg-gold/45" />
-                  <div
-                    className="h-px flex-1"
-                    style={{ background: 'linear-gradient(to right, transparent, rgba(197,160,89,0.28), transparent)' }}
-                  />
-                </div>
-
-                {/* Quote */}
-                <div className="relative text-center">
-                  <p className="font-heading text-xl font-normal italic leading-[1.65] text-white/82">
-                    "A sanctuary for the senses, where farm-to-table dining meets the quiet joy of nature."
-                  </p>
-                  <p className="mt-5 font-body text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-gold/50">
-                    Est. 1954 · Phillip Island
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
+                  {/* Quote */}
+                  <motion.div
+                    className="relative text-center"
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 18 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.5 }}
+                    transition={{ duration: 0.6, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <p className="font-heading text-xl font-normal italic leading-[1.65] text-bark">
+                      "A sanctuary for the senses, where farm-to-table dining meets the quiet joy of nature."
+                    </p>
+                    <p className="mt-5 font-body text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-stone">
+                      Est. 1954 · Phillip Island
+                    </p>
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+            </div>
           </div>
         </section>
 

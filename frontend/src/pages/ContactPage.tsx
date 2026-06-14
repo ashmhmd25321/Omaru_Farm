@@ -135,31 +135,31 @@ export function ContactPage() {
         <meta property="og:title" content="Contact Omaru Farm | Phillip Island" />
         <meta property="og:description" content="Contact Omaru Farm for café bookings, accommodation, group bookings, farm store enquiries, events, and functions." />
         <meta property="og:url" content="https://omarufarms.com.au/contact" />
-        <meta property="og:image" content="/images/farm/image-farm/IMG_7318.jpg" />
+        <meta property="og:image" content="/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Contact Omaru Farm | Phillip Island" />
         <meta name="twitter:description" content="Contact Omaru Farm for café bookings, accommodation, group bookings, farm store enquiries, events, and functions." />
-        <meta name="twitter:image" content="/images/farm/image-farm/IMG_7318.jpg" />
+        <meta name="twitter:image" content="/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.png" />
       </Helmet>
 
       <main className="bg-surface">
         {/* ══════════════════════════════════════════
-            HERO — full-bleed woodland, no bottom white fade
+            HERO — pastoral farm view, centered text
         ══════════════════════════════════════════ */}
-        <section className="relative flex min-h-[78vh] items-center justify-center overflow-hidden">
+        <section className="relative flex min-h-[78vh] items-center justify-center overflow-hidden bg-surface">
           <img
-            src={staticUrl('/images/farm/image-farm/IMG_7318.jpg')}
-            alt="Café Omaru interior — welcoming dining space at Omaru Farm"
-            className="absolute inset-0 h-full w-full object-cover object-center [filter:saturate(1.08)_contrast(1.05)_brightness(0.92)]"
+            src={staticUrl('/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.png')}
+            alt="Sheep grazing in Omaru Farm paddocks at golden hour, Phillip Island"
+            className="absolute inset-0 h-full w-full object-cover object-[center_42%]"
             loading="eager"
             fetchPriority="high"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/55" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-charcoal/12 to-charcoal/42" />
+          <div className="absolute inset-0 bg-gradient-to-t from-charcoal/28 via-transparent to-white/6" />
 
           <div className="relative z-10 mx-auto max-w-[92vw] px-5 py-24 text-center md:py-28">
             <motion.p
-              className="mb-4 font-body text-[0.68rem] font-semibold uppercase tracking-[0.38em] text-gold"
+              className="mb-4 font-body text-[0.68rem] font-semibold uppercase tracking-[0.38em] text-gold-deep drop-shadow-[0_1px_10px_rgba(255,255,255,0.85)]"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, delay: 0.08 }}
@@ -167,7 +167,7 @@ export function ContactPage() {
               Contact Omaru
             </motion.p>
             <motion.h1
-              className="hero-headline mx-auto max-w-3xl font-heading text-[2.65rem] font-semibold leading-[1.05] tracking-[-0.028em] text-white sm:text-5xl md:text-[3.75rem]"
+              className="hero-headline mx-auto max-w-3xl font-heading text-[2.65rem] font-semibold leading-[1.05] tracking-[-0.028em] text-white drop-shadow-[0_2px_24px_rgba(22,14,4,0.45)] sm:text-5xl md:text-[3.75rem]"
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.72, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
@@ -175,7 +175,7 @@ export function ContactPage() {
               Get in touch
             </motion.h1>
             <motion.p
-              className="mx-auto mt-6 max-w-lg font-body text-base leading-[1.78] text-white/88 md:text-lg"
+              className="mx-auto mt-6 max-w-lg font-body text-base leading-[1.78] text-white/95 drop-shadow-[0_2px_16px_rgba(22,14,4,0.4)] md:text-lg"
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.58, delay: 0.28 }}

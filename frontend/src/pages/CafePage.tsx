@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   ArrowRight,
   CalendarDays,
@@ -111,7 +111,6 @@ export function CafePage() {
   const [statsAnimated, setStatsAnimated] = useState(false)
   const [produceCount, setProduceCount] = useState(0)
   const experienceSectionRef = useRef<HTMLElement | null>(null)
-  const prefersReducedMotion = useReducedMotion()
 
   const prettyDate = useMemo(() => {
     const [y, m, d] = selectedDate.split('-').map(Number)
@@ -179,30 +178,6 @@ export function CafePage() {
   }, [])
 
   useEffect(() => {
-    const section = experienceSectionRef.current
-    if (!section) return
-    const videos = Array.from(section.querySelectorAll('video'))
-    if (prefersReducedMotion) {
-      videos.forEach((video) => video.pause())
-      return
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        videos.forEach((video) => {
-          if (entry?.isIntersecting) {
-            void video.play().catch(() => {})
-          } else {
-            video.pause()
-          }
-        })
-      },
-      { threshold: 0.2 },
-    )
-    observer.observe(section)
-    return () => observer.disconnect()
-  }, [prefersReducedMotion])
-
-  useEffect(() => {
     if (!statsInView || statsAnimated) return
 
     const duration = 1300
@@ -261,35 +236,34 @@ export function CafePage() {
         <meta property="og:title" content="Café Omaru | Lunch, Dinner & Phillip Island Views" />
         <meta property="og:description" content="Lunch and dinner only at Café Omaru, with Sri Lankan flavours, barista coffee, licensed beverages, and Phillip Island wines." />
         <meta property="og:url" content="https://omarufarms.com.au/cafe" />
-        <meta property="og:image" content="/images/farm/image-farm/IMG_0674.jpg" />
+        <meta property="og:image" content="/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Café Omaru | Lunch, Dinner & Phillip Island Views" />
         <meta name="twitter:description" content="Lunch and dinner only at Café Omaru, with Sri Lankan flavours, barista coffee, licensed beverages, and Phillip Island wines." />
-        <meta name="twitter:image" content="/images/farm/image-farm/IMG_0674.jpg" />
+        <meta name="twitter:image" content="/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG" />
       </Helmet>
 
       <main>
 
         {/* ══════════════════════════════════════════
-            HERO — full-viewport farm view, centered text
+            HERO — aerial café view, centered text
         ══════════════════════════════════════════ */}
-        <section className="relative flex min-h-[85vh] items-end justify-center overflow-hidden">
+        <section className="relative flex min-h-[85vh] items-end justify-center overflow-hidden bg-surface">
           <img
-            src={staticUrl('/images/farm/image-farm/IMG_0620.jpg')}
-            alt="Café Omaru — farm-to-table dining with breathtaking paddock views, Phillip Island"
-            className="absolute inset-0 h-full w-full object-cover [filter:saturate(1.08)_contrast(1.06)_brightness(0.9)]"
+            src={staticUrl('/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG')}
+            alt="Aerial view of Café Omaru with outdoor dining and Phillip Island coastline"
+            className="absolute inset-0 h-full w-full object-cover object-[center_42%]"
             loading="eager"
             fetchPriority="high"
           />
-          {/* Dual overlay for maximum readability while preserving image */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/26 via-black/34 to-black/72" />
-          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-black/8 to-black/24" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.18)_0%,rgba(0,0,0,0.34)_72%,rgba(0,0,0,0.45)_100%)]" />
+          {/* Light scrim — readable text without heavy darkening */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/8 via-charcoal/12 to-charcoal/52" />
+          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-charcoal/5 to-charcoal/16" />
 
           {/* Centered bottom content */}
           <div className="relative z-10 w-full px-6 pb-20 text-center md:pb-28">
             <motion.p
-              className="mx-auto mb-4 inline-flex items-center rounded-sm border border-gold/45 bg-black/38 px-3 py-1.5 font-body text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-gold backdrop-blur-sm"
+              className="mx-auto mb-4 inline-flex items-center rounded-sm border border-white/40 bg-white/22 px-3 py-1.5 font-body text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-charcoal shadow-[0_4px_20px_rgba(26,18,8,0.12)] backdrop-blur-md"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -297,7 +271,7 @@ export function CafePage() {
               Established Tradition
             </motion.p>
             <motion.h1
-              className="hero-headline mx-auto max-w-3xl font-heading text-[2.5rem] font-semibold leading-[1.04] tracking-[-0.03em] text-white sm:text-5xl md:text-[3.75rem]"
+              className="hero-headline mx-auto max-w-3xl font-heading text-[2.5rem] font-semibold leading-[1.04] tracking-[-0.03em] text-white drop-shadow-[0_2px_24px_rgba(22,14,4,0.5)] sm:text-5xl md:text-[3.75rem]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
@@ -637,15 +611,11 @@ export function CafePage() {
               variants={fadeUp}
             >
               <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['morning', 'lunch']) ? 'ring-1 ring-gold/45' : ''}`}>
-                <video
-                  src={staticUrl('/images/farm/image-farm/e16abd906ce342f0bd27ac365d346401.mov')}
-                  poster={staticUrl('/images/farm/image-farm/20260127_204402.jpg')}
-                  autoPlay={!prefersReducedMotion}
-                  loop
-                  muted
-                  playsInline
-                  preload={prefersReducedMotion ? 'none' : 'metadata'}
-                  className="h-[320px] w-full object-cover transition duration-700 group-hover:scale-[1.02] md:h-[420px] [filter:saturate(1.14)_contrast(1.08)_brightness(0.95)]"
+                <img
+                  src={staticUrl('/images/farm/image-farm/IMG_0641.jpg')}
+                  alt="Freshly baked breads and artisan spreads at Café Omaru"
+                  className="h-[320px] w-full object-cover object-center transition duration-700 group-hover:scale-[1.02] md:h-[420px]"
+                  loading="lazy"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-estate/48 via-transparent to-transparent" />
                 <p className="pointer-events-none absolute left-4 top-4 rounded-sm border border-white/30 bg-white/12 px-2.5 py-1 font-body text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-white/92 backdrop-blur-md">
@@ -655,14 +625,11 @@ export function CafePage() {
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['morning', 'lunch']) ? 'ring-1 ring-gold/45' : ''}`}>
-                  <video
-                    src={staticUrl('/images/farm/image-farm/IMG_0659.MOV')}
-                    autoPlay={!prefersReducedMotion}
-                    loop
-                    muted
-                    playsInline
-                    preload={prefersReducedMotion ? 'none' : 'metadata'}
-                    className="h-40 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.12)_contrast(1.06)_brightness(0.98)]"
+                  <img
+                    src={staticUrl('/images/farm/image-farm/IMG_0620.jpg')}
+                    alt="Farm kitchen and bread station at Café Omaru"
+                    className="h-40 w-full object-cover object-center transition duration-700 group-hover:scale-[1.03]"
+                    loading="lazy"
                   />
                   <p className="pointer-events-none absolute left-2 top-2 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
                     Farm Kitchen
@@ -670,14 +637,11 @@ export function CafePage() {
                 </div>
 
                 <div className={`group relative overflow-hidden rounded-sm ${isMediaActive(['lunch', 'evening']) ? 'ring-1 ring-gold/45' : ''}`}>
-                  <video
-                    src={staticUrl('/images/farm/image-farm/IMG_0669.mp4')}
-                    autoPlay={!prefersReducedMotion}
-                    loop
-                    muted
-                    playsInline
-                    preload={prefersReducedMotion ? 'none' : 'metadata'}
-                    className="h-40 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.12)_contrast(1.06)_brightness(0.98)]"
+                  <img
+                    src={staticUrl('/images/farm/image-farm/IMG_0644.jpg')}
+                    alt="Slow-cooked Sri Lankan flavours at Café Omaru"
+                    className="h-40 w-full object-cover object-center transition duration-700 group-hover:scale-[1.03]"
+                    loading="lazy"
                   />
                   <p className="pointer-events-none absolute left-2 top-2 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
                     Slow-Cooked Flavours
@@ -686,9 +650,9 @@ export function CafePage() {
 
                 <div className={`group relative overflow-hidden rounded-sm border border-estate/10 bg-surface ${isMediaActive(['morning', 'evening']) ? 'ring-1 ring-gold/45' : ''}`}>
                   <img
-                    src={staticUrl('/images/farm/image-farm/IMG_0781.jpg')}
+                    src={staticUrl('/images/farm/image-farm/IMG_7318.jpg')}
                     alt="Guests enjoying the indoor Omaru Farm cafe atmosphere"
-                    className="h-40 w-full object-cover transition duration-700 group-hover:scale-[1.03] [filter:saturate(1.13)_contrast(1.08)_brightness(0.99)]"
+                    className="h-40 w-full object-cover object-center transition duration-700 group-hover:scale-[1.03]"
                     loading="lazy"
                   />
                   <p className="pointer-events-none absolute left-2 top-2 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
@@ -701,7 +665,7 @@ export function CafePage() {
                 <img
                   src={staticUrl('/images/farm/image-farm/20260127_204402.jpg')}
                   alt="Omaru farm paddock and cattle at golden hour"
-                  className="h-44 w-full object-cover transition duration-700 group-hover:scale-[1.02] [filter:saturate(1.13)_contrast(1.08)_brightness(0.97)]"
+                  className="h-44 w-full object-cover object-center transition duration-700 group-hover:scale-[1.02]"
                   loading="lazy"
                 />
                 <p className="pointer-events-none absolute left-3 top-3 rounded-sm border border-white/30 bg-white/12 px-2 py-0.5 font-body text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
