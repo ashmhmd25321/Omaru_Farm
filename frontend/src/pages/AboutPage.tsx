@@ -136,7 +136,7 @@ export function AboutPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
-              Est. 2024
+              Est. 1970
             </motion.p>
             <motion.h1
               className="hero-headline mx-auto max-w-3xl font-heading text-[2.7rem] font-semibold leading-[1.04] tracking-[-0.03em] text-white drop-shadow-[0_2px_24px_rgba(22,14,4,0.45)] sm:text-5xl md:text-[4.6rem]"

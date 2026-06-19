@@ -120,7 +120,7 @@ const ON_FARM_STAYS = [
     badge: 'Most Popular',
     tagline: 'Wake to the sound of the farm.',
     description:
-      'A self-contained cabin on Omaru Farm — established in 1952 as a quintessential open-farm pavilion. Enjoy life in the open paddock without compromising on comfort, with the finest farm produce on your doorstep.',
+      'A self-contained cabin on Omaru Farm — part of a working farm established in 1970. Enjoy life in the open paddock without compromising on comfort, with the finest farm produce on your doorstep.',
     amenities: [
       { Icon: BedDouble, label: 'King bed + sofa bed' },
       { Icon: Waves, label: 'Private deck, ocean views' },
@@ -667,7 +667,7 @@ export function StayPage() {
                     <h3 className="mt-2 font-heading text-2xl font-semibold tracking-[0.06em] text-charcoal">
                       Omaru Farm
                     </h3>
-                    <p className="mt-0.5 font-body text-[0.6rem] uppercase tracking-[0.24em] text-stone">Est. 1954 · Phillip Island</p>
+                    <p className="mt-0.5 font-body text-[0.6rem] uppercase tracking-[0.24em] text-stone">Est. 1970 · Phillip Island</p>
                   </div>
                   <div className="relative mt-4">
                     <div className="h-px w-full" style={{ background: 'linear-gradient(to right, transparent, rgba(197,160,89,0.25), transparent)' }} />

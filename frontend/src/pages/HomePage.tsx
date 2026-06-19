@@ -430,7 +430,7 @@ export function HomePage() {
                       transition={{ duration: 0.55, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
                     >
                       <p className="font-heading text-4xl font-semibold leading-none text-charcoal md:text-5xl">
-                        70<span className="text-gold">+</span>
+                        55<span className="text-gold">+</span>
                       </p>
                       <p className="mt-2 font-body text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone">
                         Years of Farming
@@ -594,7 +594,7 @@ export function HomePage() {
                       "A sanctuary for the senses, where farm-to-table dining meets the quiet joy of nature."
                     </p>
                     <p className="mt-5 font-body text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-stone">
-                      Est. 1954 · Phillip Island
+                      Est. 1970 · Phillip Island
                     </p>
                   </motion.div>
                 </motion.div>
