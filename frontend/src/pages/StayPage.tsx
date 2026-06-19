@@ -20,6 +20,13 @@ import {
 import { useEffect, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { staticUrl } from '@/utils/staticUrl'
+import { apiUrl } from '@/utils/api'
+import {
+  DEFAULT_WHATSAPP_NUMBER,
+  formatWhatsAppDisplay,
+  openWhatsAppSiteRequest,
+  parseWhatsAppNumber,
+} from '@/utils/whatsapp'
 
 type GalleryPhoto = { src: string; label: string }
 
@@ -223,9 +230,112 @@ export function StayPage() {
   const [checkOut, setCheckOut] = useState(() => { const d = new Date(); d.setDate(d.getDate() + 10); return toISODate(d) })
   const [cabin, setCabin]       = useState('The Glass Pavilion')
   const [guests, setGuests]     = useState('2 Guests')
-  const [submitted, setSubmitted] = useState(false)
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail]       = useState('')
+  const [phone, setPhone]       = useState('')
+  const [website, setWebsite]   = useState('')
+  const [businessNumber, setBusinessNumber] = useState(DEFAULT_WHATSAPP_NUMBER)
+  const [formState, setFormState] = useState({ loading: false, success: false, error: '' })
 
   const [lightbox, setLightbox] = useState<{ images: GalleryPhoto[]; index: number; name: string } | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(apiUrl('/api/content/site-settings'), { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data: unknown) => {
+        if (!data || typeof data !== 'object') return
+        const value = data as Record<string, unknown>
+        if (value.whatsappUrl) {
+          setBusinessNumber(parseWhatsAppNumber(String(value.whatsappUrl)))
+        }
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [])
+
+  const handleStayEnquiry = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormState({ loading: true, success: false, error: '' })
+
+    const trimmedPhone = phone.trim()
+    if (!trimmedPhone) {
+      setFormState({
+        loading: false,
+        success: false,
+        error: 'Please enter your phone number so we can confirm availability on WhatsApp.',
+      })
+      return
+    }
+
+    if (checkOut <= checkIn) {
+      setFormState({
+        loading: false,
+        success: false,
+        error: 'Check-out must be after check-in.',
+      })
+      return
+    }
+
+    const guestCount = parseInt(guests, 10) || 2
+    const apiMessage = [
+      `Phone: ${trimmedPhone}`,
+      `Accommodation: ${cabin}`,
+      `Check-in: ${checkIn}`,
+      `Check-out: ${checkOut}`,
+      `Guests: ${guests}`,
+    ].join('\n')
+
+    const whatsappDetails = [
+      `*Accommodation:* ${cabin}`,
+      `*Check-in:* ${checkIn}`,
+      `*Check-out:* ${checkOut}`,
+      `*Guests:* ${guestCount}`,
+    ].join('\n')
+
+    try {
+      const res = await fetch(apiUrl('/api/bookings'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName,
+          email,
+          bookingDate: checkIn,
+          source: 'stay',
+          guestCount,
+          message: apiMessage,
+          website,
+        }),
+      })
+      if (!res.ok) {
+        throw new Error((await res.json().catch(() => null))?.message ?? 'Could not submit enquiry')
+      }
+
+      openWhatsAppSiteRequest({
+        businessNumber,
+        pageLabel: 'Stay',
+        headline: 'New farm stay availability enquiry from your website.',
+        name: fullName,
+        phone: trimmedPhone,
+        email,
+        details: whatsappDetails,
+      })
+
+      setFormState({ loading: false, success: true, error: '' })
+      setFullName('')
+      setEmail('')
+      setPhone('')
+      setWebsite('')
+    } catch (err) {
+      setFormState({
+        loading: false,
+        success: false,
+        error: err instanceof Error ? err.message : 'Could not submit enquiry',
+      })
+    }
+  }
+
+  const whatsappDisplay = formatWhatsAppDisplay(businessNumber)
 
   useEffect(() => {
     if (!lightbox) return
@@ -634,7 +744,7 @@ export function StayPage() {
                 </p>
               </div>
 
-              {submitted ? (
+              {formState.success ? (
                 <div className="rounded-sm bg-white py-14 text-center shadow-[0_8px_40px_rgba(26,18,8,0.06)]">
                   <div
                     className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-sm"
@@ -644,11 +754,15 @@ export function StayPage() {
                   </div>
                   <p className="font-heading text-2xl font-semibold text-charcoal">Enquiry Received!</p>
                   <p className="mx-auto mt-2 max-w-xs font-body text-sm text-stone">
-                    Thank you — we'll be in touch within 24 hours with availability and pricing.
+                    Your request is saved. WhatsApp is opening — tap Send and we&apos;ll confirm availability with you.
+                  </p>
+                  <p className="mx-auto mt-3 max-w-xs font-body text-xs text-stone">
+                    Didn&apos;t open? Message us at{' '}
+                    <span className="font-semibold text-[#128C7E]">{whatsappDisplay}</span>
                   </p>
                   <button
                     type="button"
-                    onClick={() => setSubmitted(false)}
+                    onClick={() => setFormState({ loading: false, success: false, error: '' })}
                     className="mt-6 font-body text-xs font-semibold uppercase tracking-[0.16em] text-gold-deep transition hover:text-gold"
                   >
                     Make Another Enquiry
@@ -657,8 +771,16 @@ export function StayPage() {
               ) : (
                 <form
                   className="space-y-6 rounded-sm bg-white p-8 shadow-[0_8px_40px_rgba(26,18,8,0.06)] md:p-10"
-                  onSubmit={(e) => { e.preventDefault(); setSubmitted(true) }}
+                  onSubmit={handleStayEnquiry}
                 >
+                  <input
+                    className="hidden"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    aria-hidden="true"
+                  />
                   {/* Row 1: Check-in + Check-out */}
                   <div className="grid gap-6 sm:grid-cols-2">
                     <label className="block">
@@ -742,17 +864,67 @@ export function StayPage() {
                     </div>
                   </label>
 
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone">
+                        Full name
+                      </span>
+                      <input
+                        className="field mt-2 w-full"
+                        placeholder="Your name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
+                        autoComplete="name"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone">
+                        Email
+                      </span>
+                      <input
+                        className="field mt-2 w-full"
+                        placeholder="you@example.com"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="block">
+                    <span className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone">
+                      Phone number
+                    </span>
+                    <input
+                      className="field mt-2 w-full"
+                      placeholder="+61 400 000 000"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      autoComplete="tel"
+                    />
+                  </label>
+
                   {/* Submit */}
                   <div className="pt-2 text-center">
                     <button
                       type="submit"
-                      className="inline-flex h-12 w-full items-center justify-center rounded-sm font-body text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-105"
+                      disabled={formState.loading}
+                      className="inline-flex h-12 w-full items-center justify-center rounded-sm font-body text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-105 disabled:opacity-60"
                       style={{ background: GOLD_GRADIENT }}
                     >
-                      Check Availability
+                      {formState.loading ? 'Submitting…' : 'Check Availability & open WhatsApp'}
                     </button>
+                    {formState.error ? (
+                      <p className="mt-3 font-body text-sm text-red-600">{formState.error}</p>
+                    ) : null}
                     <p className="mt-4 font-body text-xs text-stone/55">
-                      776 Ventnor Road, Ventnor, Phillip Island VIC 3922
+                      776 Ventnor Road, Ventnor, Phillip Island VIC 3922 · Or message us at{' '}
+                      <span className="font-semibold text-[#128C7E]">{whatsappDisplay}</span>
                     </p>
                   </div>
                 </form>

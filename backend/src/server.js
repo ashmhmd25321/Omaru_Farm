@@ -62,7 +62,7 @@ const DEFAULT_CONTACT_CONTENT = {
   addressLine1: '776 Ventnor Road, Ventnor',
   addressLine2: 'Phillip Island VIC 3922',
   email: 'hello@omarufarm.com.au',
-  whatsapp: 'https://wa.me/61000000000',
+  whatsapp: 'https://wa.me/61476302477',
   instagram: 'https://instagram.com',
   mapQuery: '776 Ventnor Road, Ventnor, Phillip Island VIC 3922, Australia',
   hoursCafe: 'Thu–Fri: 10am–2pm & 5–8pm · Sat–Sun: 10am–8pm',
@@ -148,7 +148,7 @@ const DEFAULT_SITE_SETTINGS = {
     'A premium farm-to-table destination — seasonal produce, thoughtful hospitality, and quiet luxury rooted in the land.',
   footerTagline: 'Grown with intention',
   supportEmail: 'hello@omarufarm.com.au',
-  whatsappUrl: 'https://wa.me/61000000000',
+  whatsappUrl: 'https://wa.me/61476302477',
   instagramUrl: 'https://instagram.com',
 }
 

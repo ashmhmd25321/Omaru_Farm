@@ -5,7 +5,7 @@ const contactDetails = {
   addressLine1: '776 Ventnor Road, Ventnor',
   addressLine2: 'Phillip Island VIC 3922',
   email: 'hello@omarufarm.com.au',
-  whatsapp: 'https://wa.me/61000000000',
+  whatsapp: 'https://wa.me/61476302477',
   instagram: 'https://instagram.com',
   mapQuery: '776 Ventnor Road, Ventnor, Phillip Island VIC 3922, Australia',
   hoursCafe: 'Thu–Fri: 10am–2pm & 5–8pm · Sat–Sun: 10am–8pm',
@@ -24,6 +24,20 @@ async function setSetting(settingKey, value) {
 
 async function main() {
   await setSetting('contact_details', contactDetails)
+  const [siteRows] = await pool.query(
+    `SELECT setting_value FROM admin_settings WHERE setting_key = 'site_settings' LIMIT 1`,
+  )
+  let currentSite = {}
+  try {
+    const raw = siteRows[0]?.setting_value
+    currentSite = raw ? JSON.parse(String(raw)) : {}
+  } catch {
+    currentSite = {}
+  }
+  await setSetting('site_settings', {
+    ...currentSite,
+    whatsappUrl: contactDetails.whatsapp,
+  })
   await pool.query(
     `UPDATE menu_items
      SET is_published = 0

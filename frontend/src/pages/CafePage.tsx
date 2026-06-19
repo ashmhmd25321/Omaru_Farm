@@ -15,6 +15,12 @@ import {
 import { productImageUrl } from '@/utils/productImage'
 import { staticUrl } from '@/utils/staticUrl'
 import { apiUrl } from '@/utils/api'
+import {
+  DEFAULT_WHATSAPP_NUMBER,
+  formatWhatsAppDisplay,
+  openWhatsAppSiteRequest,
+  parseWhatsAppNumber,
+} from '@/utils/whatsapp'
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
 
@@ -101,8 +107,10 @@ export function CafePage() {
   const [timeSlot, setTimeSlot] = useState('Lunch 12:00 – 15:00')
   const [name,     setName]     = useState('')
   const [email,    setEmail]    = useState('')
+  const [phone,    setPhone]    = useState('')
   const [notes,    setNotes]    = useState('')
   const [website, setWebsite] = useState('')
+  const [businessNumber, setBusinessNumber] = useState(DEFAULT_WHATSAPP_NUMBER)
   const [formState, setFormState] = useState({ loading: false, success: false, error: '' })
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>(fallbackMenu)
@@ -143,6 +151,21 @@ export function CafePage() {
         if (mapped.length > 0) setMenuItems(mapped)
       })
       .catch(() => setMenuItems(fallbackMenu))
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(apiUrl('/api/content/site-settings'), { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data: unknown) => {
+        if (!data || typeof data !== 'object') return
+        const value = data as Record<string, unknown>
+        if (value.whatsappUrl) {
+          setBusinessNumber(parseWhatsAppNumber(String(value.whatsappUrl)))
+        }
+      })
+      .catch(() => {})
     return () => controller.abort()
   }, [])
 
@@ -205,24 +228,77 @@ export function CafePage() {
   const handleReserve = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormState({ loading: true, success: false, error: '' })
+
+    const trimmedPhone = phone.trim()
+    if (!trimmedPhone) {
+      setFormState({
+        loading: false,
+        success: false,
+        error: 'Please enter your phone number so we can confirm your table on WhatsApp.',
+      })
+      return
+    }
+
+    const guestCount = parseInt(guests, 10) || 2
+    const notesText = notes.trim()
+    const apiMessage = [
+      `Phone: ${trimmedPhone}`,
+      `Guests: ${guests}`,
+      `Time: ${timeSlot}`,
+      notesText ? `Notes: ${notesText}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n')
+
+    const whatsappDetails = [
+      `*Date:* ${prettyDate} (${selectedDate})`,
+      `*Guests:* ${guestCount}`,
+      `*Time:* ${timeSlot}`,
+      notesText ? `\n*Notes:*\n${notesText}` : '',
+    ].join('\n')
+
     try {
       const res = await fetch(apiUrl('/api/bookings'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName: name, email, bookingDate: selectedDate, source: 'cafe',
-          guestCount: parseInt(guests) || 2,
-          message: `Time: ${timeSlot}. ${notes}`.trim(),
+          fullName: name,
+          email,
+          bookingDate: selectedDate,
+          source: 'cafe',
+          guestCount,
+          message: apiMessage,
           website,
         }),
       })
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.message ?? 'Could not submit')
+
+      openWhatsAppSiteRequest({
+        businessNumber,
+        pageLabel: 'Café',
+        headline: 'New café table reservation from your website.',
+        name,
+        phone: trimmedPhone,
+        email,
+        details: whatsappDetails,
+      })
+
       setFormState({ loading: false, success: true, error: '' })
-      setName(''); setEmail(''); setNotes(''); setWebsite('')
+      setName('')
+      setEmail('')
+      setPhone('')
+      setNotes('')
+      setWebsite('')
     } catch (err) {
-      setFormState({ loading: false, success: false, error: err instanceof Error ? err.message : 'Could not submit' })
+      setFormState({
+        loading: false,
+        success: false,
+        error: err instanceof Error ? err.message : 'Could not submit',
+      })
     }
   }
+
+  const whatsappDisplay = formatWhatsAppDisplay(businessNumber)
 
   return (
     <>
@@ -790,7 +866,11 @@ export function CafePage() {
                 <div className="rounded-sm bg-white p-10 text-center shadow-[0_8px_40px_rgba(26,18,8,0.06)]">
                   <p className="font-heading text-2xl font-semibold text-charcoal">Booking Received!</p>
                   <p className="mx-auto mt-2 max-w-xs font-body text-sm text-stone">
-                    Thank you — we'll confirm your table by email shortly.
+                    Your request is saved. WhatsApp is opening — tap Send to confirm your table with our team.
+                  </p>
+                  <p className="mx-auto mt-3 max-w-xs font-body text-xs text-stone">
+                    Didn&apos;t open? Message us at{' '}
+                    <span className="font-semibold text-[#128C7E]">{whatsappDisplay}</span>
                   </p>
                   <button
                     type="button"
@@ -887,6 +967,7 @@ export function CafePage() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
+                        autoComplete="name"
                       />
                     </label>
                     <label className="block">
@@ -900,9 +981,25 @@ export function CafePage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
+                        autoComplete="email"
                       />
                     </label>
                   </div>
+
+                  <label className="block">
+                    <span className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-stone">
+                      Phone number
+                    </span>
+                    <input
+                      className="field mt-2 w-full"
+                      placeholder="+61 400 000 000"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      autoComplete="tel"
+                    />
+                  </label>
 
                   {/* Notes */}
                   <label className="block">
@@ -925,13 +1022,14 @@ export function CafePage() {
                       className="inline-flex h-12 w-full items-center justify-center rounded-sm font-body text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-105 disabled:opacity-60"
                       style={{ background: GOLD_GRADIENT }}
                     >
-                      {formState.loading ? 'Submitting…' : 'Book a Table'}
+                      {formState.loading ? 'Submitting…' : 'Book a Table & open WhatsApp'}
                     </button>
                     {formState.error && (
                       <p className="mt-3 font-body text-sm text-red-600">{formState.error}</p>
                     )}
                     <p className="mt-4 font-body text-xs text-stone/50">
-                      Thu–Fri: 10am–2pm &amp; 5–8pm · Sat–Sun: 10am–8pm
+                      Thu–Fri: 10am–2pm &amp; 5–8pm · Sat–Sun: 10am–8pm · Or message us at{' '}
+                      <span className="font-semibold text-[#128C7E]">{whatsappDisplay}</span>
                     </p>
                   </div>
                 </form>

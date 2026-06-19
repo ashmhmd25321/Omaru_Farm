@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AtSign, Clock3, Mail, MapPin, MessageCircle } from 'lucide-react'
 import { mainNavItems } from '@/constants/siteNav'
 import { staticUrl } from '@/utils/staticUrl'
+import { buildWhatsAppUrl, DEFAULT_WHATSAPP_NUMBER } from '@/utils/whatsapp'
 
 export function SiteFooter() {
   const currentYear = useMemo(() => new Date().getFullYear(), [])
@@ -86,7 +87,7 @@ export function SiteFooter() {
                 <Mail className="h-4 w-4" />
               </a>
               <a
-                href="https://wa.me/61000000000"
+                href={buildWhatsAppUrl(DEFAULT_WHATSAPP_NUMBER, 'Hello Omaru Farm, I have a question from your website.')}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-parchment bg-white text-gold transition hover:border-gold/50 hover:shadow-sm"
