@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { Analytics } from '@/components/site/Analytics'
 import { ScrollToTop } from '@/components/site/ScrollToTop'
 import { SiteFooter } from '@/components/site/SiteFooter'
 import { SiteHeader } from '@/components/site/SiteHeader'
@@ -13,6 +14,7 @@ export function SiteLayout() {
       >
         Skip to main content
       </a>
+      <Analytics />
       <ScrollToTop />
       <SiteHeader />
       <div id="main-content">

@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
 import dotenv from 'dotenv'
 import path from 'node:path'
 import fs from 'node:fs/promises'
@@ -61,7 +62,8 @@ const DEFAULT_CONTACT_CONTENT = {
   farmName: 'Omaru Farm',
   addressLine1: '776 Ventnor Road, Ventnor',
   addressLine2: 'Phillip Island VIC 3922',
-  email: 'hello@omarufarm.com.au',
+  email: 'Omarufarmcafe@gmail.com',
+  phone: '+61 476 302 477',
   whatsapp: 'https://wa.me/61476302477',
   instagram: 'https://instagram.com',
   mapQuery: '776 Ventnor Road, Ventnor, Phillip Island VIC 3922, Australia',
@@ -147,7 +149,7 @@ const DEFAULT_SITE_SETTINGS = {
   missionText:
     'A premium farm-to-table destination — seasonal produce, thoughtful hospitality, and quiet luxury rooted in the land.',
   footerTagline: 'Grown with intention',
-  supportEmail: 'hello@omarufarm.com.au',
+  supportEmail: 'Omarufarmcafe@gmail.com',
   whatsappUrl: 'https://wa.me/61476302477',
   instagramUrl: 'https://instagram.com',
 }
@@ -157,6 +159,8 @@ const ADMIN_LOGIN_MAX_ATTEMPTS = Number(process.env.ADMIN_LOGIN_MAX_ATTEMPTS ?? 
 const loginAttemptMap = new Map()
 
 app.set('trust proxy', 1)
+
+app.use(helmet())
 app.use(cors({
   origin(origin, callback) {
     if (!origin || corsOrigins.includes(origin)) return callback(null, true)
@@ -192,11 +196,23 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
     if (!allowed.includes(file.mimetype)) return cb(new Error('Only image files are allowed'))
     return cb(null, true)
   },
 })
+
+
+function logServerError(context, error) {
+  // Keep implementation details in server logs, not public JSON responses.
+  // eslint-disable-next-line no-console
+  console.error(context, error)
+}
+
+function sendServerError(res, message, error) {
+  logServerError(message, error)
+  return res.status(500).json({ message })
+}
 
 function toNumber(value, fallback = 0) {
   const n = Number(value)
@@ -428,6 +444,27 @@ async function ensureSchemaAndSeed() {
     )`,
   )
 
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS bookings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      full_name VARCHAR(150) NOT NULL,
+      email VARCHAR(150) NOT NULL,
+      booking_date DATE NOT NULL,
+      message TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+  )
+
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS reviews (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      customer_name VARCHAR(150) NOT NULL,
+      rating INT NOT NULL,
+      comment TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+  )
+
   // Booking workflow columns for admin processing.
   await addColumnIfMissing('bookings', 'source', 'VARCHAR(40) NOT NULL DEFAULT "website"')
   await addColumnIfMissing('bookings', 'guest_count', 'INT NULL')
@@ -533,7 +570,7 @@ app.get('/api/products', async (_req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load products', error: error.message })
+    sendServerError(res, 'Failed to load products', error)
   }
 })
 
@@ -544,7 +581,7 @@ app.get('/api/product-categories', async (_req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load categories', error: error.message })
+    sendServerError(res, 'Failed to load categories', error)
   }
 })
 
@@ -559,7 +596,7 @@ app.get('/api/testimonials', async (_req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load testimonials', error: error.message })
+    sendServerError(res, 'Failed to load testimonials', error)
   }
 })
 
@@ -573,7 +610,7 @@ app.get('/api/menu', async (_req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load menu', error: error.message })
+    sendServerError(res, 'Failed to load menu', error)
   }
 })
 
@@ -582,16 +619,19 @@ app.get('/api/content/about', async (_req, res) => {
     const value = await getSetting('about_page', DEFAULT_ABOUT_CONTENT)
     res.json(value)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load about content', error: error.message })
+    sendServerError(res, 'Failed to load about content', error)
   }
 })
 
 app.get('/api/content/contact', async (_req, res) => {
   try {
-    const value = await getSetting('contact_details', DEFAULT_CONTACT_CONTENT)
+    const value = {
+      ...DEFAULT_CONTACT_CONTENT,
+      ...(await getSetting('contact_details', DEFAULT_CONTACT_CONTENT)),
+    }
     res.json(value)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load contact details', error: error.message })
+    sendServerError(res, 'Failed to load contact details', error)
   }
 })
 
@@ -600,7 +640,7 @@ app.get('/api/content/site-settings', async (_req, res) => {
     const value = await getSetting('site_settings', DEFAULT_SITE_SETTINGS)
     res.json(value)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load site settings', error: error.message })
+    sendServerError(res, 'Failed to load site settings', error)
   }
 })
 
@@ -647,24 +687,7 @@ app.post('/api/bookings', async (req, res) => {
     )
     res.status(201).json({ message: 'Booking submitted', bookingId: result.insertId })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to submit booking', error: error.message })
-  }
-})
-
-app.post('/api/reviews', async (req, res) => {
-  const { customerName, rating, comment } = req.body
-  if (!customerName || !rating || !comment) {
-    return res.status(400).json({ message: 'customerName, rating, and comment are required.' })
-  }
-
-  try {
-    const [result] = await pool.query(
-      'INSERT INTO reviews (customer_name, rating, comment) VALUES (?, ?, ?)',
-      [String(customerName), toNumber(rating, 5), String(comment)],
-    )
-    res.status(201).json({ message: 'Review submitted', reviewId: result.insertId })
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to submit review', error: error.message })
+    sendServerError(res, 'Failed to submit booking', error)
   }
 })
 
@@ -714,7 +737,7 @@ app.post('/api/admin/login', async (req, res) => {
       user: { id: user.id, username: user.username },
     })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to login', error: error.message })
+    sendServerError(res, 'Failed to login', error)
   }
 })
 
@@ -738,7 +761,7 @@ app.get('/api/admin/products', requireAdmin, async (_req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load products', error: error.message })
+    sendServerError(res, 'Failed to load products', error)
   }
 })
 
@@ -764,7 +787,7 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
     await ensureProductCategoryName(body.category)
     res.status(201).json({ id: result.insertId })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create product', error: error.message })
+    sendServerError(res, 'Failed to create product', error)
   }
 })
 
@@ -790,7 +813,7 @@ app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
     await ensureProductCategoryName(body.category)
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update product', error: error.message })
+    sendServerError(res, 'Failed to update product', error)
   }
 })
 
@@ -801,7 +824,7 @@ app.get('/api/admin/product-categories', requireAdmin, async (_req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load categories', error: error.message })
+    sendServerError(res, 'Failed to load categories', error)
   }
 })
 
@@ -817,7 +840,7 @@ app.post('/api/admin/product-categories', requireAdmin, async (req, res) => {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ message: 'A category with this name already exists' })
     }
-    res.status(500).json({ message: 'Failed to create category', error: error.message })
+    sendServerError(res, 'Failed to create category', error)
   }
 })
 
@@ -851,7 +874,7 @@ app.put('/api/admin/product-categories/:id', requireAdmin, async (req, res) => {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ message: 'A category with this name already exists' })
     }
-    res.status(500).json({ message: 'Failed to update category', error: error.message })
+    sendServerError(res, 'Failed to update category', error)
   } finally {
     conn.release()
   }
@@ -876,7 +899,7 @@ app.delete('/api/admin/product-categories/:id', requireAdmin, async (req, res) =
     await pool.query('DELETE FROM product_categories WHERE id = ? LIMIT 1', [id])
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete category', error: error.message })
+    sendServerError(res, 'Failed to delete category', error)
   }
 })
 
@@ -888,7 +911,7 @@ app.delete('/api/admin/products/:id', requireAdmin, async (req, res) => {
     await pool.query('DELETE FROM products WHERE id = ? LIMIT 1', [id])
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete product', error: error.message })
+    sendServerError(res, 'Failed to delete product', error)
   }
 })
 
@@ -901,7 +924,7 @@ app.get('/api/admin/testimonials', requireAdmin, async (_req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load testimonials', error: error.message })
+    sendServerError(res, 'Failed to load testimonials', error)
   }
 })
 
@@ -926,7 +949,7 @@ app.post('/api/admin/testimonials', requireAdmin, async (req, res) => {
     )
     res.status(201).json({ id: result.insertId })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create testimonial', error: error.message })
+    sendServerError(res, 'Failed to create testimonial', error)
   }
 })
 
@@ -952,7 +975,7 @@ app.put('/api/admin/testimonials/:id', requireAdmin, async (req, res) => {
     )
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update testimonial', error: error.message })
+    sendServerError(res, 'Failed to update testimonial', error)
   }
 })
 
@@ -964,7 +987,7 @@ app.delete('/api/admin/testimonials/:id', requireAdmin, async (req, res) => {
     await pool.query('DELETE FROM testimonials WHERE id = ? LIMIT 1', [id])
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete testimonial', error: error.message })
+    sendServerError(res, 'Failed to delete testimonial', error)
   }
 })
 
@@ -977,7 +1000,7 @@ app.get('/api/admin/menu', requireAdmin, async (_req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load menu', error: error.message })
+    sendServerError(res, 'Failed to load menu', error)
   }
 })
 
@@ -1003,7 +1026,7 @@ app.post('/api/admin/menu', requireAdmin, async (req, res) => {
     )
     res.status(201).json({ id: result.insertId })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create menu item', error: error.message })
+    sendServerError(res, 'Failed to create menu item', error)
   }
 })
 
@@ -1030,7 +1053,7 @@ app.put('/api/admin/menu/:id', requireAdmin, async (req, res) => {
     )
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update menu item', error: error.message })
+    sendServerError(res, 'Failed to update menu item', error)
   }
 })
 
@@ -1042,7 +1065,7 @@ app.delete('/api/admin/menu/:id', requireAdmin, async (req, res) => {
     await pool.query('DELETE FROM menu_items WHERE id = ? LIMIT 1', [id])
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete menu item', error: error.message })
+    sendServerError(res, 'Failed to delete menu item', error)
   }
 })
 
@@ -1067,14 +1090,15 @@ app.get('/api/admin/media', requireAdmin, async (_req, res) => {
     rows.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load media library', error: error.message })
+    sendServerError(res, 'Failed to load media library', error)
   }
 })
 
 app.post('/api/admin/media/upload', requireAdmin, (req, res) => {
   upload.single('file')(req, res, (error) => {
     if (error) {
-      return res.status(400).json({ message: error.message || 'Upload failed' })
+      logServerError('Upload failed', error)
+      return res.status(400).json({ message: 'Upload failed. Use a JPEG, PNG, WebP, or GIF under 10MB.' })
     }
 
     if (!req.file) {
@@ -1099,7 +1123,7 @@ app.delete('/api/admin/media/:fileName', requireAdmin, async (req, res) => {
     res.json({ ok: true })
   } catch (error) {
     if (error?.code === 'ENOENT') return res.status(404).json({ message: 'File not found' })
-    res.status(500).json({ message: 'Failed to delete file', error: error.message })
+    sendServerError(res, 'Failed to delete file', error)
   }
 })
 
@@ -1126,7 +1150,7 @@ app.get('/api/admin/bookings', requireAdmin, async (_req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load bookings', error: error.message })
+    sendServerError(res, 'Failed to load bookings', error)
   }
 })
 
@@ -1145,7 +1169,7 @@ app.put('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
     )
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update booking', error: error.message })
+    sendServerError(res, 'Failed to update booking', error)
   }
 })
 
@@ -1153,7 +1177,7 @@ app.get('/api/admin/content/about', requireAdmin, async (_req, res) => {
   try {
     res.json(await getSetting('about_page', DEFAULT_ABOUT_CONTENT))
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load about content', error: error.message })
+    sendServerError(res, 'Failed to load about content', error)
   }
 })
 
@@ -1169,15 +1193,18 @@ app.put('/api/admin/content/about', requireAdmin, async (req, res) => {
     await setSetting('about_page', nextValue)
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update about content', error: error.message })
+    sendServerError(res, 'Failed to update about content', error)
   }
 })
 
 app.get('/api/admin/content/contact', requireAdmin, async (_req, res) => {
   try {
-    res.json(await getSetting('contact_details', DEFAULT_CONTACT_CONTENT))
+    res.json({
+      ...DEFAULT_CONTACT_CONTENT,
+      ...(await getSetting('contact_details', DEFAULT_CONTACT_CONTENT)),
+    })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load contact details', error: error.message })
+    sendServerError(res, 'Failed to load contact details', error)
   }
 })
 
@@ -1187,6 +1214,7 @@ app.put('/api/admin/content/contact', requireAdmin, async (req, res) => {
     addressLine1: String(req.body?.addressLine1 ?? DEFAULT_CONTACT_CONTENT.addressLine1),
     addressLine2: String(req.body?.addressLine2 ?? DEFAULT_CONTACT_CONTENT.addressLine2),
     email: String(req.body?.email ?? DEFAULT_CONTACT_CONTENT.email),
+    phone: String(req.body?.phone ?? DEFAULT_CONTACT_CONTENT.phone),
     whatsapp: String(req.body?.whatsapp ?? DEFAULT_CONTACT_CONTENT.whatsapp),
     instagram: String(req.body?.instagram ?? DEFAULT_CONTACT_CONTENT.instagram),
     mapQuery: String(req.body?.mapQuery ?? DEFAULT_CONTACT_CONTENT.mapQuery),
@@ -1199,7 +1227,7 @@ app.put('/api/admin/content/contact', requireAdmin, async (req, res) => {
     await setSetting('contact_details', nextValue)
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update contact details', error: error.message })
+    sendServerError(res, 'Failed to update contact details', error)
   }
 })
 
@@ -1207,7 +1235,7 @@ app.get('/api/admin/content/site-settings', requireAdmin, async (_req, res) => {
   try {
     res.json(await getSetting('site_settings', DEFAULT_SITE_SETTINGS))
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load site settings', error: error.message })
+    sendServerError(res, 'Failed to load site settings', error)
   }
 })
 
@@ -1225,7 +1253,7 @@ app.put('/api/admin/content/site-settings', requireAdmin, async (req, res) => {
     await setSetting('site_settings', nextValue)
     res.json({ ok: true })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update site settings', error: error.message })
+    sendServerError(res, 'Failed to update site settings', error)
   }
 })
 

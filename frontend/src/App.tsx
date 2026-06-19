@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
+import { ErrorBoundary } from '@/components/site/ErrorBoundary'
 import { SiteLayout } from '@/components/site/SiteLayout'
 
 const AboutPage = lazy(() => import('@/pages/AboutPage').then((m) => ({ default: m.AboutPage })))
@@ -23,21 +24,23 @@ function RouteFallback() {
 
 export default function App() {
   return (
-    <Suspense fallback={<RouteFallback />}>
-      <Routes>
-        <Route path="/admin" element={<AdminDashboardPage />} />
-        <Route element={<SiteLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/cafe" element={<CafePage />} />
-          <Route path="/stay" element={<StayPage />} />
-          <Route path="/store" element={<StorePage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/book" element={<BookPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-        </Route>
-      </Routes>
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/admin" element={<AdminDashboardPage />} />
+          <Route element={<SiteLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/cafe" element={<CafePage />} />
+            <Route path="/stay" element={<StayPage />} />
+            <Route path="/store" element={<StorePage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/book" element={<BookPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+          </Route>
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   )
 }

@@ -165,8 +165,10 @@ export function StorePage() {
     if (!id || products.length === 0) return
     const found = products.find((x) => x.id === id)
     if (!found) return
-    setSelectedProduct(found)
-    window.setTimeout(() => document.getElementById('store-browse')?.scrollIntoView({ behavior: 'smooth' }), 120)
+    window.setTimeout(() => {
+      setSelectedProduct(found)
+      document.getElementById('store-browse')?.scrollIntoView({ behavior: 'smooth' })
+    }, 120)
   }, [productPreviewId, products])
 
   /* ── Filtered + sorted products ── */
@@ -187,8 +189,12 @@ export function StorePage() {
     [currentPage, filteredProducts],
   )
 
-  useEffect(() => { setCurrentPage(1) }, [query, category, sortBy])
-  useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages) }, [currentPage, totalPages])
+  useEffect(() => {
+    window.setTimeout(() => setCurrentPage(1), 0)
+  }, [query, category, sortBy])
+  useEffect(() => {
+    if (currentPage > totalPages) window.setTimeout(() => setCurrentPage(totalPages), 0)
+  }, [currentPage, totalPages])
 
   const [smUp, setSmUp] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches,

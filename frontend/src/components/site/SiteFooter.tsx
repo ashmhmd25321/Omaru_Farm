@@ -80,7 +80,7 @@ export function SiteFooter() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-bark">Connect</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <a
-                href="mailto:hello@omarufarm.com.au"
+                href="mailto:Omarufarmcafe@gmail.com"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-parchment bg-white text-gold transition hover:border-gold/50 hover:shadow-sm"
                 aria-label="Email"
               >

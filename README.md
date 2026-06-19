@@ -99,6 +99,17 @@ This updates contact details/hours and hides legacy Breakfast or Afternoon Tea m
 
 ## Free Hosting Options
 
+### Production deployment note
+
+This app is **not** a static-only website. Bookings, admin, menu/products, media uploads, and site settings all require the Express API and MySQL database. The GitHub Actions workflow now runs build checks only; it does **not** deploy to GitHub Pages because GitHub Pages cannot run the backend.
+
+For the client-facing site, deploy the Docker stack (`frontend` + `backend` + `db`) behind HTTPS. In production set:
+
+- `CORS_ORIGIN=https://your-domain`
+- `PUBLIC_SITE_URL=https://your-domain`
+- `COOKIE_SECURE=true`
+- strong `ADMIN_PASSWORD`, `ADMIN_JWT_SECRET`, `DB_PASSWORD`, and `DB_ROOT_PASSWORD`
+
 ### Option A (recommended for full-stack + Docker): Oracle Cloud Always Free VM
 
 Why:
@@ -115,7 +126,7 @@ High-level:
 
 ### Option B (frontend only): GitHub Pages
 
-Good for design-only preview, but **not** for your current full backend/admin/database flow.
+Good for design-only preview only. It is **not valid for the client-facing production site** unless the backend is hosted separately and the frontend is built with `VITE_API_BASE_URL` pointing to that hosted API.
 
 ### Option C (split services): Render/Railway/etc
 
@@ -125,6 +136,10 @@ Possible, but free tiers usually sleep or have limits. Also MySQL free plans are
 
 - `GET /api/health`
 - `GET /api/products`
-- `GET /api/reviews`
+- `GET /api/product-categories`
+- `GET /api/testimonials`
+- `GET /api/menu`
+- `GET /api/content/about`
+- `GET /api/content/contact`
+- `GET /api/content/site-settings`
 - `POST /api/bookings`
-- `POST /api/reviews`

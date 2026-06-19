@@ -277,7 +277,7 @@ export function BookPage() {
                 >
                   <div className="relative h-36 overflow-hidden">
                     <img
-                      src={staticUrl('/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.png')}
+                      src={staticUrl('/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.jpg')}
                       alt=""
                       className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                       loading="lazy"

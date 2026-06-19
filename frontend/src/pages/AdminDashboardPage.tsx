@@ -74,6 +74,7 @@ type ContactContent = {
   addressLine1: string
   addressLine2: string
   email: string
+  phone: string
   whatsapp: string
   instagram: string
   mapQuery: string
@@ -468,6 +469,7 @@ export function AdminDashboardPage() {
     addressLine1: '',
     addressLine2: '',
     email: '',
+    phone: '',
     whatsapp: '',
     instagram: '',
     mapQuery: '',
@@ -2070,6 +2072,7 @@ export function AdminDashboardPage() {
                 <CardContent className="grid gap-3 md:grid-cols-2">
                   <input className="field" value={contact.farmName} onChange={(e) => setContact((v) => ({ ...v, farmName: e.target.value }))} placeholder="Farm name" />
                   <input className="field" value={contact.email} onChange={(e) => setContact((v) => ({ ...v, email: e.target.value }))} placeholder="Email" />
+                  <input className="field" value={contact.phone} onChange={(e) => setContact((v) => ({ ...v, phone: e.target.value }))} placeholder="Phone number" />
                   <input className="field" value={contact.addressLine1} onChange={(e) => setContact((v) => ({ ...v, addressLine1: e.target.value }))} placeholder="Address line 1" />
                   <input className="field" value={contact.addressLine2} onChange={(e) => setContact((v) => ({ ...v, addressLine2: e.target.value }))} placeholder="Address line 2" />
                   <input className="field" value={contact.whatsapp} onChange={(e) => setContact((v) => ({ ...v, whatsapp: e.target.value }))} placeholder="WhatsApp URL" />

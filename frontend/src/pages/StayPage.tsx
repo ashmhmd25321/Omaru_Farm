@@ -365,11 +365,11 @@ export function StayPage() {
         <meta property="og:title" content="Stay at Omaru Farm | Cabins & Holiday Homes" />
         <meta property="og:description" content="Self-contained farm cabins and Phillip Island holiday homes close to Penguin Parade, Cowes, and island attractions." />
         <meta property="og:url" content="https://omarufarms.com.au/stay" />
-        <meta property="og:image" content="/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.png" />
+        <meta property="og:image" content="/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.jpg" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Stay at Omaru Farm | Cabins & Holiday Homes" />
         <meta name="twitter:description" content="Self-contained farm cabins and Phillip Island holiday homes close to Penguin Parade, Cowes, and island attractions." />
-        <meta name="twitter:image" content="/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.png" />
+        <meta name="twitter:image" content="/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.jpg" />
       </Helmet>
 
       <main>
@@ -379,7 +379,7 @@ export function StayPage() {
         ══════════════════════════════════════════ */}
         <section className="relative flex min-h-[80vh] items-end overflow-hidden bg-surface">
           <img
-            src={staticUrl('/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.png')}
+            src={staticUrl('/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.jpg')}
             alt="Terrace dining at Omaru Farm overlooking Phillip Island coastline at sunset"
             className="absolute inset-0 h-full w-full object-cover object-[center_45%]"
             loading="eager"

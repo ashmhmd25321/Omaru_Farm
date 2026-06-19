@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://omarufarms.com.au/</loc></url>
-  <url><loc>https://omarufarms.com.au/about</loc></url>
-  <url><loc>https://omarufarms.com.au/cafe</loc></url>
-  <url><loc>https://omarufarms.com.au/stay</loc></url>
-  <url><loc>https://omarufarms.com.au/store</loc></url>
-  <url><loc>https://omarufarms.com.au/contact</loc></url>
-  <url><loc>https://omarufarms.com.au/book</loc></url>
+  <url><loc>https://omarufarms.com.au/</loc><lastmod>2026-06-20</lastmod></url>
+  <url><loc>https://omarufarms.com.au/about</loc><lastmod>2026-06-20</lastmod></url>
+  <url><loc>https://omarufarms.com.au/cafe</loc><lastmod>2026-06-20</lastmod></url>
+  <url><loc>https://omarufarms.com.au/stay</loc><lastmod>2026-06-20</lastmod></url>
+  <url><loc>https://omarufarms.com.au/store</loc><lastmod>2026-06-20</lastmod></url>
+  <url><loc>https://omarufarms.com.au/contact</loc><lastmod>2026-06-20</lastmod></url>
+  <url><loc>https://omarufarms.com.au/book</loc><lastmod>2026-06-20</lastmod></url>
+  <url><loc>https://omarufarms.com.au/terms</loc><lastmod>2026-06-20</lastmod></url>
+  <url><loc>https://omarufarms.com.au/privacy</loc><lastmod>2026-06-20</lastmod></url>
 </urlset>

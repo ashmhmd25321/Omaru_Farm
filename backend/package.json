@@ -6,17 +6,19 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "align:live-data": "node scripts/align-live-data.js"
+    "align:live-data": "node scripts/align-live-data.js",
+    "check": "node --check src/server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Omaru Farm",
   "license": "ISC",
-  "description": "",
+  "description": "Express and MySQL API for the Omaru Farm website and admin CMS.",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "mysql2": "^3.20.0"

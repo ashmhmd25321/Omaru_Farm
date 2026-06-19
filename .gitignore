@@ -24,3 +24,7 @@
 # Source image folders (keep web-ready copies in frontend/public/)
 Image Farm/
 Farm_images/
+Farm Store products 2026/
+
+# Project/source documents
+*.pdf

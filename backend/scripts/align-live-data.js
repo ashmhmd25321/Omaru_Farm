@@ -4,7 +4,8 @@ const contactDetails = {
   farmName: 'Omaru Farm',
   addressLine1: '776 Ventnor Road, Ventnor',
   addressLine2: 'Phillip Island VIC 3922',
-  email: 'hello@omarufarm.com.au',
+  email: 'Omarufarmcafe@gmail.com',
+  phone: '+61 476 302 477',
   whatsapp: 'https://wa.me/61476302477',
   instagram: 'https://instagram.com',
   mapQuery: '776 Ventnor Road, Ventnor, Phillip Island VIC 3922, Australia',
@@ -36,6 +37,7 @@ async function main() {
   }
   await setSetting('site_settings', {
     ...currentSite,
+    supportEmail: contactDetails.email,
     whatsappUrl: contactDetails.whatsapp,
   })
   await pool.query(

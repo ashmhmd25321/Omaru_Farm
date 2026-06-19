@@ -12,6 +12,7 @@ type ContactDetails = {
   addressLine1: string
   addressLine2: string
   email: string
+  phone: string
   mapQuery: string
   hoursCafe: string
   hoursStore: string
@@ -21,7 +22,8 @@ const FALLBACK_CONTACT: ContactDetails = {
   farmName: 'Omaru Farm',
   addressLine1: '776 Ventnor Road, Ventnor',
   addressLine2: 'Phillip Island VIC 3922',
-  email: 'hello@omarufarm.com.au',
+  email: 'Omarufarmcafe@gmail.com',
+  phone: '+61 476 302 477',
   mapQuery: '776 Ventnor Road, Ventnor, Phillip Island VIC 3922, Australia',
   hoursCafe: 'Thu–Fri: 10am–2pm & 5–8pm · Sat–Sun: 10am–8pm',
   hoursStore: 'Mon–Sun: 9am–5pm',
@@ -29,8 +31,6 @@ const FALLBACK_CONTACT: ContactDetails = {
 
 /** Display lines for café column when using structured fallback copy */
 const CAFE_HOURS_DISPLAY = ['Thu–Fri: 10am–2pm,', '5pm–8pm', 'Sat–Sun: 10am–8pm'] as const
-
-const PHONE_DISPLAY = '+61 (0) 3 5956 0000'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
@@ -76,6 +76,7 @@ export function ContactPage() {
           addressLine1: String(row.addressLine1 ?? FALLBACK_CONTACT.addressLine1),
           addressLine2: String(row.addressLine2 ?? FALLBACK_CONTACT.addressLine2),
           email: String(row.email ?? FALLBACK_CONTACT.email),
+          phone: String(row.phone ?? FALLBACK_CONTACT.phone),
           mapQuery: String(row.mapQuery ?? FALLBACK_CONTACT.mapQuery),
           hoursCafe: String(row.hoursCafe ?? FALLBACK_CONTACT.hoursCafe),
           hoursStore: String(row.hoursStore ?? FALLBACK_CONTACT.hoursStore),
@@ -95,6 +96,7 @@ export function ContactPage() {
     () => `https://www.google.com/maps?q=${encodeURIComponent(details.mapQuery)}&z=15&hl=en&output=embed`,
     [details.mapQuery],
   )
+  const phoneHref = useMemo(() => `tel:${details.phone.replace(/[^\d+]/g, '')}`, [details.phone])
 
   const cafeHoursIsStructured = details.hoursCafe === FALLBACK_CONTACT.hoursCafe
 
@@ -135,11 +137,11 @@ export function ContactPage() {
         <meta property="og:title" content="Contact Omaru Farm | Phillip Island" />
         <meta property="og:description" content="Contact Omaru Farm for café bookings, accommodation, group bookings, farm store enquiries, events, and functions." />
         <meta property="og:url" content="https://omarufarms.com.au/contact" />
-        <meta property="og:image" content="/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.png" />
+        <meta property="og:image" content="/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.jpg" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Contact Omaru Farm | Phillip Island" />
         <meta name="twitter:description" content="Contact Omaru Farm for café bookings, accommodation, group bookings, farm store enquiries, events, and functions." />
-        <meta name="twitter:image" content="/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.png" />
+        <meta name="twitter:image" content="/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.jpg" />
       </Helmet>
 
       <main className="bg-surface">
@@ -148,7 +150,7 @@ export function ContactPage() {
         ══════════════════════════════════════════ */}
         <section className="relative flex min-h-[78vh] items-center justify-center overflow-hidden bg-surface">
           <img
-            src={staticUrl('/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.png')}
+            src={staticUrl('/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.jpg')}
             alt="Sheep grazing in Omaru Farm paddocks at golden hour, Phillip Island"
             className="absolute inset-0 h-full w-full object-cover object-[center_42%]"
             loading="eager"
@@ -286,11 +288,11 @@ export function ContactPage() {
                       {details.email}
                     </a>
                     <a
-                      href={`tel:${PHONE_DISPLAY.replace(/\s/g, '')}`}
+                      href={phoneHref}
                       className="mt-2 inline-flex items-center gap-2 font-body text-sm text-stone transition hover:text-gold-deep"
                     >
                       <Phone className="h-4 w-4 shrink-0 text-gold" aria-hidden />
-                      {PHONE_DISPLAY}
+                      {details.phone}
                     </a>
                   </div>
                 </div>
