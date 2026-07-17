@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async'
+import { Seo } from '@/components/site/Seo'
 import { Link } from 'react-router-dom'
 
 /**
@@ -8,10 +8,11 @@ import { Link } from 'react-router-dom'
 export function TermsPage() {
   return (
     <>
-      <Helmet>
-        <title>Terms of use | Omaru Farm</title>
-        <meta name="description" content="Terms of use for the Omaru Farm website, bookings, and enquiries." />
-      </Helmet>
+      <Seo
+        title="Terms of use | Omaru Farm"
+        description="Terms of use for the Omaru Farm website, bookings, and enquiries."
+        path="/terms"
+      />
 
       <main className="mx-auto max-w-3xl px-5 py-14 md:py-16">
         <p className="text-xs uppercase tracking-[0.28em] text-gold/75">Legal</p>

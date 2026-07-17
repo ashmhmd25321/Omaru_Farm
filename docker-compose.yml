@@ -54,7 +54,8 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: /api
+        # Empty = same-origin relative /api/* paths (host Nginx proxies to backend)
+        VITE_API_BASE_URL: ""
     container_name: omaru_frontend
     restart: unless-stopped
     depends_on:

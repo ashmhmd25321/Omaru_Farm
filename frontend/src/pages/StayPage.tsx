@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async'
+import { Seo } from '@/components/site/Seo'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
@@ -355,22 +355,12 @@ export function StayPage() {
 
   return (
     <>
-      <Helmet>
-        <title>Stay at Omaru Farm | On-Farm Cabins & Phillip Island Holiday Homes</title>
-        <meta
-          name="description"
-          content="Self-contained cabins on Omaru Farm, plus separate holiday homes on Phillip Island. Farm stays, dark skies, and easy access to the Penguin Parade."
-        />
-        <link rel="canonical" href="https://omarufarms.com.au/stay" />
-        <meta property="og:title" content="Stay at Omaru Farm | Cabins & Holiday Homes" />
-        <meta property="og:description" content="Self-contained farm cabins and Phillip Island holiday homes close to Penguin Parade, Cowes, and island attractions." />
-        <meta property="og:url" content="https://omarufarms.com.au/stay" />
-        <meta property="og:image" content="/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.jpg" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Stay at Omaru Farm | Cabins & Holiday Homes" />
-        <meta name="twitter:description" content="Self-contained farm cabins and Phillip Island holiday homes close to Penguin Parade, Cowes, and island attractions." />
-        <meta name="twitter:image" content="/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.jpg" />
-      </Helmet>
+      <Seo
+        title="Stay at Omaru Farm | On-Farm Cabins & Phillip Island Holiday Homes"
+        description="Self-contained cabins on Omaru Farm, plus separate holiday homes on Phillip Island. Farm stays, dark skies, and easy access to the Penguin Parade."
+        path="/stay"
+        image="/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.jpg"
+      />
 
       <main>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Helmet } from 'react-helmet-async'
+import { Seo } from '@/components/site/Seo'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
@@ -174,19 +174,12 @@ export function BookPage() {
 
   return (
     <>
-      <Helmet>
-        <title>Book Now | Omaru Farm</title>
-        <meta name="description" content="Book a cafe table or submit an accommodation request at Omaru Farm." />
-        <link rel="canonical" href="https://omarufarms.com.au/book" />
-        <meta property="og:title" content="Book Omaru Farm | Café & Accommodation Requests" />
-        <meta property="og:description" content="Submit a café table or accommodation booking request for Omaru Farm on Phillip Island." />
-        <meta property="og:url" content="https://omarufarms.com.au/book" />
-        <meta property="og:image" content="/images/farm/image-farm/IMG_0674.jpg" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Book Omaru Farm | Café & Accommodation Requests" />
-        <meta name="twitter:description" content="Submit a café table or accommodation booking request for Omaru Farm on Phillip Island." />
-        <meta name="twitter:image" content="/images/farm/image-farm/IMG_0674.jpg" />
-      </Helmet>
+      <Seo
+        title="Book Now | Omaru Farm"
+        description="Book a cafe table or submit an accommodation request at Omaru Farm on Phillip Island."
+        path="/book"
+        image="/images/farm/image-farm/IMG_0674.jpg"
+      />
 
       <main className="bg-surface">
         <section className="bg-surface py-12 md:py-16">

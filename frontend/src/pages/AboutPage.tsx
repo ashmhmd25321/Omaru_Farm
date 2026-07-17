@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Helmet } from 'react-helmet-async'
+import { Seo } from '@/components/site/Seo'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, BedDouble, ChevronLeft, ChevronRight, Sun } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -95,22 +95,12 @@ export function AboutPage() {
 
   return (
     <>
-      <Helmet>
-        <title>About | Omaru Farm</title>
-        <meta
-          name="description"
-          content="Discover the story of Omaru Farm — a premium farm-to-table destination rooted in sustainability, heritage, and breathtaking views on Phillip Island."
-        />
-        <link rel="canonical" href="https://omarufarms.com.au/about" />
-        <meta property="og:title" content="About Omaru Farm | A Beautiful View" />
-        <meta property="og:description" content="Discover Omaru Farm, a tranquil Phillip Island destination shaped by beautiful views, farm life, and warm hospitality." />
-        <meta property="og:url" content="https://omarufarms.com.au/about" />
-        <meta property="og:image" content="/images/farm/image-farm/DC543FC904F0A78254E08248B5D588EC.JPG" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="About Omaru Farm | A Beautiful View" />
-        <meta name="twitter:description" content="Discover Omaru Farm, a tranquil Phillip Island destination shaped by beautiful views, farm life, and warm hospitality." />
-        <meta name="twitter:image" content="/images/farm/image-farm/DC543FC904F0A78254E08248B5D588EC.JPG" />
-      </Helmet>
+      <Seo
+        title="About | Omaru Farm"
+        description="Discover the story of Omaru Farm — a premium farm-to-table destination rooted in sustainability, heritage, and breathtaking views on Phillip Island."
+        path="/about"
+        image="/images/farm/image-farm/DC543FC904F0A78254E08248B5D588EC.JPG"
+      />
 
       <main>
 

@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async'
+import { Seo } from '@/components/site/Seo'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
@@ -302,22 +302,12 @@ export function CafePage() {
 
   return (
     <>
-      <Helmet>
-        <title>Café Omaru | Farm-to-Table Dining on Phillip Island</title>
-        <meta
-          name="description"
-          content="Sri Lankan flavours meet Phillip Island charm at Café Omaru. Lunch and dinner only — no breakfast. Set menu featuring authentic Sri Lankan cuisine, fully licensed bar, local wines. Dog friendly. Open Thu–Sun."
-        />
-        <link rel="canonical" href="https://omarufarms.com.au/cafe" />
-        <meta property="og:title" content="Café Omaru | Lunch, Dinner & Phillip Island Views" />
-        <meta property="og:description" content="Lunch and dinner only at Café Omaru, with Sri Lankan flavours, barista coffee, licensed beverages, and Phillip Island wines." />
-        <meta property="og:url" content="https://omarufarms.com.au/cafe" />
-        <meta property="og:image" content="/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Café Omaru | Lunch, Dinner & Phillip Island Views" />
-        <meta name="twitter:description" content="Lunch and dinner only at Café Omaru, with Sri Lankan flavours, barista coffee, licensed beverages, and Phillip Island wines." />
-        <meta name="twitter:image" content="/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG" />
-      </Helmet>
+      <Seo
+        title="Café Omaru | Farm-to-Table Dining on Phillip Island"
+        description="Sri Lankan flavours meet Phillip Island charm at Café Omaru. Lunch and dinner only — no breakfast. Set menu featuring authentic Sri Lankan cuisine, fully licensed bar, local wines. Dog friendly. Open Thu–Sun."
+        path="/cafe"
+        image="/images/farm/AEA8C771269A966E816D1F714AD4BE2D.JPG"
+      />
 
       <main>
 

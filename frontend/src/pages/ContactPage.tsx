@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Helmet } from 'react-helmet-async'
+import { Seo } from '@/components/site/Seo'
 import { motion } from 'framer-motion'
 import { ArrowUpRight, ChevronDown, Clock3, Mail, MapPin, Phone } from 'lucide-react'
 import { staticUrl } from '@/utils/staticUrl'
@@ -127,22 +127,12 @@ export function ContactPage() {
 
   return (
     <>
-      <Helmet>
-        <title>Contact | Omaru Farm · Phillip Island</title>
-        <meta
-          name="description"
-          content="Get in touch with Omaru Farm for group bookings, weddings, events, functions, café bookings, farm stays and store enquiries."
-        />
-        <link rel="canonical" href="https://omarufarms.com.au/contact" />
-        <meta property="og:title" content="Contact Omaru Farm | Phillip Island" />
-        <meta property="og:description" content="Contact Omaru Farm for café bookings, accommodation, group bookings, farm store enquiries, events, and functions." />
-        <meta property="og:url" content="https://omarufarms.com.au/contact" />
-        <meta property="og:image" content="/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.jpg" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Contact Omaru Farm | Phillip Island" />
-        <meta name="twitter:description" content="Contact Omaru Farm for café bookings, accommodation, group bookings, farm store enquiries, events, and functions." />
-        <meta name="twitter:image" content="/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.jpg" />
-      </Helmet>
+      <Seo
+        title="Contact | Omaru Farm · Phillip Island"
+        description="Get in touch with Omaru Farm for group bookings, weddings, events, functions, café bookings, farm stays and store enquiries."
+        path="/contact"
+        image="/images/farm/image-farm/Gemini_Generated_Image_253b1s253b1s253b.jpg"
+      />
 
       <main className="bg-surface">
         {/* ══════════════════════════════════════════

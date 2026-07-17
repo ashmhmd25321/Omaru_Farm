@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async'
+import { Seo } from '@/components/site/Seo'
 import { Link } from 'react-router-dom'
 
 /**
@@ -8,10 +8,11 @@ import { Link } from 'react-router-dom'
 export function PrivacyPage() {
   return (
     <>
-      <Helmet>
-        <title>Privacy policy | Omaru Farm</title>
-        <meta name="description" content="How Omaru Farm collects, uses, and protects your personal information." />
-      </Helmet>
+      <Seo
+        title="Privacy policy | Omaru Farm"
+        description="How Omaru Farm collects, uses, and protects your personal information."
+        path="/privacy"
+      />
 
       <main className="mx-auto max-w-3xl px-5 py-14 md:py-16">
         <p className="text-xs uppercase tracking-[0.28em] text-gold/75">Legal</p>

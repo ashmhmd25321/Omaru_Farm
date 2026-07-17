@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Seo } from '@/components/site/Seo'
+import { faqSchema } from '@/data/seoSchema'
 import { Helmet } from 'react-helmet-async'
 import { motion, useReducedMotion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
@@ -224,21 +226,14 @@ export function HomePage() {
 
   return (
     <>
+      <Seo
+        title="Omaru Farm | Farm-to-Table Dining, Stays & Store on Phillip Island"
+        description="Omaru means 'a beautiful view' — farm-to-table dining, cabin stays, and a premium farm store on Phillip Island, just 5 minutes from the Penguin Parade."
+        path="/"
+        image="/images/farm/IMG_3924.jpg"
+      />
       <Helmet>
-        <title>Omaru Farm | Farm-to-Table Dining, Stays & Store on Phillip Island</title>
-        <meta
-          name="description"
-          content="Omaru means 'a beautiful view' — farm-to-table dining, cabin stays, and a premium farm store on Phillip Island, just 5 minutes from the Penguin Parade."
-        />
-        <link rel="canonical" href="https://omarufarms.com.au/" />
-        <meta property="og:title" content="Omaru Farm | A Beautiful View on Phillip Island" />
-        <meta property="og:description" content="Farm-to-table dining, stays, farm life, and farm store goods in Ventnor, Phillip Island." />
-        <meta property="og:url" content="https://omarufarms.com.au/" />
-        <meta property="og:image" content="/images/farm/IMG_3924.jpg" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Omaru Farm | A Beautiful View on Phillip Island" />
-        <meta name="twitter:description" content="Farm-to-table dining, stays, farm life, and farm store goods in Ventnor, Phillip Island." />
-        <meta name="twitter:image" content="/images/farm/IMG_3924.jpg" />
+        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
       </Helmet>
 
       <main>

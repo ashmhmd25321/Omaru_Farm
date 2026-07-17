@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Helmet } from 'react-helmet-async'
+import { Seo } from '@/components/site/Seo'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Clock3, Leaf, MapPin, PackageSearch, Search, Wheat, X } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
@@ -224,13 +224,12 @@ export function StorePage() {
 
   return (
     <>
-      <Helmet>
-        <title>Farm Store | Omaru — Organic, Homemade Pantry Goods</title>
-        <meta
-          name="description"
-          content="Organic, homemade pickles, herbs & spices, chutneys and pantry favourites — year-round production from Omaru Farm, Phillip Island."
-        />
-      </Helmet>
+      <Seo
+        title="Farm Store | Omaru — Organic, Homemade Pantry Goods"
+        description="Organic, homemade pickles, herbs & spices, chutneys and pantry favourites — year-round production from Omaru Farm, Phillip Island."
+        path="/store"
+        image="/images/products/20260311_130334.jpg"
+      />
 
       <main>
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { Helmet } from 'react-helmet-async'
+import { Seo } from '@/components/site/Seo'
 import {
   ChevronDown,
   DollarSign,
@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { API_BASE } from '@/utils/api'
+import { apiUrl } from '@/utils/api'
 import { productImageUrl } from '@/utils/productImage'
 
 type Product = {
@@ -124,7 +124,7 @@ async function request<T>(
   _session: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(apiUrl(path), {
     ...init,
     credentials: 'include',
     headers: {
@@ -145,7 +145,7 @@ async function request<T>(
 async function uploadProductImage(_session: string, file: File): Promise<string> {
   const fd = new FormData()
   fd.append('file', file)
-  const res = await fetch(`${API_BASE}/api/admin/media/upload`, {
+  const res = await fetch(apiUrl('/api/admin/media/upload'), {
     method: 'POST',
     credentials: 'include',
     body: fd,
@@ -595,7 +595,7 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     let cancelled = false
-    fetch(`${API_BASE}/api/admin/me`, { credentials: 'include' })
+    fetch(apiUrl('/api/admin/me'), { credentials: 'include' })
       .then((res) => {
         if (!res.ok) throw new Error('No active session')
         if (!cancelled) setToken('cookie-session')
@@ -620,7 +620,7 @@ export function AdminDashboardPage() {
     setError('')
     setMessage('')
     try {
-      const res = await fetch(`${API_BASE}/api/admin/login`, {
+      const res = await fetch(apiUrl('/api/admin/login'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -664,9 +664,12 @@ export function AdminDashboardPage() {
   if (!token) {
     return (
       <>
-        <Helmet>
-          <title>Admin Login | Omaru Farm</title>
-        </Helmet>
+        <Seo
+          title="Admin Login | Omaru Farm"
+          description="Omaru Farm admin login."
+          path="/admin"
+          noindex
+        />
         <main className="admin-shell mx-auto flex min-h-screen w-full max-w-5xl items-center bg-surface px-5 py-12">
           <Card className="w-full max-w-lg">
             <CardHeader>
@@ -700,9 +703,12 @@ export function AdminDashboardPage() {
 
   return (
     <>
-      <Helmet>
-        <title>Admin Dashboard | Omaru Farm</title>
-      </Helmet>
+      <Seo
+        title="Admin Dashboard | Omaru Farm"
+        description="Omaru Farm admin dashboard."
+        path="/admin"
+        noindex
+      />
 
       <main className="admin-shell min-h-screen bg-surface pb-14">
         <section className="border-b border-parchment/60 bg-white shadow-[0_1px_0_rgba(26,18,8,0.04)]">
@@ -2194,7 +2200,7 @@ export function AdminDashboardPage() {
                         try {
                           const formData = new FormData()
                           formData.append('file', uploadFile)
-                          const res = await fetch(`${API_BASE}/api/admin/media/upload`, {
+                          const res = await fetch(apiUrl('/api/admin/media/upload'), {
                             method: 'POST',
                             credentials: 'include',
                             body: formData,

@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
 
+Disallow: /admin
+Disallow: /api/
+
 Sitemap: https://omarufarms.com.au/sitemap.xml
