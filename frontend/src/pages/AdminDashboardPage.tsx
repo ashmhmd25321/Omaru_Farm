@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { apiUrl } from '@/utils/api'
+import { staticUrl } from '@/utils/staticUrl'
 import { productImageUrl } from '@/utils/productImage'
 
 type Product = {
@@ -672,8 +673,17 @@ export function AdminDashboardPage() {
         />
         <main className="admin-shell mx-auto flex min-h-screen w-full max-w-5xl items-center bg-surface px-5 py-12">
           <Card className="w-full max-w-lg">
-            <CardHeader>
-              <CardTitle>Omaru Admin Login</CardTitle>
+            <CardHeader className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-parchment/70">
+                <img
+                  src={staticUrl('/images/farm/omaru-logo.png')}
+                  alt="Omaru Farm logo"
+                  className="h-11 w-11"
+                  loading="eager"
+                />
+              </div>
+              <CardTitle className="text-3xl">Omaru Admin Login</CardTitle>
+              <p className="text-sm text-stone">Sign in to manage the Omaru Farm website.</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <input
