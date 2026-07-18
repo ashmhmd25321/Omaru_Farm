@@ -71,6 +71,8 @@ type Product = {
   size: string
   price: number
   image: string
+  images?: string[]
+  description?: string
   category: string
 }
 
@@ -113,6 +115,7 @@ export function StorePage() {
   const [sortBy,   setSortBy]   = useState<'name' | 'price-low' | 'price-high'>('name')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [modalImageIndex, setModalImageIndex] = useState(0)
   const pageSize = 12
 
   /* ── API fetch: category order ── */
@@ -150,6 +153,8 @@ export function StorePage() {
               size: String(row.size ?? ''),
               price: Number(row.price ?? 0),
               image: String(row.image ?? ''),
+              images: Array.isArray(row.images) ? row.images.map((x) => String(x ?? '')).filter(Boolean) : undefined,
+              description: row.description !== undefined ? String(row.description ?? '') : undefined,
               category: String(row.category ?? 'Other'),
             }
           }),
@@ -170,6 +175,10 @@ export function StorePage() {
       document.getElementById('store-browse')?.scrollIntoView({ behavior: 'smooth' })
     }, 120)
   }, [productPreviewId, products])
+
+  useEffect(() => {
+    setModalImageIndex(0)
+  }, [selectedProduct?.id])
 
   /* ── Filtered + sorted products ── */
   const filteredProducts = useMemo(() => {
@@ -709,12 +718,44 @@ export function StorePage() {
 
               <div className="grid md:grid-cols-2">
                 {/* Image panel */}
-                <div className="flex items-center justify-center bg-surface p-6 md:min-h-72">
-                  <img
-                    src={imgFor(selectedProduct.image, products.indexOf(selectedProduct))}
-                    alt={selectedProduct.name}
-                    className="max-h-[320px] w-full rounded-sm object-contain"
-                  />
+                <div className="bg-surface p-6 md:min-h-72">
+                  {(() => {
+                    const index = products.indexOf(selectedProduct)
+                    const raw = (selectedProduct.images ?? []).filter(Boolean)
+                    const candidatePaths = raw.length ? raw : (selectedProduct.image ? [selectedProduct.image] : [])
+                    const urls = candidatePaths.length
+                      ? candidatePaths.map((p) => productImageUrl(p))
+                      : [imgFor(selectedProduct.image, index)]
+                    const active = urls[Math.min(modalImageIndex, urls.length - 1)]!
+
+                    return (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-center">
+                          <img src={active} alt={selectedProduct.name} className="max-h-[320px] w-full rounded-sm object-contain" />
+                        </div>
+                        {urls.length > 1 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {urls.map((u, i) => (
+                              <button
+                                key={`${u}-${i}`}
+                                type="button"
+                                onClick={() => setModalImageIndex(i)}
+                                className={[
+                                  'h-14 w-14 overflow-hidden rounded-sm border bg-white',
+                                  i === modalImageIndex
+                                    ? 'border-gold shadow-[0_0_0_2px_rgba(205,163,73,0.14)]'
+                                    : 'border-parchment/70',
+                                ].join(' ')}
+                                aria-label={`View image ${i + 1}`}
+                              >
+                                <img src={u} alt="" className="h-full w-full object-cover" />
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {/* Details panel */}
@@ -735,7 +776,9 @@ export function StorePage() {
                     <p><span className="font-semibold text-charcoal">Pack Size:</span> {selectedProduct.size}</p>
                     <p>
                       <span className="font-semibold text-charcoal">Description:</span>{' '}
-                      Handcrafted with farm-inspired quality, rich natural flavour and premium ingredients.
+                      {selectedProduct.description?.trim()
+                        ? selectedProduct.description
+                        : 'Handcrafted with farm-inspired quality, rich natural flavour and premium ingredients.'}
                     </p>
                   </div>
                   <div className="mt-6">

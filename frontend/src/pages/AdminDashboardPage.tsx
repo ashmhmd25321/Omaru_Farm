@@ -32,6 +32,8 @@ type Product = {
   size: string
   price: number
   image: string
+  images?: string[]
+  description?: string
   category: string
   featured?: boolean
 }
@@ -440,6 +442,178 @@ function ProductImageField({
   )
 }
 
+function ProductImagesField({
+  token,
+  value,
+  onChange,
+  disabled,
+  onError,
+  compact,
+  className,
+  fieldId,
+}: {
+  token: string
+  value: string[]
+  onChange: (next: string[]) => void
+  disabled?: boolean
+  onError: (msg: string) => void
+  compact?: boolean
+  className?: string
+  fieldId: string
+}) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [dragOver, setDragOver] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  const normalize = (raw: string[]) =>
+    raw
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .filter((v, i, arr) => arr.indexOf(v) === i)
+      .slice(0, 10)
+
+  const pickFiles = async (files: FileList | null) => {
+    if (!files || !token) return
+    const list = Array.from(files).filter(Boolean)
+    if (list.length === 0) return
+    setUploading(true)
+    onError('')
+    try {
+      const uploaded: string[] = []
+      for (const file of list) {
+        // eslint-disable-next-line no-await-in-loop
+        uploaded.push(await uploadProductImage(token, file))
+      }
+      onChange(normalize([...(value ?? []), ...uploaded]))
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setDragOver(false)
+    void pickFiles(e.dataTransfer.files)
+  }
+
+  const setPrimary = (img: string) => {
+    const rest = (value ?? []).filter((x) => x !== img)
+    onChange(normalize([img, ...rest]))
+  }
+
+  const removeImage = (img: string) => {
+    onChange(normalize((value ?? []).filter((x) => x !== img)))
+  }
+
+  return (
+    <div className={cn('space-y-3', className)}>
+      <div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            fileRef.current?.click()
+          }
+        }}
+        onDragEnter={(e) => {
+          e.preventDefault()
+          setDragOver(true)
+        }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragOver(true)
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        onClick={() => !disabled && !uploading && fileRef.current?.click()}
+        className={cn(
+          'flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-3 text-center transition',
+          compact ? 'min-h-[72px] py-2.5' : 'min-h-[110px] py-4',
+          dragOver
+            ? 'border-gold bg-gold/[0.12] text-gold shadow-[0_0_24px_rgba(205,163,73,0.15)]'
+            : 'border-gold/30 text-stone hover:border-gold/50 hover:bg-surface hover:text-bark',
+          disabled || uploading ? 'pointer-events-none opacity-50' : '',
+        )}
+      >
+        {uploading ? (
+          <Loader2 className="h-5 w-5 animate-spin text-gold" aria-hidden />
+        ) : (
+          <ImagePlus className="h-5 w-5 text-gold/85" aria-hidden />
+        )}
+        <span className="text-xs font-medium">{uploading ? 'Uploading…' : 'Drop images here, or click to browse'}</span>
+        <span className="text-[10px] leading-snug text-stone">You can upload multiple files (max 10 images).</span>
+      </div>
+
+      <input
+        ref={fileRef}
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="sr-only"
+        disabled={disabled || uploading}
+        onChange={(e) => void pickFiles(e.target.files)}
+      />
+
+      {value?.length ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {value.map((img, idx) => (
+            <div key={`${fieldId}-${img}-${idx}`} className="overflow-hidden rounded-xl border border-gold/15 bg-surface-low">
+              <button
+                type="button"
+                onClick={() => setPrimary(img)}
+                className="group relative block w-full"
+                aria-label={idx === 0 ? 'Primary image' : 'Make primary image'}
+                title={idx === 0 ? 'Primary image' : 'Make primary'}
+              >
+                <img src={productImageUrl(img)} alt="" className="aspect-square w-full object-cover" />
+                <span
+                  className={cn(
+                    'absolute left-2 top-2 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]',
+                    idx === 0 ? 'bg-gold text-white' : 'bg-black/55 text-white/90 opacity-0 transition group-hover:opacity-100',
+                  )}
+                >
+                  {idx === 0 ? 'Primary' : 'Make primary'}
+                </span>
+              </button>
+              <div className="flex items-center justify-between gap-2 border-t border-gold/10 px-3 py-2">
+                <p className="truncate font-mono text-[10px] text-stone" title={img}>
+                  {img}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => removeImage(img)}
+                  className="rounded-md border border-red-500/30 px-2 py-1 text-[10px] font-semibold text-red-700 transition hover:border-red-500/50 hover:bg-red-950/10"
+                  aria-label="Remove image"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div>
+        <AdminLabel htmlFor={`${fieldId}-images-paths`}>Image paths (one per line)</AdminLabel>
+        <textarea
+          id={`${fieldId}-images-paths`}
+          className="field min-h-[92px] font-mono text-xs"
+          value={(value ?? []).join('\n')}
+          onChange={(e) => onChange(normalize(e.target.value.split('\n')))}
+          placeholder={'uploads/your-file.jpg\n20260311_130334.jpg'}
+          disabled={disabled || uploading}
+        />
+        <p className="mt-1 text-[11px] text-stone/80">
+          Tip: click a thumbnail to make it the primary image (used for cards). Legacy files may use the filename only.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export function AdminDashboardPage() {
   const [token, setToken] = useState('')
   const [checkingSession, setCheckingSession] = useState(true)
@@ -492,6 +666,8 @@ export function AdminDashboardPage() {
     size: '',
     price: '',
     image: '',
+    images: [] as string[],
+    description: '',
     category: '',
     featured: false,
   })
@@ -1068,12 +1244,27 @@ export function AdminDashboardPage() {
                         </div>
                       </FieldGroup>
 
-                      <FieldGroup title="Image" description="Upload or paste an existing path">
-                        <ProductImageField
+                      <FieldGroup title="Description" description="Shown in the customer product view">
+                        <div>
+                          <AdminLabel htmlFor="new-prod-description">Product description</AdminLabel>
+                          <textarea
+                            id="new-prod-description"
+                            className="field min-h-[120px]"
+                            placeholder="Describe the product, ingredients, flavour notes, or serving suggestions…"
+                            value={newProduct.description}
+                            onChange={(e) => setNewProduct((v) => ({ ...v, description: e.target.value }))}
+                          />
+                        </div>
+                      </FieldGroup>
+
+                      <FieldGroup title="Images" description="Upload multiple photos and choose the primary">
+                        <ProductImagesField
                           fieldId="new-product"
                           token={token}
-                          value={newProduct.image}
-                          onChange={(image) => setNewProduct((v) => ({ ...v, image }))}
+                          value={newProduct.images}
+                          onChange={(images) =>
+                            setNewProduct((v) => ({ ...v, images, image: images[0] ?? '' }))
+                          }
                           onError={setError}
                         />
                       </FieldGroup>
@@ -1121,11 +1312,13 @@ export function AdminDashboardPage() {
                               size: newProduct.size,
                               price: Number(newProduct.price || 0),
                               image: newProduct.image,
+                              images: newProduct.images,
+                              description: newProduct.description,
                               category: newProduct.category,
                               featured: newProduct.featured,
                             }),
                           })
-                          setNewProduct({ name: '', size: '', price: '', image: '', category: '', featured: false })
+                          setNewProduct({ name: '', size: '', price: '', image: '', images: [], description: '', category: '', featured: false })
                           setMessage('Product added')
                           await loadAll()
                         } catch (err) {
@@ -1327,6 +1520,20 @@ export function AdminDashboardPage() {
                                             }
                                           />
                                         </div>
+                                        <div>
+                                          <AdminLabel htmlFor={`prod-${p.id}-desc`}>Description</AdminLabel>
+                                          <textarea
+                                            id={`prod-${p.id}-desc`}
+                                            className="field min-h-[120px]"
+                                            placeholder="Shown to customers on the store product view…"
+                                            value={p.description ?? ''}
+                                            onChange={(e) =>
+                                              setProducts((rows) =>
+                                                rows.map((x) => (x.id === p.id ? { ...x, description: e.target.value } : x)),
+                                              )
+                                            }
+                                          />
+                                        </div>
                                         <div className="grid gap-3 sm:grid-cols-2">
                                           <div>
                                             <AdminLabel htmlFor={`prod-${p.id}-size`}>Size</AdminLabel>
@@ -1395,19 +1602,21 @@ export function AdminDashboardPage() {
                                   <div className="lg:col-span-7">
                                     <FieldGroup title="Photo" description="Replace image anytime" className="h-full !p-3 sm:!p-4">
                                       <div className="grid gap-4 lg:grid-cols-2">
-                                        <ProductImageField
+                                        <ProductImagesField
                                           fieldId={`product-${p.id}`}
                                           token={token}
                                           compact
-                                          value={p.image}
-                                          onChange={(image) =>
-                                            setProducts((rows) => rows.map((x) => (x.id === p.id ? { ...x, image } : x)))
+                                          value={(p.images && p.images.length ? p.images : (p.image ? [p.image] : []))}
+                                          onChange={(images) =>
+                                            setProducts((rows) =>
+                                              rows.map((x) => (x.id === p.id ? { ...x, images, image: images[0] ?? '' } : x)),
+                                            )
                                           }
                                           onError={setError}
                                         />
                                         <div className="overflow-hidden rounded-xl border border-gold/20 bg-surface-low">
                                           <img
-                                            src={productImageUrl(p.image)}
+                                            src={productImageUrl((p.images && p.images[0]) ? p.images[0] : p.image)}
                                             alt=""
                                             className="aspect-video w-full object-cover sm:aspect-square"
                                           />
@@ -1441,6 +1650,8 @@ export function AdminDashboardPage() {
                                               size: p.size,
                                               price: p.price,
                                               image: p.image,
+                                              images: (p.images && p.images.length ? p.images : (p.image ? [p.image] : [])),
+                                              description: p.description ?? '',
                                               category: p.category,
                                               featured: !!p.featured,
                                             }),

@@ -486,11 +486,15 @@ async function ensureSchemaAndSeed() {
       size VARCHAR(60) DEFAULT '',
       price DECIMAL(8, 2) NOT NULL DEFAULT 0,
       image VARCHAR(255) DEFAULT '',
+      description TEXT NULL,
+      images_json TEXT NULL,
       is_featured TINYINT(1) NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`,
   )
   await addColumnIfMissing('products', 'is_featured', 'TINYINT(1) NOT NULL DEFAULT 0')
+  await addColumnIfMissing('products', 'description', 'TEXT NULL')
+  await addColumnIfMissing('products', 'images_json', 'TEXT NULL')
 
   await pool.query(
     `CREATE TABLE IF NOT EXISTS product_categories (
@@ -562,13 +566,23 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/products', async (_req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id, name, size, price, image, category,
+      `SELECT id, name, size, price, image, description, images_json AS imagesJson, category,
               is_featured AS featured
        FROM products
        ORDER BY id ASC
        LIMIT 1000`,
     )
-    res.json(rows)
+    res.json(
+      rows.map((row) => {
+        const images = parseProductImages(row.imagesJson, row.image)
+        return {
+          ...row,
+          images,
+          imagesJson: undefined,
+          image: images[0] ?? String(row.image ?? ''),
+        }
+      }),
+    )
   } catch (error) {
     sendServerError(res, 'Failed to load products', error)
   }
@@ -753,17 +767,68 @@ app.post('/api/admin/logout', (_req, res) => {
 app.get('/api/admin/products', requireAdmin, async (_req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id, name, size, price, image, category,
+      `SELECT id, name, size, price, image, description, images_json AS imagesJson, category,
               is_featured AS featured
        FROM products
        ORDER BY id ASC
        LIMIT 2000`,
     )
-    res.json(rows)
+    res.json(
+      rows.map((row) => {
+        const images = parseProductImages(row.imagesJson, row.image)
+        return {
+          ...row,
+          images,
+          imagesJson: undefined,
+          image: images[0] ?? String(row.image ?? ''),
+        }
+      }),
+    )
   } catch (error) {
     sendServerError(res, 'Failed to load products', error)
   }
 })
+
+function parseProductImages(raw, fallbackImage) {
+  const fallback = String(fallbackImage ?? '').trim()
+  try {
+    if (Array.isArray(raw)) {
+      return raw.map((x) => String(x ?? '').trim()).filter(Boolean)
+    }
+    if (typeof raw === 'string' && raw.trim()) {
+      const txt = raw.trim()
+      if (txt.startsWith('[')) {
+        const parsed = JSON.parse(txt)
+        if (Array.isArray(parsed)) {
+          return parsed.map((x) => String(x ?? '').trim()).filter(Boolean)
+        }
+      }
+      // non-JSON legacy case: treat as single path
+      return [txt]
+    }
+  } catch {
+    // ignore parse errors and fall back
+  }
+  return fallback ? [fallback] : []
+}
+
+function normalizeProductImages(rawImages, rawImage) {
+  const list = []
+  if (Array.isArray(rawImages)) list.push(...rawImages)
+  const fallback = String(rawImage ?? '').trim()
+  if (fallback) list.push(fallback)
+
+  const out = []
+  const seen = new Set()
+  for (const item of list) {
+    const v = String(item ?? '').trim()
+    if (!v) continue
+    if (seen.has(v)) continue
+    seen.add(v)
+    out.push(v)
+  }
+  return out.slice(0, 10)
+}
 
 app.post('/api/admin/products', requireAdmin, async (req, res) => {
   const body = req.body ?? {}
@@ -773,13 +838,18 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
 
   try {
     const featured = body.featured === true || body.featured === 1 || body.featured === '1' ? 1 : 0
+    const images = normalizeProductImages(body.images, body.image)
+    const primaryImage = images[0] ?? String(body.image ?? '')
+    const description = body.description !== undefined ? String(body.description) : ''
     const [result] = await pool.query(
-      'INSERT INTO products (name, size, price, image, category, is_featured) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO products (name, size, price, image, description, images_json, category, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [
         String(body.name),
         String(body.size ?? ''),
         sanitizePrice(body.price),
-        String(body.image ?? ''),
+        primaryImage,
+        description,
+        JSON.stringify(images),
         String(body.category),
         featured,
       ],
@@ -798,13 +868,18 @@ app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
   const body = req.body ?? {}
   const featured = body.featured === true || body.featured === 1 || body.featured === '1' ? 1 : 0
   try {
+    const images = normalizeProductImages(body.images, body.image)
+    const primaryImage = images[0] ?? String(body.image ?? '')
+    const description = body.description !== undefined ? String(body.description) : ''
     await pool.query(
-      'UPDATE products SET name = ?, size = ?, price = ?, image = ?, category = ?, is_featured = ? WHERE id = ?',
+      'UPDATE products SET name = ?, size = ?, price = ?, image = ?, description = ?, images_json = ?, category = ?, is_featured = ? WHERE id = ?',
       [
         String(body.name ?? ''),
         String(body.size ?? ''),
         sanitizePrice(body.price),
-        String(body.image ?? ''),
+        primaryImage,
+        description,
+        JSON.stringify(images),
         String(body.category ?? ''),
         featured,
         id,
