@@ -676,7 +676,6 @@ export function AdminDashboardPage() {
               <CardTitle>Omaru Admin Login</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-stone">Enter admin credentials from backend `.env` (`ADMIN_USERNAME` / `ADMIN_PASSWORD`).</p>
               <input
                 className="field"
                 value={username}
