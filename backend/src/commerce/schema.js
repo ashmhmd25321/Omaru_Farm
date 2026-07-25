@@ -54,7 +54,7 @@ export async function ensureCommerceSchema() {
     CREATE TABLE IF NOT EXISTS shipping_rules (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(120) NOT NULL,
-      postcode_prefixes VARCHAR(255) NOT NULL,
+      postcode_prefixes TEXT NOT NULL,
       base_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
       per_kg_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
       free_over DECIMAL(10,2) NULL,
@@ -63,6 +63,8 @@ export async function ensureCommerceSchema() {
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `)
+  // Widen if an older deploy created VARCHAR(255) — long AU postcode lists overflow it.
+  await pool.query('ALTER TABLE shipping_rules MODIFY COLUMN postcode_prefixes TEXT NOT NULL')
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
@@ -201,10 +203,12 @@ export async function ensureCommerceSchema() {
 
   const [ruleCount] = await pool.query('SELECT COUNT(*) AS c FROM shipping_rules')
   if (toNumber(ruleCount[0]?.c, 0) === 0) {
+    // Compact prefix placeholders until the client shipping matrix arrives.
+    // Matching uses startsWith, so "30,31,32" covers metro-ish VIC and "39" covers Phillip Island / Bass Coast.
     await pool.query(
       `INSERT INTO shipping_rules (name, postcode_prefixes, base_fee, per_kg_fee, free_over, sort_order) VALUES
-       ('Metro VIC', '3000,3001,3002,3003,3004,3005,3006,3008,3010,3011,3012,3013,3015,3016,3018,3019,3020,3021,3022,3023,3025,3026,3027,3028,3029,3030,3031,3032,3033,3034,3036,3037,3038,3039,3040,3041,3042,3043,3044,3045,3046,3047,3048,3049,3050,3051,3052,3053,3054,3055,3056,3057,3058,3059,3060,3061,3064,3065,3066,3067,3068,3070,3071,3072,3073,3074,3075,3076,3078,3079,3081,3082,3083,3084,3085,3087,3088,3089,3090,3093,3094,3095,3101,3102,3103,3104,3105,3106,3107,3108,3109,3111,3121,3122,3123,3124,3125,3126,3127,3128,3129,3130,3131,3132,3133,3134,3135,3136,3137,3138,3141,3142,3143,3144,3145,3146,3147,3148,3149,3150,3151,3152,3153,3154,3155,3156,3161,3162,3163,3165,3166,3167,3168,3169,3170,3171,3172,3173,3174,3175,3177,3178,3179,3180,3181,3182,3183,3184,3185,3186,3187,3188,3189,3190,3191,3192,3193,3194,3195,3196,3197,3198,3199,3200,3201,3202,3204,3205,3206,3207', 12.00, 2.50, 150.00, 10),
-       ('Regional VIC / Phillip Island', '3920,3921,3922,3923,3925,3930,3931,3933,3934,3936,3939,3940,3941,3942,3943,3944,3950,3951,3953,3954,3956,3957,3958,3959,3960,3962,3964,3965,3966,3967,3971,3975,3976,3977,3978,3979,3980,3981,3984,3987,3988,3990,3991,3992,3995,3996', 15.00, 3.00, 180.00, 20),
+       ('Metro VIC', '30,31,32', 12.00, 2.50, 150.00, 10),
+       ('Regional VIC / Phillip Island', '39', 15.00, 3.00, 180.00, 20),
        ('Interstate AU (default)', '*', 25.00, 4.50, 250.00, 100)`,
     )
   }
