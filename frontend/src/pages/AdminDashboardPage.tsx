@@ -2,23 +2,39 @@ import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type
 import { Seo } from '@/components/site/Seo'
 import { AdminCommercePanels } from '@/components/admin/AdminCommercePanels'
 import {
+  BarChart3,
+  BedDouble,
+  CalendarDays,
   ChevronDown,
   DollarSign,
   ExternalLink,
   Eye,
   Filter,
   FolderTree,
+  Image,
   ImagePlus,
+  Info,
   Loader2,
+  LogOut,
+  Menu,
   Package,
+  Phone,
   Plus,
+  RefreshCw,
   Ruler,
   Search,
+  Settings,
+  ShoppingCart,
   Sparkles,
+  Star,
   Store,
+  Table2,
   Tag,
   Trash2,
+  Truck,
   UtensilsCrossed,
+  X,
+  type LucideIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -125,6 +141,45 @@ type Booking = {
 type TabKey = 'products' | 'orders' | 'shipping' | 'stays' | 'tables' | 'sales' | 'testimonials' | 'about' | 'menu' | 'bookings' | 'contact' | 'media' | 'settings'
 
 const MENU_SECTIONS = ['Lunch', 'Dinner', 'Beverages'] as const
+
+type NavItem = { id: TabKey; label: string; icon: LucideIcon }
+type NavGroup = { title: string; items: NavItem[] }
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    title: 'Store & Commerce',
+    items: [
+      { id: 'products', label: 'Products', icon: Package },
+      { id: 'orders', label: 'Orders', icon: ShoppingCart },
+      { id: 'shipping', label: 'Shipping', icon: Truck },
+      { id: 'sales', label: 'Sales', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'Bookings & Stays',
+    items: [
+      { id: 'stays', label: 'Stays', icon: BedDouble },
+      { id: 'tables', label: 'Table holds', icon: Table2 },
+      { id: 'bookings', label: 'Bookings', icon: CalendarDays },
+    ],
+  },
+  {
+    title: 'Site Content',
+    items: [
+      { id: 'testimonials', label: 'Testimonials', icon: Star },
+      { id: 'about', label: 'About Content', icon: Info },
+      { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
+      { id: 'contact', label: 'Contact Details', icon: Phone },
+      { id: 'media', label: 'Media Library', icon: Image },
+      { id: 'settings', label: 'Site Settings', icon: Settings },
+    ],
+  },
+]
+
+const NAV_ITEM_BY_ID: Record<TabKey, NavItem> = NAV_GROUPS.flatMap((g) => g.items).reduce(
+  (acc, item) => ({ ...acc, [item.id]: item }),
+  {} as Record<TabKey, NavItem>,
+)
 
 async function request<T>(
   path: string,
@@ -624,6 +679,7 @@ export function AdminDashboardPage() {
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('')
   const [tab, setTab] = useState<TabKey>('products')
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -902,25 +958,176 @@ export function AdminDashboardPage() {
         noindex
       />
 
-      <main className="admin-shell min-h-screen bg-surface pb-14">
-        <section className="border-b border-parchment/60 bg-white shadow-[0_1px_0_rgba(26,18,8,0.04)]">
-          <div className="mx-auto flex max-w-[96vw] flex-col gap-4 px-4 py-6 sm:px-5 md:flex-row md:items-center md:justify-between">
+      <main className="admin-shell flex min-h-screen bg-surface">
+        {/* Desktop sidebar */}
+        <aside className="hidden w-64 flex-none flex-col border-r border-parchment/60 bg-white md:flex">
+          <div className="flex items-center gap-3 border-b border-parchment/60 px-5 py-5">
+            <img
+              src={staticUrl('/images/farm/omaru-logo.png')}
+              alt="Omaru Farm logo"
+              className="h-9 w-9"
+              loading="eager"
+            />
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-gold/75">Website Control</p>
-              <h1 className="mt-2 font-heading text-4xl text-charcoal md:text-5xl">Admin Dashboard</h1>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={loadAll} disabled={busy}>
-                Refresh
-              </Button>
-              <Button variant="outline" onClick={logout}>
-                Log out
-              </Button>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold/70">Omaru Farm</p>
+              <p className="font-heading text-lg leading-tight text-charcoal">Admin</p>
             </div>
           </div>
-        </section>
+          <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Admin sections">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.title}>
+                <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone/55">
+                  {group.title}
+                </p>
+                <div className="mt-2 space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon
+                    const active = tab === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setTab(item.id)}
+                        aria-current={active ? 'page' : undefined}
+                        className={cn(
+                          'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition',
+                          active
+                            ? 'bg-gold/15 font-semibold text-gold-deep'
+                            : 'text-stone hover:bg-surface hover:text-charcoal',
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                        {item.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+          <div className="border-t border-parchment/60 p-3">
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={logout}>
+              <LogOut className="h-4 w-4" aria-hidden />
+              Log out
+            </Button>
+          </div>
+        </aside>
 
-        <section className="mx-auto max-w-[96vw] px-4 pt-6 sm:px-5">
+        {/* Mobile nav drawer */}
+        {mobileNavOpen ? (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Admin navigation"
+            className="fixed inset-0 z-[110] md:hidden"
+            onClick={() => setMobileNavOpen(false)}
+          >
+            <div className="absolute inset-0 bg-charcoal/50 backdrop-blur-sm" />
+            <div
+              className="relative flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between gap-3 border-b border-parchment/60 px-5 py-5">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={staticUrl('/images/farm/omaru-logo.png')}
+                    alt="Omaru Farm logo"
+                    className="h-9 w-9"
+                  />
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold/70">Omaru Farm</p>
+                    <p className="font-heading text-lg leading-tight text-charcoal">Admin</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(false)}
+                  className="rounded-md p-1.5 text-stone hover:bg-surface hover:text-charcoal"
+                  aria-label="Close navigation"
+                >
+                  <X className="h-5 w-5" aria-hidden />
+                </button>
+              </div>
+              <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Admin sections">
+                {NAV_GROUPS.map((group) => (
+                  <div key={group.title}>
+                    <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone/55">
+                      {group.title}
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {group.items.map((item) => {
+                        const Icon = item.icon
+                        const active = tab === item.id
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              setTab(item.id)
+                              setMobileNavOpen(false)
+                            }}
+                            aria-current={active ? 'page' : undefined}
+                            className={cn(
+                              'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition',
+                              active
+                                ? 'bg-gold/15 font-semibold text-gold-deep'
+                                : 'text-stone hover:bg-surface hover:text-charcoal',
+                            )}
+                          >
+                            <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                            {item.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </nav>
+              <div className="border-t border-parchment/60 p-3">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={logout}>
+                  <LogOut className="h-4 w-4" aria-hidden />
+                  Log out
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Main content column */}
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-30 border-b border-parchment/60 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(true)}
+                  className="rounded-md border border-parchment/70 p-2 text-stone hover:border-gold/50 hover:text-gold-deep md:hidden"
+                  aria-label="Open navigation"
+                >
+                  <Menu className="h-5 w-5" aria-hidden />
+                </button>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/70">
+                    Website Control
+                  </p>
+                  <h1 className="mt-0.5 font-heading text-2xl text-charcoal sm:text-3xl">
+                    {NAV_ITEM_BY_ID[tab]?.label ?? 'Admin Dashboard'}
+                  </h1>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={loadAll} disabled={busy} className="gap-2">
+                  <RefreshCw className={cn('h-4 w-4', busy && 'animate-spin')} aria-hidden />
+                  <span className="hidden sm:inline">Refresh</span>
+                </Button>
+                <Button variant="outline" onClick={logout} className="gap-2 md:hidden">
+                  <LogOut className="h-4 w-4" aria-hidden />
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          <div className="min-w-0 flex-1 px-4 py-6 sm:px-6">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {stats.map((s) => (
               <Card key={s.label}>
@@ -929,37 +1136,6 @@ export function AdminDashboardPage() {
                   <p className="mt-2 text-2xl font-semibold text-gold">{s.value}</p>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-2">
-            {[
-              { id: 'products', label: 'Products' },
-              { id: 'orders', label: 'Orders' },
-              { id: 'shipping', label: 'Shipping' },
-              { id: 'stays', label: 'Stays' },
-              { id: 'tables', label: 'Table holds' },
-              { id: 'sales', label: 'Sales' },
-              { id: 'testimonials', label: 'Testimonials' },
-              { id: 'about', label: 'About Content' },
-              { id: 'menu', label: 'Menu' },
-              { id: 'bookings', label: 'Bookings' },
-              { id: 'contact', label: 'Contact Details' },
-              { id: 'media', label: 'Media Library' },
-              { id: 'settings', label: 'Site Settings' },
-            ].map((x) => (
-              <button
-                key={x.id}
-                type="button"
-                onClick={() => setTab(x.id as TabKey)}
-                className={`rounded-full border px-4 py-2 text-sm transition ${
-                  tab === x.id
-                    ? 'border-gold bg-gold/15 text-gold-deep'
-                    : 'border-parchment bg-white text-stone hover:border-gold/50 hover:text-gold-deep'
-                }`}
-              >
-                {x.label}
-              </button>
             ))}
           </div>
 
@@ -2684,7 +2860,8 @@ export function AdminDashboardPage() {
               </Card>
             </section>
           )}
-        </section>
+          </div>
+        </div>
       </main>
     </>
   )

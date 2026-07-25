@@ -10,6 +10,7 @@ import { staticUrl } from '@/utils/staticUrl'
 import { apiUrl } from '@/utils/api'
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
+const LOW_STOCK_THRESHOLD = 5
 
 const fadeUp = {
   hidden: { opacity: 0, y: 26 },
@@ -18,6 +19,31 @@ const fadeUp = {
     y: 0,
     transition: { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] as const },
   }),
+}
+
+/** Customer-facing stock hint — never shows exact qty when stock is healthy. */
+function stockStatusText(stockQty?: number): string | null {
+  if (stockQty === undefined || !Number.isFinite(stockQty)) return null
+  if (stockQty <= 0) return 'Out of stock'
+  if (stockQty <= LOW_STOCK_THRESHOLD) {
+    return stockQty === 1 ? 'Only 1 left' : `Only ${stockQty} left`
+  }
+  return null
+}
+
+function StockHint({ stockQty, className = '' }: { stockQty?: number; className?: string }) {
+  const text = stockStatusText(stockQty)
+  if (!text) return null
+  const out = stockQty !== undefined && stockQty <= 0
+  return (
+    <p
+      className={`${className} font-body text-xs font-semibold ${
+        out ? 'text-red-700' : 'text-amber-800'
+      }`}
+    >
+      {text}
+    </p>
+  )
 }
 
 /** product images pool for catalog items without an API image */
@@ -459,13 +485,22 @@ export function StorePage() {
                         <p className="mt-2 max-w-xs font-body text-xs leading-relaxed text-white/65">
                           Cold-pressed from our own Omaru grove. Single-origin, unfiltered and exceptionally fresh.
                         </p>
-                        <div className="mt-4 flex items-center gap-4">
+                        <div className="mt-4 flex flex-wrap items-center gap-4">
                           <span
                             className="rounded-sm px-3 py-1 font-body text-[0.65rem] font-semibold text-white"
                             style={{ background: GOLD_GRADIENT }}
                           >
                             ${featLarge.price.toFixed(2)}
                           </span>
+                          {stockStatusText(featLarge.stockQty) ? (
+                            <span
+                              className={`font-body text-[0.65rem] font-semibold uppercase tracking-[0.14em] ${
+                                (featLarge.stockQty ?? 0) <= 0 ? 'text-red-200' : 'text-amber-200'
+                              }`}
+                            >
+                              {stockStatusText(featLarge.stockQty)}
+                            </span>
+                          ) : null}
                           <span className="inline-flex items-center gap-1 font-body text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/60 transition group-hover:text-gold">
                             View Details <ArrowRight className="h-3 w-3" aria-hidden />
                           </span>
@@ -506,6 +541,7 @@ export function StorePage() {
                         <p className="mt-3 font-body text-sm font-semibold text-charcoal">
                           ${featMed.price.toFixed(2)}
                         </p>
+                        <StockHint stockQty={featMed.stockQty} className="mt-1.5" />
                       </div>
                     </motion.div>
                   )}
@@ -541,6 +577,7 @@ export function StorePage() {
                             {p.name}
                           </h3>
                           <p className="mt-1 font-body text-sm text-stone">${p.price.toFixed(2)}</p>
+                          <StockHint stockQty={p.stockQty} className="mt-1" />
                         </div>
                       </motion.div>
                     ) : null,
@@ -623,6 +660,7 @@ export function StorePage() {
                     <p className="mt-2 font-heading text-lg font-semibold text-charcoal">
                       ${product.price.toFixed(2)}
                     </p>
+                    <StockHint stockQty={product.stockQty} className="mt-1" />
                   </div>
                 </motion.div>
               ))}
@@ -793,25 +831,28 @@ export function StorePage() {
                       ${selectedProduct.price.toFixed(2)}
                     </p>
                     {selectedProduct.stockQty !== undefined && selectedProduct.stockQty <= 0 ? (
-                      <span className="text-sm font-semibold text-red-700">Out of stock</span>
+                      <StockHint stockQty={selectedProduct.stockQty} className="text-sm" />
                     ) : (
-                      <button
-                        type="button"
-                        className="rounded-sm px-4 py-2 text-sm font-semibold text-white"
-                        style={{ background: GOLD_GRADIENT }}
-                        onClick={() => {
-                          if (!selectedProduct.id) return
-                          addItem({
-                            productId: selectedProduct.id,
-                            name: selectedProduct.name,
-                            size: selectedProduct.size,
-                            price: selectedProduct.price,
-                            image: selectedProduct.image,
-                          })
-                        }}
-                      >
-                        Add to cart
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="rounded-sm px-4 py-2 text-sm font-semibold text-white"
+                          style={{ background: GOLD_GRADIENT }}
+                          onClick={() => {
+                            if (!selectedProduct.id) return
+                            addItem({
+                              productId: selectedProduct.id,
+                              name: selectedProduct.name,
+                              size: selectedProduct.size,
+                              price: selectedProduct.price,
+                              image: selectedProduct.image,
+                            })
+                          }}
+                        >
+                          Add to cart
+                        </button>
+                        <StockHint stockQty={selectedProduct.stockQty} className="text-sm" />
+                      </>
                     )}
                   </div>
                   <button
