@@ -37,6 +37,9 @@ type Product = {
   description?: string
   category: string
   featured?: boolean
+  stockQty?: number
+  weightGrams?: number
+  shippable?: boolean
 }
 
 type ProductCategory = {
@@ -671,6 +674,9 @@ export function AdminDashboardPage() {
     description: '',
     category: '',
     featured: false,
+    stockQty: '100',
+    weightGrams: '500',
+    shippable: true,
   })
   const [draftPreviewOpen, setDraftPreviewOpen] = useState(false)
   const [savingProductId, setSavingProductId] = useState<number | 'new' | null>(null)
@@ -1230,6 +1236,53 @@ export function AdminDashboardPage() {
                         </div>
                       </FieldGroup>
 
+                      <FieldGroup title="Inventory & shipping" description="Used for stock control and shipping quotes">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <AdminLabel htmlFor="new-prod-stock">Stock quantity</AdminLabel>
+                            <input
+                              id="new-prod-stock"
+                              className="field"
+                              inputMode="numeric"
+                              placeholder="100"
+                              value={newProduct.stockQty}
+                              onChange={(e) => setNewProduct((v) => ({ ...v, stockQty: e.target.value }))}
+                            />
+                            <p className="mt-1 text-[11px] text-stone">Set to 0 to mark out of stock.</p>
+                          </div>
+                          <div>
+                            <AdminLabel htmlFor="new-prod-weight">Weight (grams)</AdminLabel>
+                            <input
+                              id="new-prod-weight"
+                              className="field"
+                              inputMode="numeric"
+                              placeholder="500"
+                              value={newProduct.weightGrams}
+                              onChange={(e) => setNewProduct((v) => ({ ...v, weightGrams: e.target.value }))}
+                            />
+                            <p className="mt-1 text-[11px] text-stone">Used for per‑kg shipping pricing.</p>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <div className="flex flex-col gap-3 rounded-lg border border-gold/10 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex items-center gap-3">
+                                <div>
+                                  <p id="new-prod-shippable-label" className="text-sm font-medium text-charcoal">
+                                    Shippable item
+                                  </p>
+                                  <p className="text-xs text-stone">Turn off for digital / pickup-only products.</p>
+                                </div>
+                              </div>
+                              <FeaturedToggle
+                                id="new-prod-shippable"
+                                labelledBy="new-prod-shippable-label"
+                                checked={newProduct.shippable}
+                                onCheckedChange={(v) => setNewProduct((x) => ({ ...x, shippable: v }))}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </FieldGroup>
+
                       <FieldGroup title="Visibility" description="Featured items fill the home page grid (up to six)">
                         <div className="flex flex-col gap-3 rounded-lg border border-gold/10 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex items-center gap-3">
@@ -1322,9 +1375,24 @@ export function AdminDashboardPage() {
                               description: newProduct.description,
                               category: newProduct.category,
                               featured: newProduct.featured,
+                              stockQty: Number(newProduct.stockQty || 0),
+                              weightGrams: Number(newProduct.weightGrams || 0),
+                              shippable: newProduct.shippable,
                             }),
                           })
-                          setNewProduct({ name: '', size: '', price: '', image: '', images: [], description: '', category: '', featured: false })
+                          setNewProduct({
+                            name: '',
+                            size: '',
+                            price: '',
+                            image: '',
+                            images: [],
+                            description: '',
+                            category: '',
+                            featured: false,
+                            stockQty: '100',
+                            weightGrams: '500',
+                            shippable: true,
+                          })
                           setMessage('Product added')
                           await loadAll()
                         } catch (err) {
@@ -1488,6 +1556,11 @@ export function AdminDashboardPage() {
                                       Featured
                                     </span>
                                   ) : null}
+                                  {p.stockQty !== undefined && p.stockQty <= 0 ? (
+                                    <span className="inline-flex items-center rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-red-700 sm:text-[11px]">
+                                      Out of stock
+                                    </span>
+                                  ) : null}
                                 </div>
                                 <p className="mt-1 truncate font-heading text-base text-charcoal sm:text-lg">{p.name || 'Untitled product'}</p>
                                 <p className="truncate text-xs text-stone sm:text-sm">
@@ -1582,6 +1655,56 @@ export function AdminDashboardPage() {
                                             />
                                           </div>
                                         </div>
+                                        <div className="grid gap-3 sm:grid-cols-2">
+                                          <div>
+                                            <AdminLabel htmlFor={`prod-${p.id}-stock`}>Stock quantity</AdminLabel>
+                                            <input
+                                              id={`prod-${p.id}-stock`}
+                                              className="field"
+                                              inputMode="numeric"
+                                              value={String(p.stockQty ?? 0)}
+                                              onChange={(e) =>
+                                                setProducts((rows) =>
+                                                  rows.map((x) =>
+                                                    x.id === p.id ? { ...x, stockQty: Number(e.target.value || 0) } : x,
+                                                  ),
+                                                )
+                                              }
+                                            />
+                                          </div>
+                                          <div>
+                                            <AdminLabel htmlFor={`prod-${p.id}-weight`}>Weight (grams)</AdminLabel>
+                                            <input
+                                              id={`prod-${p.id}-weight`}
+                                              className="field"
+                                              inputMode="numeric"
+                                              value={String(p.weightGrams ?? 0)}
+                                              onChange={(e) =>
+                                                setProducts((rows) =>
+                                                  rows.map((x) =>
+                                                    x.id === p.id ? { ...x, weightGrams: Number(e.target.value || 0) } : x,
+                                                  ),
+                                                )
+                                              }
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="flex flex-col gap-3 rounded-lg border border-gold/10 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+                                          <div>
+                                            <p id={`prod-${p.id}-shippable-label`} className="text-sm text-charcoal">
+                                              Shippable item
+                                            </p>
+                                            <p className="text-xs text-stone">Turn off for digital / pickup-only products.</p>
+                                          </div>
+                                          <FeaturedToggle
+                                            id={`prod-${p.id}-shippable`}
+                                            labelledBy={`prod-${p.id}-shippable-label`}
+                                            checked={p.shippable !== false}
+                                            onCheckedChange={(v) =>
+                                              setProducts((rows) => rows.map((x) => (x.id === p.id ? { ...x, shippable: v } : x)))
+                                            }
+                                          />
+                                        </div>
                                       </div>
                                     </FieldGroup>
 
@@ -1660,6 +1783,9 @@ export function AdminDashboardPage() {
                                               description: p.description ?? '',
                                               category: p.category,
                                               featured: !!p.featured,
+                                              stockQty: p.stockQty,
+                                              weightGrams: p.weightGrams,
+                                              shippable: p.shippable !== false,
                                             }),
                                           })
                                           setMessage('Product updated')
