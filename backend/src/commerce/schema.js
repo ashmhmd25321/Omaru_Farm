@@ -1,0 +1,220 @@
+import { pool } from '../db.js'
+
+function toNumber(value, fallback = 0) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+async function addColumnIfMissing(tableName, columnName, definitionSql) {
+  const [rows] = await pool.query(
+    `SELECT COUNT(*) AS c
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [tableName, columnName],
+  )
+  if (toNumber(rows[0]?.c, 0) > 0) return
+  await pool.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definitionSql}`)
+}
+
+export async function ensureCommerceSchema() {
+  await addColumnIfMissing('products', 'stock_qty', 'INT NOT NULL DEFAULT 100')
+  await addColumnIfMissing('products', 'weight_grams', 'INT NOT NULL DEFAULT 500')
+  await addColumnIfMissing('products', 'shippable', 'TINYINT(1) NOT NULL DEFAULT 1')
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS customers (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(180) NOT NULL UNIQUE,
+      password_hash VARCHAR(255) NOT NULL,
+      full_name VARCHAR(180) NOT NULL DEFAULT '',
+      phone VARCHAR(40) DEFAULT '',
+      delivery_line1 VARCHAR(255) DEFAULT '',
+      delivery_line2 VARCHAR(255) DEFAULT '',
+      delivery_city VARCHAR(120) DEFAULT '',
+      delivery_state VARCHAR(60) DEFAULT '',
+      delivery_postcode VARCHAR(20) DEFAULT '',
+      stripe_customer_id VARCHAR(120) DEFAULT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS customer_sessions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      customer_id INT NOT NULL,
+      token_hash VARCHAR(128) NOT NULL UNIQUE,
+      expires_at DATETIME NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_customer_sessions_customer (customer_id),
+      CONSTRAINT fk_customer_sessions_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS shipping_rules (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(120) NOT NULL,
+      postcode_prefixes VARCHAR(255) NOT NULL,
+      base_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+      per_kg_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+      free_over DECIMAL(10,2) NULL,
+      sort_order INT NOT NULL DEFAULT 100,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_number VARCHAR(40) NOT NULL UNIQUE,
+      customer_id INT NULL,
+      email VARCHAR(180) NOT NULL,
+      full_name VARCHAR(180) NOT NULL,
+      phone VARCHAR(40) DEFAULT '',
+      shipping_method VARCHAR(40) NOT NULL DEFAULT 'delivery',
+      shipping_line1 VARCHAR(255) DEFAULT '',
+      shipping_line2 VARCHAR(255) DEFAULT '',
+      shipping_city VARCHAR(120) DEFAULT '',
+      shipping_state VARCHAR(60) DEFAULT '',
+      shipping_postcode VARCHAR(20) DEFAULT '',
+      subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
+      shipping_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+      total DECIMAL(10,2) NOT NULL DEFAULT 0,
+      currency VARCHAR(10) NOT NULL DEFAULT 'aud',
+      status VARCHAR(40) NOT NULL DEFAULT 'pending_payment',
+      fulfillment_status VARCHAR(40) NOT NULL DEFAULT 'unfulfilled',
+      stripe_payment_intent_id VARCHAR(120) DEFAULT NULL,
+      shipping_breakdown_json TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_orders_status (status),
+      INDEX idx_orders_customer (customer_id)
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS order_items (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_id INT NOT NULL,
+      product_id INT NOT NULL,
+      product_name VARCHAR(255) NOT NULL,
+      product_size VARCHAR(60) DEFAULT '',
+      unit_price DECIMAL(10,2) NOT NULL,
+      quantity INT NOT NULL,
+      weight_grams INT NOT NULL DEFAULT 0,
+      line_total DECIMAL(10,2) NOT NULL,
+      CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS stripe_payment_methods (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      customer_id INT NOT NULL,
+      stripe_payment_method_id VARCHAR(120) NOT NULL UNIQUE,
+      brand VARCHAR(40) DEFAULT '',
+      last4 VARCHAR(8) DEFAULT '',
+      exp_month INT NULL,
+      exp_year INT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_spm_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS properties (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      slug VARCHAR(80) NOT NULL UNIQUE,
+      name VARCHAR(180) NOT NULL,
+      description TEXT,
+      nightly_rate DECIMAL(10,2) NOT NULL DEFAULT 0,
+      min_nights INT NOT NULL DEFAULT 1,
+      max_guests INT NOT NULL DEFAULT 2,
+      cleaning_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+      ical_airbnb_url TEXT NULL,
+      ical_booking_url TEXT NULL,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      sort_order INT NOT NULL DEFAULT 100,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS availability_blocks (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      property_id INT NOT NULL,
+      start_date DATE NOT NULL,
+      end_date DATE NOT NULL,
+      source VARCHAR(40) NOT NULL DEFAULT 'manual',
+      external_uid VARCHAR(255) DEFAULT NULL,
+      note VARCHAR(255) DEFAULT '',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_block_external (property_id, source, external_uid),
+      INDEX idx_blocks_property_dates (property_id, start_date, end_date),
+      CONSTRAINT fk_blocks_property FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS stay_bookings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      booking_number VARCHAR(40) NOT NULL UNIQUE,
+      property_id INT NOT NULL,
+      customer_id INT NULL,
+      email VARCHAR(180) NOT NULL,
+      full_name VARCHAR(180) NOT NULL,
+      phone VARCHAR(40) DEFAULT '',
+      check_in DATE NOT NULL,
+      check_out DATE NOT NULL,
+      guests INT NOT NULL DEFAULT 1,
+      nights INT NOT NULL,
+      nightly_rate DECIMAL(10,2) NOT NULL,
+      cleaning_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+      total DECIMAL(10,2) NOT NULL,
+      status VARCHAR(40) NOT NULL DEFAULT 'pending_payment',
+      stripe_payment_intent_id VARCHAR(120) DEFAULT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_stay_property FOREIGN KEY (property_id) REFERENCES properties(id)
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS table_holds (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      hold_number VARCHAR(40) NOT NULL UNIQUE,
+      full_name VARCHAR(180) NOT NULL,
+      email VARCHAR(180) NOT NULL,
+      phone VARCHAR(40) DEFAULT '',
+      party_date DATE NOT NULL,
+      slot VARCHAR(20) NOT NULL,
+      covers INT NOT NULL,
+      notes TEXT,
+      status VARCHAR(40) NOT NULL DEFAULT 'held',
+      expires_at DATETIME NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_table_holds_expires (expires_at),
+      INDEX idx_table_holds_date_slot (party_date, slot)
+    )
+  `)
+
+  const [ruleCount] = await pool.query('SELECT COUNT(*) AS c FROM shipping_rules')
+  if (toNumber(ruleCount[0]?.c, 0) === 0) {
+    await pool.query(
+      `INSERT INTO shipping_rules (name, postcode_prefixes, base_fee, per_kg_fee, free_over, sort_order) VALUES
+       ('Metro VIC', '3000,3001,3002,3003,3004,3005,3006,3008,3010,3011,3012,3013,3015,3016,3018,3019,3020,3021,3022,3023,3025,3026,3027,3028,3029,3030,3031,3032,3033,3034,3036,3037,3038,3039,3040,3041,3042,3043,3044,3045,3046,3047,3048,3049,3050,3051,3052,3053,3054,3055,3056,3057,3058,3059,3060,3061,3064,3065,3066,3067,3068,3070,3071,3072,3073,3074,3075,3076,3078,3079,3081,3082,3083,3084,3085,3087,3088,3089,3090,3093,3094,3095,3101,3102,3103,3104,3105,3106,3107,3108,3109,3111,3121,3122,3123,3124,3125,3126,3127,3128,3129,3130,3131,3132,3133,3134,3135,3136,3137,3138,3141,3142,3143,3144,3145,3146,3147,3148,3149,3150,3151,3152,3153,3154,3155,3156,3161,3162,3163,3165,3166,3167,3168,3169,3170,3171,3172,3173,3174,3175,3177,3178,3179,3180,3181,3182,3183,3184,3185,3186,3187,3188,3189,3190,3191,3192,3193,3194,3195,3196,3197,3198,3199,3200,3201,3202,3204,3205,3206,3207', 12.00, 2.50, 150.00, 10),
+       ('Regional VIC / Phillip Island', '3920,3921,3922,3923,3925,3930,3931,3933,3934,3936,3939,3940,3941,3942,3943,3944,3950,3951,3953,3954,3956,3957,3958,3959,3960,3962,3964,3965,3966,3967,3971,3975,3976,3977,3978,3979,3980,3981,3984,3987,3988,3990,3991,3992,3995,3996', 15.00, 3.00, 180.00, 20),
+       ('Interstate AU (default)', '*', 25.00, 4.50, 250.00, 100)`,
+    )
+  }
+
+  const [propCount] = await pool.query('SELECT COUNT(*) AS c FROM properties')
+  if (toNumber(propCount[0]?.c, 0) === 0) {
+    await pool.query(
+      `INSERT INTO properties (slug, name, description, nightly_rate, min_nights, max_guests, cleaning_fee, sort_order) VALUES
+       ('glass-pavilion', 'Glass Pavilion', 'On-farm cabin with sweeping views.', 280.00, 2, 2, 80.00, 10),
+       ('heritage-stone-cottage', 'Heritage Stone Cottage', 'Self-contained stone cottage on Omaru Farm.', 320.00, 2, 4, 90.00, 20)`,
+    )
+  }
+}

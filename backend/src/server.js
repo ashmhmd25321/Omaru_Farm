@@ -8,6 +8,8 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import multer from 'multer'
 import { pool } from './db.js'
+import { ensureCommerceSchema } from './commerce/schema.js'
+import { registerCommerceRoutes } from './commerce/routes.js'
 
 dotenv.config()
 
@@ -168,7 +170,13 @@ app.use(cors({
   },
   credentials: true,
 }))
-app.use(express.json({ limit: '1mb' }))
+// Stripe webhooks need the raw body; everything else uses JSON.
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/stripe/webhook') {
+    return express.raw({ type: 'application/json' })(req, res, next)
+  }
+  return express.json({ limit: '1mb' })(req, res, next)
+})
 
 const storage = multer.diskStorage({
   destination: async (_req, _file, cb) => {
@@ -496,6 +504,8 @@ async function ensureSchemaAndSeed() {
   await addColumnIfMissing('products', 'description', 'TEXT NULL')
   await addColumnIfMissing('products', 'images_json', 'TEXT NULL')
 
+  await ensureCommerceSchema()
+
   await pool.query(
     `CREATE TABLE IF NOT EXISTS product_categories (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -567,7 +577,7 @@ app.get('/api/products', async (_req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT id, name, size, price, image, description, images_json AS imagesJson, category,
-              is_featured AS featured
+              is_featured AS featured, stock_qty AS stockQty, weight_grams AS weightGrams, shippable
        FROM products
        ORDER BY id ASC
        LIMIT 1000`,
@@ -580,6 +590,7 @@ app.get('/api/products', async (_req, res) => {
           images,
           imagesJson: undefined,
           image: images[0] ?? String(row.image ?? ''),
+          shippable: Boolean(row.shippable),
         }
       }),
     )
@@ -768,7 +779,7 @@ app.get('/api/admin/products', requireAdmin, async (_req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT id, name, size, price, image, description, images_json AS imagesJson, category,
-              is_featured AS featured
+              is_featured AS featured, stock_qty AS stockQty, weight_grams AS weightGrams, shippable
        FROM products
        ORDER BY id ASC
        LIMIT 2000`,
@@ -781,6 +792,7 @@ app.get('/api/admin/products', requireAdmin, async (_req, res) => {
           images,
           imagesJson: undefined,
           image: images[0] ?? String(row.image ?? ''),
+          shippable: Boolean(row.shippable),
         }
       }),
     )
@@ -842,7 +854,7 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
     const primaryImage = images[0] ?? String(body.image ?? '')
     const description = body.description !== undefined ? String(body.description) : ''
     const [result] = await pool.query(
-      'INSERT INTO products (name, size, price, image, description, images_json, category, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO products (name, size, price, image, description, images_json, category, is_featured, stock_qty, weight_grams, shippable) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         String(body.name),
         String(body.size ?? ''),
@@ -852,6 +864,9 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
         JSON.stringify(images),
         String(body.category),
         featured,
+        body.stockQty !== undefined ? toNumber(body.stockQty, 100) : 100,
+        body.weightGrams !== undefined ? toNumber(body.weightGrams, 500) : 500,
+        body.shippable === false || body.shippable === 0 || body.shippable === '0' ? 0 : 1,
       ],
     )
     await ensureProductCategoryName(body.category)
@@ -872,7 +887,7 @@ app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
     const primaryImage = images[0] ?? String(body.image ?? '')
     const description = body.description !== undefined ? String(body.description) : ''
     await pool.query(
-      'UPDATE products SET name = ?, size = ?, price = ?, image = ?, description = ?, images_json = ?, category = ?, is_featured = ? WHERE id = ?',
+      'UPDATE products SET name = ?, size = ?, price = ?, image = ?, description = ?, images_json = ?, category = ?, is_featured = ?, stock_qty = ?, weight_grams = ?, shippable = ? WHERE id = ?',
       [
         String(body.name ?? ''),
         String(body.size ?? ''),
@@ -882,6 +897,9 @@ app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
         JSON.stringify(images),
         String(body.category ?? ''),
         featured,
+        body.stockQty !== undefined ? toNumber(body.stockQty, 100) : 100,
+        body.weightGrams !== undefined ? toNumber(body.weightGrams, 500) : 500,
+        body.shippable === false || body.shippable === 0 || body.shippable === '0' ? 0 : 1,
         id,
       ],
     )
@@ -1330,6 +1348,13 @@ app.put('/api/admin/content/site-settings', requireAdmin, async (req, res) => {
   } catch (error) {
     sendServerError(res, 'Failed to update site settings', error)
   }
+})
+
+registerCommerceRoutes(app, {
+  requireAdmin,
+  sendServerError,
+  parseCookies,
+  cookieSecure: COOKIE_SECURE,
 })
 
 ensureSchemaAndSeed()

@@ -13,6 +13,9 @@ const PrivacyPage = lazy(() => import('@/pages/PrivacyPage').then((m) => ({ defa
 const StayPage = lazy(() => import('@/pages/StayPage').then((m) => ({ default: m.StayPage })))
 const StorePage = lazy(() => import('@/pages/StorePage').then((m) => ({ default: m.StorePage })))
 const TermsPage = lazy(() => import('@/pages/TermsPage').then((m) => ({ default: m.TermsPage })))
+const CartPage = lazy(() => import('@/pages/CartPage').then((m) => ({ default: m.CartPage })))
+const CheckoutPage = lazy(() => import('@/pages/CheckoutPage').then((m) => ({ default: m.CheckoutPage })))
+const AccountPage = lazy(() => import('@/pages/AccountPage').then((m) => ({ default: m.AccountPage })))
 
 function RouteFallback() {
   return (
@@ -34,6 +37,9 @@ export default function App() {
             <Route path="/cafe" element={<CafePage />} />
             <Route path="/stay" element={<StayPage />} />
             <Route path="/store" element={<StorePage />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/account" element={<AccountPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/book" element={<BookPage />} />
             <Route path="/terms" element={<TermsPage />} />

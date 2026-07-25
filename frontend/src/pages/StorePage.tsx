@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Clock3, Leaf, MapPin, PackageSearch, Search, Wheat, X } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { productCatalog } from '@/data/productCatalog'
+import { useCart } from '@/context/CartContext'
 import { productImageUrl } from '@/utils/productImage'
 import { staticUrl } from '@/utils/staticUrl'
 import { apiUrl } from '@/utils/api'
@@ -74,6 +75,7 @@ type Product = {
   images?: string[]
   description?: string
   category: string
+  stockQty?: number
 }
 
 function paginationItems(total: number, current: number, siblingCount: number): PageToken[] {
@@ -97,6 +99,7 @@ function paginationItems(total: number, current: number, siblingCount: number): 
 export function StorePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const productPreviewId = searchParams.get('product')
+  const { addItem } = useCart()
 
   const [products, setProducts] = useState<Product[]>(
     productCatalog.map((p) => ({ ...p, image: '' })),
@@ -156,6 +159,7 @@ export function StorePage() {
               images: Array.isArray(row.images) ? row.images.map((x) => String(x ?? '')).filter(Boolean) : undefined,
               description: row.description !== undefined ? String(row.description ?? '') : undefined,
               category: String(row.category ?? 'Other'),
+              stockQty: row.stockQty !== undefined ? Number(row.stockQty) : undefined,
             }
           }),
         )
@@ -781,13 +785,34 @@ export function StorePage() {
                         : 'Handcrafted with farm-inspired quality, rich natural flavour and premium ingredients.'}
                     </p>
                   </div>
-                  <div className="mt-6">
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
                     <p
                       className="inline-flex rounded-sm px-4 py-2 font-heading text-2xl font-semibold text-white"
                       style={{ background: GOLD_GRADIENT }}
                     >
                       ${selectedProduct.price.toFixed(2)}
                     </p>
+                    {selectedProduct.stockQty !== undefined && selectedProduct.stockQty <= 0 ? (
+                      <span className="text-sm font-semibold text-red-700">Out of stock</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="rounded-sm px-4 py-2 text-sm font-semibold text-white"
+                        style={{ background: GOLD_GRADIENT }}
+                        onClick={() => {
+                          if (!selectedProduct.id) return
+                          addItem({
+                            productId: selectedProduct.id,
+                            name: selectedProduct.name,
+                            size: selectedProduct.size,
+                            price: selectedProduct.price,
+                            image: selectedProduct.image,
+                          })
+                        }}
+                      >
+                        Add to cart
+                      </button>
+                    )}
                   </div>
                   <button
                     onClick={closeModal}

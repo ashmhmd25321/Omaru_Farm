@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { Menu, ShoppingBag, UserRound, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { mainNavItems } from '@/constants/siteNav'
+import { useCart } from '@/context/CartContext'
 import { staticUrl } from '@/utils/staticUrl'
 
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const { count } = useCart()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -67,6 +69,25 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            to="/account"
+            aria-label="Account"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-parchment text-bark transition hover:border-gold/50 hover:text-gold"
+          >
+            <UserRound className="h-4 w-4" />
+          </Link>
+          <Link
+            to="/cart"
+            aria-label={`Cart${count ? `, ${count} items` : ''}`}
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-parchment text-bark transition hover:border-gold/50 hover:text-gold"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            {count > 0 ? (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-white">
+                {count}
+              </span>
+            ) : null}
+          </Link>
           <Link
             to="/book"
             className="hidden h-10 items-center rounded-sm px-6 font-body text-sm font-semibold tracking-wide text-white shadow-[0_4px_16px_rgba(119,90,25,0.3)] transition hover:brightness-105 md:inline-flex"

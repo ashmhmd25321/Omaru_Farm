@@ -1,4 +1,5 @@
 import { Seo } from '@/components/site/Seo'
+import { StayBookingPanel } from '@/components/stay/StayBookingPanel'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
@@ -922,6 +923,8 @@ export function StayPage() {
             </motion.div>
           </div>
         </section>
+
+        <StayBookingPanel />
 
       </main>
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { Seo } from '@/components/site/Seo'
+import { AdminCommercePanels } from '@/components/admin/AdminCommercePanels'
 import {
   ChevronDown,
   DollarSign,
@@ -118,7 +119,7 @@ type Booking = {
   updatedAt?: string
 }
 
-type TabKey = 'products' | 'testimonials' | 'about' | 'menu' | 'bookings' | 'contact' | 'media' | 'settings'
+type TabKey = 'products' | 'orders' | 'shipping' | 'stays' | 'tables' | 'sales' | 'testimonials' | 'about' | 'menu' | 'bookings' | 'contact' | 'media' | 'settings'
 
 const MENU_SECTIONS = ['Lunch', 'Dinner', 'Beverages'] as const
 
@@ -928,6 +929,11 @@ export function AdminDashboardPage() {
           <div className="mt-6 flex flex-wrap gap-2">
             {[
               { id: 'products', label: 'Products' },
+              { id: 'orders', label: 'Orders' },
+              { id: 'shipping', label: 'Shipping' },
+              { id: 'stays', label: 'Stays' },
+              { id: 'tables', label: 'Table holds' },
+              { id: 'sales', label: 'Sales' },
               { id: 'testimonials', label: 'Testimonials' },
               { id: 'about', label: 'About Content' },
               { id: 'menu', label: 'Menu' },
@@ -1758,6 +1764,12 @@ export function AdminDashboardPage() {
                   </div>
                 </div>
               ) : null}
+            </section>
+          )}
+
+          {(tab === 'orders' || tab === 'shipping' || tab === 'stays' || tab === 'tables' || tab === 'sales') && (
+            <section className="mt-5">
+              <AdminCommercePanels section={tab} />
             </section>
           )}
 

@@ -273,6 +273,21 @@ export function CafePage() {
       })
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.message ?? 'Could not submit')
 
+      // Also create a 24h table hold for admin availability management
+      await fetch(apiUrl('/api/table-holds'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: name,
+          email,
+          phone: trimmedPhone,
+          partyDate: selectedDate,
+          slot: timeSlot.toLowerCase().includes('dinner') ? 'dinner' : 'lunch',
+          covers: guestCount,
+          notes: notesText,
+        }),
+      }).catch(() => null)
+
       openWhatsAppSiteRequest({
         businessNumber,
         pageLabel: 'Café',
