@@ -25,6 +25,29 @@ import {
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
 
+type CafeAvailability = {
+  date: string
+  slot: string
+  open: boolean
+  capacity: number
+  booked: number
+  remaining: number
+  covers: number
+  maxPartySize: number
+  available: boolean
+  reason: string
+  openDayNames?: string[]
+}
+
+function cafeSlotFromTimeLabel(timeSlot: string): 'lunch' | 'dinner' {
+  return timeSlot.toLowerCase().includes('dinner') ? 'dinner' : 'lunch'
+}
+
+function guestCountFromLabel(guests: string): number {
+  const n = parseInt(guests, 10)
+  return Number.isFinite(n) && n > 0 ? n : 2
+}
+
 const fadeUp = {
   hidden: { opacity: 0, y: 26 },
   show: (delay = 0) => ({
@@ -114,6 +137,8 @@ export function CafePage() {
   const [businessNumber, setBusinessNumber] = useState(DEFAULT_WHATSAPP_NUMBER)
   const [secondaryNumber, setSecondaryNumber] = useState(DEFAULT_WHATSAPP_SECONDARY_NUMBER)
   const [formState, setFormState] = useState({ loading: false, success: false, error: '' })
+  const [availability, setAvailability] = useState<CafeAvailability | null>(null)
+  const [availabilityLoading, setAvailabilityLoading] = useState(false)
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>(fallbackMenu)
   const [activeDaypart, setActiveDaypart] = useState<DaypartKey>('sunset')
@@ -129,6 +154,41 @@ export function CafePage() {
       weekday: 'short', month: 'long', day: '2-digit', year: 'numeric',
     })
   }, [selectedDate])
+
+  const selectedSlot = cafeSlotFromTimeLabel(timeSlot)
+  const selectedCovers = guestCountFromLabel(guests)
+  const canSubmit =
+    !formState.loading &&
+    !availabilityLoading &&
+    Boolean(availability?.available)
+
+  useEffect(() => {
+    if (!selectedDate) {
+      setAvailability(null)
+      return
+    }
+    const controller = new AbortController()
+    setAvailabilityLoading(true)
+    const params = new URLSearchParams({
+      date: selectedDate,
+      slot: selectedSlot,
+      covers: String(selectedCovers),
+    })
+    fetch(apiUrl(`/api/cafe/availability?${params}`), { signal: controller.signal })
+      .then(async (r) => {
+        const data = await r.json()
+        if (!r.ok) throw new Error(data.message ?? 'Could not check availability')
+        setAvailability(data as CafeAvailability)
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError') return
+        setAvailability(null)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAvailabilityLoading(false)
+      })
+    return () => controller.abort()
+  }, [selectedDate, selectedSlot, selectedCovers])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -244,7 +304,16 @@ export function CafePage() {
       return
     }
 
-    const guestCount = parseInt(guests, 10) || 2
+    if (!availability?.available) {
+      setFormState({
+        loading: false,
+        success: false,
+        error: availability?.reason || 'This date and time is not available. Please choose another.',
+      })
+      return
+    }
+
+    const guestCount = selectedCovers
     const notesText = notes.trim()
     const apiMessage = [
       `Phone: ${trimmedPhone}`,
@@ -263,7 +332,26 @@ export function CafePage() {
     ].join('\n')
 
     try {
-      const res = await fetch(apiUrl('/api/bookings'), {
+      const holdRes = await fetch(apiUrl('/api/table-holds'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: name,
+          email,
+          phone: trimmedPhone,
+          partyDate: selectedDate,
+          slot: selectedSlot,
+          covers: guestCount,
+          notes: notesText,
+        }),
+      })
+      const holdPayload = await holdRes.json().catch(() => null)
+      if (!holdRes.ok) {
+        if (holdPayload?.availability) setAvailability(holdPayload.availability as CafeAvailability)
+        throw new Error(holdPayload?.message ?? 'This service is fully booked. Please choose another time.')
+      }
+
+      await fetch(apiUrl('/api/bookings'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -275,28 +363,12 @@ export function CafePage() {
           message: apiMessage,
           website,
         }),
-      })
-      if (!res.ok) throw new Error((await res.json().catch(() => null))?.message ?? 'Could not submit')
-
-      // Also create a 24h table hold for admin availability management
-      await fetch(apiUrl('/api/table-holds'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: name,
-          email,
-          phone: trimmedPhone,
-          partyDate: selectedDate,
-          slot: timeSlot.toLowerCase().includes('dinner') ? 'dinner' : 'lunch',
-          covers: guestCount,
-          notes: notesText,
-        }),
       }).catch(() => null)
 
       openWhatsAppSiteRequest({
         businessNumber,
         pageLabel: 'Café',
-        headline: 'New café table reservation from your website.',
+        headline: 'New café table request (pending confirmation) from your website.',
         name,
         phone: trimmedPhone,
         email,
@@ -309,6 +381,17 @@ export function CafePage() {
       setPhone('')
       setNotes('')
       setWebsite('')
+      // Refresh remaining seats after a successful hold
+      setAvailability((prev) =>
+        prev
+          ? {
+              ...prev,
+              booked: prev.booked + guestCount,
+              remaining: Math.max(0, prev.remaining - guestCount),
+              available: prev.remaining - guestCount >= selectedCovers,
+            }
+          : prev,
+      )
     } catch (err) {
       setFormState({
         loading: false,
@@ -875,9 +958,10 @@ export function CafePage() {
               {/* Form */}
               {formState.success ? (
                 <div className="rounded-sm bg-white p-10 text-center shadow-[0_8px_40px_rgba(26,18,8,0.06)]">
-                  <p className="font-heading text-2xl font-semibold text-charcoal">Booking Received!</p>
-                  <p className="mx-auto mt-2 max-w-xs font-body text-sm text-stone">
-                    Your request is saved. WhatsApp is opening — tap Send to confirm your table with our team.
+                  <p className="font-heading text-2xl font-semibold text-charcoal">Request received</p>
+                  <p className="mx-auto mt-2 max-w-sm font-body text-sm text-stone">
+                    Your table request is <span className="font-semibold text-amber-800">pending confirmation</span>.
+                    WhatsApp is opening — tap Send and we&apos;ll confirm availability with you.
                   </p>
                   <p className="mx-auto mt-3 max-w-xs font-body text-xs text-stone">
                     Didn&apos;t open? Message us at{' '}
@@ -894,7 +978,7 @@ export function CafePage() {
                     onClick={() => setFormState({ loading: false, success: false, error: '' })}
                     className="mt-5 font-body text-xs font-semibold uppercase tracking-[0.16em] text-gold-deep transition hover:text-gold"
                   >
-                    Book Another
+                    Request Another
                   </button>
                 </div>
               ) : (
@@ -903,6 +987,35 @@ export function CafePage() {
                   className="space-y-5 rounded-sm bg-white p-8 shadow-[0_8px_40px_rgba(26,18,8,0.06)] md:p-10"
                 >
                   <input className="hidden" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" />
+
+                  <div
+                    className={`rounded-sm border px-4 py-3 text-left text-sm ${
+                      availabilityLoading
+                        ? 'border-parchment bg-surface text-stone'
+                        : availability?.available
+                          ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900'
+                          : 'border-amber-200 bg-amber-50/80 text-amber-950'
+                    }`}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {availabilityLoading ? (
+                      <p>Checking availability…</p>
+                    ) : availability?.available ? (
+                      <p>
+                        <span className="font-semibold capitalize">{availability.slot}</span> on {prettyDate}:{' '}
+                        <span className="font-semibold">
+                          {availability.remaining} of {availability.capacity} seats available
+                        </span>
+                        . Request is pending until our team confirms.
+                      </p>
+                    ) : (
+                      <p className="font-medium">
+                        {availability?.reason || 'Choose a date and time to check availability.'}
+                      </p>
+                    )}
+                  </div>
+
                   {/* Row 1: Date + Guests */}
                   <div className="grid gap-5 sm:grid-cols-2">
                     <label className="block">
@@ -1035,17 +1148,21 @@ export function CafePage() {
                   <div className="pt-1 text-center">
                     <button
                       type="submit"
-                      disabled={formState.loading}
+                      disabled={!canSubmit}
                       className="inline-flex h-12 w-full items-center justify-center rounded-sm font-body text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-105 disabled:opacity-60"
                       style={{ background: GOLD_GRADIENT }}
                     >
-                      {formState.loading ? 'Submitting…' : 'Book a Table & open WhatsApp'}
+                      {formState.loading
+                        ? 'Submitting…'
+                        : availability?.available
+                          ? 'Request a Table & open WhatsApp'
+                          : 'Not available'}
                     </button>
                     {formState.error && (
                       <p className="mt-3 font-body text-sm text-red-600">{formState.error}</p>
                     )}
                     <p className="mt-4 font-body text-xs text-stone/50">
-                      Thu–Fri: 10am–2pm &amp; 5–8pm · Sat–Sun: 10am–8pm · Or message us at{' '}
+                      Requests are pending until confirmed by our team · Thu–Sun · Or message us at{' '}
                       <span className="font-semibold text-[#128C7E]">{whatsappDisplay}</span>
                     </p>
                   </div>

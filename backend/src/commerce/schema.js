@@ -193,13 +193,36 @@ export async function ensureCommerceSchema() {
       slot VARCHAR(20) NOT NULL,
       covers INT NOT NULL,
       notes TEXT,
-      status VARCHAR(40) NOT NULL DEFAULT 'held',
+      status VARCHAR(40) NOT NULL DEFAULT 'pending',
       expires_at DATETIME NOT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_table_holds_expires (expires_at),
       INDEX idx_table_holds_date_slot (party_date, slot)
     )
   `)
+
+  // Capacity for café lunch/dinner soft-holds (single-row settings).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cafe_capacity (
+      id INT PRIMARY KEY,
+      lunch_covers INT NOT NULL DEFAULT 40,
+      dinner_covers INT NOT NULL DEFAULT 30,
+      max_party_size INT NOT NULL DEFAULT 10,
+      open_days VARCHAR(32) NOT NULL DEFAULT '4,5,6,0',
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `)
+  const [capRows] = await pool.query('SELECT id FROM cafe_capacity WHERE id = 1 LIMIT 1')
+  if (!capRows[0]) {
+    // Default open days: Thu(4), Fri(5), Sat(6), Sun(0) — matches café hours.
+    await pool.query(
+      `INSERT INTO cafe_capacity (id, lunch_covers, dinner_covers, max_party_size, open_days)
+       VALUES (1, 40, 30, 10, '4,5,6,0')`,
+    )
+  }
+
+  // Legacy soft holds used status "held"; treat them as pending confirmation.
+  await pool.query(`UPDATE table_holds SET status = 'pending' WHERE status = 'held'`)
 
   const [ruleCount] = await pool.query('SELECT COUNT(*) AS c FROM shipping_rules')
   if (toNumber(ruleCount[0]?.c, 0) === 0) {

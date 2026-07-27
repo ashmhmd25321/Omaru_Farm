@@ -18,7 +18,7 @@ import {
   Waves,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { staticUrl } from '@/utils/staticUrl'
 import { apiUrl } from '@/utils/api'
@@ -216,6 +216,8 @@ const STAY_GROUPS = [
   },
 ] as const
 
+const ALL_BOOKABLE_STAYS = [...ON_FARM_STAYS, ...HOLIDAY_HOME_STAYS]
+
 const EXPERIENCES = [
   { Icon: Sunrise,         label: 'Taste the Life',      desc: 'Savour breakfast on your private deck as mist lifts from the paddocks at dawn.' },
   { Icon: UtensilsCrossed, label: 'Wildlife Chef',        desc: 'Dine on produce grown steps from your door — picked fresh, served with care.' },
@@ -241,6 +243,17 @@ export function StayPage() {
   const [formState, setFormState] = useState({ loading: false, success: false, error: '' })
 
   const [lightbox, setLightbox] = useState<{ images: GalleryPhoto[]; index: number; name: string } | null>(null)
+
+  const selectedStay = useMemo(
+    () => ALL_BOOKABLE_STAYS.find((stay) => stay.name === cabin) ?? ALL_BOOKABLE_STAYS[0],
+    [cabin],
+  )
+
+  const selectedStayPhotos = useMemo((): GalleryPhoto[] => {
+    if (!selectedStay) return []
+    if (selectedStay.gallery && selectedStay.gallery.length > 0) return selectedStay.gallery
+    return [{ src: selectedStay.image, label: selectedStay.name }]
+  }, [selectedStay])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -463,7 +476,8 @@ export function StayPage() {
                 return (
                   <motion.div
                     key={stay.id}
-                    className={`grid items-center gap-10 md:grid-cols-[5fr_6fr] md:gap-14 lg:gap-20 ${isLeft ? '' : 'md:[&>*:first-child]:order-2 md:[&>*:last-child]:order-1'}`}
+                    id={stay.id}
+                    className={`scroll-mt-28 grid items-center gap-10 md:grid-cols-[5fr_6fr] md:gap-14 lg:gap-20 ${isLeft ? '' : 'md:[&>*:first-child]:order-2 md:[&>*:last-child]:order-1'}`}
                     initial="hidden"
                     whileInView="show"
                     viewport={{ once: true, amount: 0.15 }}
@@ -821,29 +835,117 @@ export function StayPage() {
                   </div>
 
                   {/* Row 2: Accommodation */}
-                  <label className="block">
-                    <span className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone">
-                      Accommodation
-                    </span>
-                    <div className="relative mt-2">
-                      <select
-                        value={cabin}
-                        onChange={(e) => setCabin(e.target.value)}
-                        className="field w-full appearance-none pr-8"
-                        aria-label="Select accommodation"
-                      >
-                        <optgroup label="On-Farm · Self-Contained Cabins">
-                          <option>The Glass Pavilion</option>
-                          <option>Heritage Stone Cottage</option>
-                        </optgroup>
-                        <optgroup label="Holiday Homes · Phillip Island">
-                          <option>Rose by Omaru Farm</option>
-                          <option>Jasmine by Omaru Farm</option>
-                        </optgroup>
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/55" aria-hidden />
-                    </div>
-                  </label>
+                  <div className="block">
+                    <label className="block">
+                      <span className="font-body text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone">
+                        Accommodation
+                      </span>
+                      <div className="relative mt-2">
+                        <select
+                          value={cabin}
+                          onChange={(e) => setCabin(e.target.value)}
+                          className="field w-full appearance-none pr-8"
+                          aria-label="Select accommodation"
+                        >
+                          <optgroup label="On-Farm · Self-Contained Cabins">
+                            <option>The Glass Pavilion</option>
+                            <option>Heritage Stone Cottage</option>
+                          </optgroup>
+                          <optgroup label="Holiday Homes · Phillip Island">
+                            <option>Rose by Omaru Farm</option>
+                            <option>Jasmine by Omaru Farm</option>
+                          </optgroup>
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/55" aria-hidden />
+                      </div>
+                    </label>
+
+                    {selectedStay ? (
+                      <div className="mt-4 overflow-hidden rounded-sm border border-parchment/80 bg-surface-low/60">
+                        <div className="grid gap-0 sm:grid-cols-[140px_1fr]">
+                          <button
+                            type="button"
+                            className="relative block h-36 w-full overflow-hidden sm:h-full sm:min-h-[140px]"
+                            onClick={() =>
+                              setLightbox({
+                                images: selectedStayPhotos,
+                                index: 0,
+                                name: selectedStay.name,
+                              })
+                            }
+                            aria-label={`View photos of ${selectedStay.name}`}
+                          >
+                            <img
+                              src={selectedStay.image}
+                              alt={selectedStay.name}
+                              className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
+                              loading="lazy"
+                            />
+                            <span className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-black/55 px-2 py-1 font-body text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-sm">
+                              {selectedStayPhotos.length > 1
+                                ? `${selectedStayPhotos.length} photos`
+                                : 'View photo'}
+                            </span>
+                          </button>
+                          <div className="flex flex-col justify-center p-4 sm:p-5">
+                            <p className="font-body text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-gold-deep">
+                              {selectedStay.type}
+                            </p>
+                            <h3 className="mt-1 font-heading text-xl font-semibold text-charcoal">
+                              {selectedStay.name}
+                            </h3>
+                            <p className="mt-1 font-body text-sm italic text-stone">{selectedStay.tagline}</p>
+                            <p className="mt-2 line-clamp-2 font-body text-xs leading-relaxed text-stone">
+                              {selectedStay.description}
+                            </p>
+                            <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+                              {selectedStay.amenities.slice(0, 3).map(({ Icon, label }) => (
+                                <li key={label} className="inline-flex items-center gap-1.5 font-body text-[0.7rem] text-bark">
+                                  <Icon className="h-3.5 w-3.5 text-gold" aria-hidden />
+                                  {label}
+                                </li>
+                              ))}
+                              <li className="inline-flex items-center gap-1.5 font-body text-[0.7rem] text-bark">
+                                <Users className="h-3.5 w-3.5 text-gold" aria-hidden />
+                                Up to {selectedStay.guests} guests
+                              </li>
+                            </ul>
+                            <div className="mt-3 flex flex-wrap gap-3">
+                              <button
+                                type="button"
+                                className="font-body text-xs font-semibold uppercase tracking-[0.16em] text-gold-deep transition hover:text-gold"
+                                onClick={() =>
+                                  setLightbox({
+                                    images: selectedStayPhotos,
+                                    index: 0,
+                                    name: selectedStay.name,
+                                  })
+                                }
+                              >
+                                View photos
+                              </button>
+                              <a
+                                href={`#${selectedStay.id}`}
+                                className="inline-flex items-center gap-1 font-body text-xs font-semibold uppercase tracking-[0.16em] text-charcoal transition hover:text-gold-deep"
+                              >
+                                Full details <ArrowRight className="h-3 w-3" aria-hidden />
+                              </a>
+                              {selectedStay.bookingUrl ? (
+                                <a
+                                  href={selectedStay.bookingUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="font-body text-xs font-semibold uppercase tracking-[0.16em] text-stone transition hover:text-gold-deep"
+                                >
+                                  View on Airbnb
+                                </a>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
 
                   {/* Row 3: Guests */}
                   <label className="block">

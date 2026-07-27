@@ -34,6 +34,28 @@ function nightsBetween(checkIn, checkOut) {
   return Math.round((b - a) / (1000 * 60 * 60 * 24))
 }
 
+/** Normalize MySQL DATE / Date / ISO string to YYYY-MM-DD without timezone shift bugs. */
+function toDateOnly(value) {
+  if (value == null || value === '') return ''
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const y = value.getFullYear()
+    const m = String(value.getMonth() + 1).padStart(2, '0')
+    const d = String(value.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  const raw = String(value).trim()
+  const iso = raw.match(/^(\d{4}-\d{2}-\d{2})/)
+  if (iso) return iso[1]
+  const parsed = new Date(raw)
+  if (!Number.isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear()
+    const m = String(parsed.getMonth() + 1).padStart(2, '0')
+    const d = String(parsed.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  return ''
+}
+
 async function loadShippingRules() {
   const [rows] = await pool.query(
     'SELECT id, name, postcode_prefixes, base_fee, per_kg_fee, free_over, sort_order, is_active FROM shipping_rules WHERE is_active = 1 ORDER BY sort_order ASC, id ASC',
@@ -519,12 +541,151 @@ export function registerCommerceRoutes(app, {
     }
   })
 
-  // ── Table holds ─────────────────────────────────────────
+  // ── Café capacity & table holds ─────────────────────────
+  // Pending + confirmed + seated count toward capacity.
+  // Pending auto-expires the morning after the dining day if staff never confirmed.
+  const ACTIVE_HOLD_STATUSES = ['pending', 'held', 'confirmed', 'seated']
+  const ALLOWED_HOLD_STATUSES = ['pending', 'confirmed', 'seated', 'cancelled', 'declined', 'expired']
+  const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+  function normalizeCafeSlot(slot) {
+    const s = String(slot ?? 'lunch').toLowerCase()
+    return s.includes('dinner') ? 'dinner' : 'lunch'
+  }
+
+  function parseOpenDays(raw) {
+    return String(raw ?? '4,5,6,0')
+      .split(',')
+      .map((v) => Number(v.trim()))
+      .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6)
+  }
+
+  async function getCafeCapacitySettings() {
+    const [rows] = await pool.query(
+      `SELECT lunch_covers AS lunchCovers, dinner_covers AS dinnerCovers,
+              max_party_size AS maxPartySize, open_days AS openDays
+       FROM cafe_capacity WHERE id = 1 LIMIT 1`,
+    )
+    const row = rows[0] ?? {}
+    return {
+      lunchCovers: Math.max(1, toNumber(row.lunchCovers, 40)),
+      dinnerCovers: Math.max(1, toNumber(row.dinnerCovers, 30)),
+      maxPartySize: Math.max(1, toNumber(row.maxPartySize, 10)),
+      openDays: parseOpenDays(row.openDays),
+    }
+  }
+
+  async function getSlotBookedCovers(partyDate, slot, excludeHoldId = 0) {
+    const [rows] = await pool.query(
+      `SELECT COALESCE(SUM(covers), 0) AS booked
+       FROM table_holds
+       WHERE party_date = ? AND slot = ? AND status IN (?, ?, ?, ?)
+         AND id <> ?`,
+      [partyDate, slot, ...ACTIVE_HOLD_STATUSES, excludeHoldId || 0],
+    )
+    return toNumber(rows[0]?.booked, 0)
+  }
+
+  async function getCafeAvailability(partyDate, slotInput, covers = 1, excludeHoldId = 0, options = {}) {
+    const ignoreClosed = Boolean(options.ignoreClosed)
+    const settings = await getCafeCapacitySettings()
+    const slot = normalizeCafeSlot(slotInput)
+    const partyCovers = Math.max(1, Math.floor(toNumber(covers, 1)))
+    const day = new Date(`${partyDate}T12:00:00`).getDay()
+    const open = settings.openDays.includes(day)
+    const capacity = slot === 'dinner' ? settings.dinnerCovers : settings.lunchCovers
+    const treatAsOpen = open || ignoreClosed
+    const booked = treatAsOpen ? await getSlotBookedCovers(partyDate, slot, excludeHoldId) : 0
+    const remaining = treatAsOpen ? Math.max(0, capacity - booked) : 0
+    let reason = ''
+    if (!open && !ignoreClosed) {
+      reason = `Café is closed on ${WEEKDAY_NAMES[day] ?? 'this day'}. Open Thu–Sun.`
+    } else if (partyCovers > settings.maxPartySize) {
+      reason = `Maximum party size is ${settings.maxPartySize} guests. Please contact us for larger groups.`
+    } else if (remaining <= 0) {
+      reason = `This ${slot} service is fully booked (${capacity} covers).`
+    } else if (partyCovers > remaining) {
+      reason = `Only ${remaining} seat${remaining === 1 ? '' : 's'} left for this ${slot}.`
+    }
+    return {
+      date: partyDate,
+      slot,
+      open,
+      capacity,
+      booked,
+      remaining,
+      covers: partyCovers,
+      maxPartySize: settings.maxPartySize,
+      available:
+        (open || ignoreClosed) &&
+        partyCovers <= settings.maxPartySize &&
+        partyCovers <= remaining,
+      reason,
+      openDays: settings.openDays,
+      openDayNames: settings.openDays.map((d) => WEEKDAY_NAMES[d]),
+    }
+  }
+
   async function expireTableHolds() {
     await pool.query(
-      `UPDATE table_holds SET status = 'expired' WHERE status = 'held' AND expires_at < NOW()`,
+      `UPDATE table_holds
+       SET expires_at = TIMESTAMP(DATE_ADD(party_date, INTERVAL 1 DAY))
+       WHERE status IN ('pending', 'held')
+         AND expires_at < TIMESTAMP(party_date)`,
+    )
+    await pool.query(
+      `UPDATE table_holds SET status = 'expired'
+       WHERE status IN ('pending', 'held') AND expires_at < NOW()`,
     )
   }
+
+  app.get('/api/cafe/availability', async (req, res) => {
+    try {
+      const date = String(req.query.date ?? '').slice(0, 10)
+      const slot = String(req.query.slot ?? 'lunch')
+      const covers = toNumber(req.query.covers, 2)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ message: 'Valid date is required (YYYY-MM-DD)' })
+      }
+      res.json(await getCafeAvailability(date, slot, covers))
+    } catch (error) {
+      sendServerError(res, 'Failed to load café availability', error)
+    }
+  })
+
+  app.get('/api/admin/cafe-capacity', requireAdmin, async (_req, res) => {
+    try {
+      res.json(await getCafeCapacitySettings())
+    } catch (error) {
+      sendServerError(res, 'Failed to load café capacity', error)
+    }
+  })
+
+  app.put('/api/admin/cafe-capacity', requireAdmin, async (req, res) => {
+    try {
+      const body = req.body ?? {}
+      const lunchCovers = Math.max(1, Math.floor(toNumber(body.lunchCovers, 40)))
+      const dinnerCovers = Math.max(1, Math.floor(toNumber(body.dinnerCovers, 30)))
+      const maxPartySize = Math.max(1, Math.floor(toNumber(body.maxPartySize, 10)))
+      let openDays = Array.isArray(body.openDays)
+        ? body.openDays.map((d) => Number(d)).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6)
+        : parseOpenDays(body.openDays)
+      if (openDays.length === 0) openDays = [4, 5, 6, 0]
+      await pool.query(
+        `INSERT INTO cafe_capacity (id, lunch_covers, dinner_covers, max_party_size, open_days)
+         VALUES (1, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           lunch_covers = VALUES(lunch_covers),
+           dinner_covers = VALUES(dinner_covers),
+           max_party_size = VALUES(max_party_size),
+           open_days = VALUES(open_days)`,
+        [lunchCovers, dinnerCovers, maxPartySize, openDays.join(',')],
+      )
+      res.json(await getCafeCapacitySettings())
+    } catch (error) {
+      sendServerError(res, 'Failed to update café capacity', error)
+    }
+  })
 
   app.post('/api/table-holds', async (req, res) => {
     try {
@@ -533,18 +694,35 @@ export function registerCommerceRoutes(app, {
       const fullName = String(body.fullName ?? '').trim()
       const email = String(body.email ?? '').trim()
       const partyDate = String(body.partyDate ?? body.date ?? '')
-      const slot = String(body.slot ?? 'lunch')
+      const normalizedPartyDate = toDateOnly(partyDate)
+      const slot = normalizeCafeSlot(body.slot)
       const covers = Math.max(1, Math.floor(toNumber(body.covers ?? body.guestCount, 2)))
-      if (!fullName || !email || !partyDate) {
+      if (!fullName || !email || !normalizedPartyDate) {
         return res.status(400).json({ message: 'Name, email, and date are required' })
+      }
+      const availability = await getCafeAvailability(normalizedPartyDate, slot, covers)
+      if (!availability.available) {
+        return res.status(409).json({
+          message: availability.reason || 'This service is not available',
+          availability,
+        })
       }
       const number = holdNumber()
       const [result] = await pool.query(
         `INSERT INTO table_holds (hold_number, full_name, email, phone, party_date, slot, covers, notes, status, expires_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'held', DATE_ADD(NOW(), INTERVAL 24 HOUR))`,
-        [number, fullName, email, String(body.phone ?? ''), partyDate, slot, covers, String(body.notes ?? '')],
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', TIMESTAMP(DATE_ADD(?, INTERVAL 1 DAY)))`,
+        [number, fullName, email, String(body.phone ?? ''), normalizedPartyDate, slot, covers, String(body.notes ?? ''), normalizedPartyDate],
       )
-      res.status(201).json({ id: result.insertId, holdNumber: number, expiresInHours: 24 })
+      res.status(201).json({
+        id: result.insertId,
+        holdNumber: number,
+        partyDate: normalizedPartyDate,
+        slot,
+        covers,
+        status: 'pending',
+        message: 'Request received — pending confirmation from our team.',
+        availability: await getCafeAvailability(normalizedPartyDate, slot, 1),
+      })
     } catch (error) {
       sendServerError(res, 'Failed to create table hold', error)
     }
@@ -558,7 +736,13 @@ export function registerCommerceRoutes(app, {
                 slot, covers, notes, status, expires_at AS expiresAt, created_at AS createdAt
          FROM table_holds ORDER BY id DESC LIMIT 500`,
       )
-      res.json(rows)
+      res.json(
+        rows.map((row) => ({
+          ...row,
+          partyDate: toDateOnly(row.partyDate),
+          expiresAt: toDateOnly(row.expiresAt) || row.expiresAt,
+        })),
+      )
     } catch (error) {
       sendServerError(res, 'Failed to load table holds', error)
     }
@@ -566,9 +750,86 @@ export function registerCommerceRoutes(app, {
 
   app.put('/api/admin/table-holds/:id', requireAdmin, async (req, res) => {
     const id = toNumber(req.params.id, 0)
+    if (!id) return res.status(400).json({ message: 'Invalid hold id' })
+
     try {
-      await pool.query(`UPDATE table_holds SET status = ? WHERE id = ?`, [String(req.body?.status ?? 'held'), id])
-      res.json({ ok: true })
+      const [existingRows] = await pool.query(
+        `SELECT id, full_name AS fullName, email, phone, party_date AS partyDate, slot, covers, notes, status
+         FROM table_holds WHERE id = ? LIMIT 1`,
+        [id],
+      )
+      const existing = existingRows[0]
+      if (!existing) return res.status(404).json({ message: 'Table hold not found' })
+
+      const body = req.body ?? {}
+      const status = body.status !== undefined ? String(body.status) : String(existing.status)
+      if (!ALLOWED_HOLD_STATUSES.includes(status)) {
+        return res.status(400).json({ message: `Status must be one of: ${ALLOWED_HOLD_STATUSES.join(', ')}` })
+      }
+
+      const fullName = body.fullName !== undefined ? String(body.fullName).trim() : String(existing.fullName)
+      const email = body.email !== undefined ? String(body.email).trim() : String(existing.email)
+      const phone = body.phone !== undefined ? String(body.phone).trim() : String(existing.phone ?? '')
+      const partyDate = body.partyDate !== undefined
+        ? toDateOnly(body.partyDate)
+        : toDateOnly(existing.partyDate)
+      const slot = body.slot !== undefined ? normalizeCafeSlot(body.slot) : normalizeCafeSlot(existing.slot)
+      const covers = body.covers !== undefined
+        ? Math.max(1, Math.floor(toNumber(body.covers, existing.covers)))
+        : Math.max(1, Math.floor(toNumber(existing.covers, 1)))
+      const notes = body.notes !== undefined ? String(body.notes) : String(existing.notes ?? '')
+
+      if (!fullName || !email || !/^\d{4}-\d{2}-\d{2}$/.test(partyDate)) {
+        return res.status(400).json({ message: 'Name, email, and a valid dining date are required' })
+      }
+
+      const existingPartyDate = toDateOnly(existing.partyDate)
+      const existingSlot = normalizeCafeSlot(existing.slot)
+      const existingCovers = Math.max(1, Math.floor(toNumber(existing.covers, 1)))
+      const scheduleChanged =
+        partyDate !== existingPartyDate || slot !== existingSlot || covers !== existingCovers
+      const bodyKeys = Object.keys(body)
+      const statusOnly = bodyKeys.length === 1 && body.status !== undefined
+
+      // Status-only changes (Confirm / Decline / dropdown) must never be blocked by
+      // open-day / capacity re-checks — those only apply when admin moves the booking.
+      if (!statusOnly && scheduleChanged && ACTIVE_HOLD_STATUSES.includes(status)) {
+        const availability = await getCafeAvailability(partyDate, slot, covers, id, {
+          ignoreClosed: true,
+        })
+        if (!availability.available) {
+          return res.status(409).json({
+            message: availability.reason || 'That date/slot does not have enough capacity',
+            availability,
+          })
+        }
+      }
+
+      await pool.query(
+        `UPDATE table_holds
+         SET full_name = ?, email = ?, phone = ?, party_date = ?, slot = ?, covers = ?, notes = ?,
+             status = ?, expires_at = TIMESTAMP(DATE_ADD(?, INTERVAL 1 DAY))
+         WHERE id = ?`,
+        [fullName, email, phone, partyDate, slot, covers, notes, status, partyDate, id],
+      )
+
+      const [updatedRows] = await pool.query(
+        `SELECT id, hold_number AS holdNumber, full_name AS fullName, email, phone, party_date AS partyDate,
+                slot, covers, notes, status, expires_at AS expiresAt, created_at AS createdAt
+         FROM table_holds WHERE id = ? LIMIT 1`,
+        [id],
+      )
+      const hold = updatedRows[0]
+      res.json({
+        ok: true,
+        hold: hold
+          ? {
+              ...hold,
+              partyDate: toDateOnly(hold.partyDate),
+              expiresAt: toDateOnly(hold.expiresAt) || hold.expiresAt,
+            }
+          : null,
+      })
     } catch (error) {
       sendServerError(res, 'Failed to update table hold', error)
     }
