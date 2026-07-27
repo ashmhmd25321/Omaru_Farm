@@ -24,6 +24,7 @@ import { staticUrl } from '@/utils/staticUrl'
 import { apiUrl } from '@/utils/api'
 import {
   DEFAULT_WHATSAPP_NUMBER,
+  DEFAULT_WHATSAPP_SECONDARY_NUMBER,
   formatWhatsAppDisplay,
   openWhatsAppSiteRequest,
   parseWhatsAppNumber,
@@ -236,6 +237,7 @@ export function StayPage() {
   const [phone, setPhone]       = useState('')
   const [website, setWebsite]   = useState('')
   const [businessNumber, setBusinessNumber] = useState(DEFAULT_WHATSAPP_NUMBER)
+  const [secondaryNumber, setSecondaryNumber] = useState(DEFAULT_WHATSAPP_SECONDARY_NUMBER)
   const [formState, setFormState] = useState({ loading: false, success: false, error: '' })
 
   const [lightbox, setLightbox] = useState<{ images: GalleryPhoto[]; index: number; name: string } | null>(null)
@@ -249,6 +251,9 @@ export function StayPage() {
         const value = data as Record<string, unknown>
         if (value.whatsappUrl) {
           setBusinessNumber(parseWhatsAppNumber(String(value.whatsappUrl)))
+        }
+        if (value.whatsappSecondaryUrl) {
+          setSecondaryNumber(parseWhatsAppNumber(String(value.whatsappSecondaryUrl)))
         }
       })
       .catch(() => {})
@@ -337,6 +342,7 @@ export function StayPage() {
   }
 
   const whatsappDisplay = formatWhatsAppDisplay(businessNumber)
+  const secondaryWhatsappDisplay = formatWhatsAppDisplay(secondaryNumber)
 
   useEffect(() => {
     if (!lightbox) return
@@ -750,6 +756,12 @@ export function StayPage() {
                   <p className="mx-auto mt-3 max-w-xs font-body text-xs text-stone">
                     Didn&apos;t open? Message us at{' '}
                     <span className="font-semibold text-[#128C7E]">{whatsappDisplay}</span>
+                    {secondaryWhatsappDisplay && secondaryNumber !== businessNumber ? (
+                      <>
+                        {' '}or Rosie at{' '}
+                        <span className="font-semibold text-[#128C7E]">{secondaryWhatsappDisplay}</span>
+                      </>
+                    ) : null}
                   </p>
                   <button
                     type="button"

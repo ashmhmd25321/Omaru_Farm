@@ -67,6 +67,8 @@ const DEFAULT_CONTACT_CONTENT = {
   email: 'Omarufarmcafe@gmail.com',
   phone: '+61 476 302 477',
   whatsapp: 'https://wa.me/61476302477',
+  // Rosie's WhatsApp — backup enquiry line for when the main business number isn't on hand.
+  whatsappSecondary: 'https://wa.me/61427558536',
   instagram: 'https://instagram.com',
   mapQuery: '776 Ventnor Road, Ventnor, Phillip Island VIC 3922, Australia',
   hoursCafe: 'Thu–Fri: 10am–2pm & 5–8pm · Sat–Sun: 10am–8pm',
@@ -153,6 +155,8 @@ const DEFAULT_SITE_SETTINGS = {
   footerTagline: 'Grown with intention',
   supportEmail: 'Omarufarmcafe@gmail.com',
   whatsappUrl: 'https://wa.me/61476302477',
+  // Rosie's WhatsApp — backup enquiry line for when the main business number isn't on hand.
+  whatsappSecondaryUrl: 'https://wa.me/61427558536',
   instagramUrl: 'https://instagram.com',
 }
 
@@ -662,8 +666,10 @@ app.get('/api/content/contact', async (_req, res) => {
 
 app.get('/api/content/site-settings', async (_req, res) => {
   try {
-    const value = await getSetting('site_settings', DEFAULT_SITE_SETTINGS)
-    res.json(value)
+    res.json({
+      ...DEFAULT_SITE_SETTINGS,
+      ...(await getSetting('site_settings', DEFAULT_SITE_SETTINGS)),
+    })
   } catch (error) {
     sendServerError(res, 'Failed to load site settings', error)
   }
@@ -1309,6 +1315,7 @@ app.put('/api/admin/content/contact', requireAdmin, async (req, res) => {
     email: String(req.body?.email ?? DEFAULT_CONTACT_CONTENT.email),
     phone: String(req.body?.phone ?? DEFAULT_CONTACT_CONTENT.phone),
     whatsapp: String(req.body?.whatsapp ?? DEFAULT_CONTACT_CONTENT.whatsapp),
+    whatsappSecondary: String(req.body?.whatsappSecondary ?? DEFAULT_CONTACT_CONTENT.whatsappSecondary),
     instagram: String(req.body?.instagram ?? DEFAULT_CONTACT_CONTENT.instagram),
     mapQuery: String(req.body?.mapQuery ?? DEFAULT_CONTACT_CONTENT.mapQuery),
     hoursCafe: String(req.body?.hoursCafe ?? DEFAULT_CONTACT_CONTENT.hoursCafe),
@@ -1326,7 +1333,10 @@ app.put('/api/admin/content/contact', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/content/site-settings', requireAdmin, async (_req, res) => {
   try {
-    res.json(await getSetting('site_settings', DEFAULT_SITE_SETTINGS))
+    res.json({
+      ...DEFAULT_SITE_SETTINGS,
+      ...(await getSetting('site_settings', DEFAULT_SITE_SETTINGS)),
+    })
   } catch (error) {
     sendServerError(res, 'Failed to load site settings', error)
   }
@@ -1339,6 +1349,7 @@ app.put('/api/admin/content/site-settings', requireAdmin, async (req, res) => {
     footerTagline: String(req.body?.footerTagline ?? DEFAULT_SITE_SETTINGS.footerTagline),
     supportEmail: String(req.body?.supportEmail ?? DEFAULT_SITE_SETTINGS.supportEmail),
     whatsappUrl: String(req.body?.whatsappUrl ?? DEFAULT_SITE_SETTINGS.whatsappUrl),
+    whatsappSecondaryUrl: String(req.body?.whatsappSecondaryUrl ?? DEFAULT_SITE_SETTINGS.whatsappSecondaryUrl),
     instagramUrl: String(req.body?.instagramUrl ?? DEFAULT_SITE_SETTINGS.instagramUrl),
   }
 

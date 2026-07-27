@@ -99,6 +99,7 @@ type ContactContent = {
   email: string
   phone: string
   whatsapp: string
+  whatsappSecondary: string
   instagram: string
   mapQuery: string
   hoursCafe: string
@@ -112,6 +113,7 @@ type SiteSettings = {
   footerTagline: string
   supportEmail: string
   whatsappUrl: string
+  whatsappSecondaryUrl: string
   instagramUrl: string
 }
 
@@ -706,6 +708,7 @@ export function AdminDashboardPage() {
     email: '',
     phone: '',
     whatsapp: '',
+    whatsappSecondary: '',
     instagram: '',
     mapQuery: '',
     hoursCafe: '',
@@ -718,6 +721,7 @@ export function AdminDashboardPage() {
     footerTagline: '',
     supportEmail: '',
     whatsappUrl: '',
+    whatsappSecondaryUrl: '',
     instagramUrl: '',
   })
 
@@ -2615,7 +2619,8 @@ export function AdminDashboardPage() {
                   <input className="field" value={contact.phone} onChange={(e) => setContact((v) => ({ ...v, phone: e.target.value }))} placeholder="Phone number" />
                   <input className="field" value={contact.addressLine1} onChange={(e) => setContact((v) => ({ ...v, addressLine1: e.target.value }))} placeholder="Address line 1" />
                   <input className="field" value={contact.addressLine2} onChange={(e) => setContact((v) => ({ ...v, addressLine2: e.target.value }))} placeholder="Address line 2" />
-                  <input className="field" value={contact.whatsapp} onChange={(e) => setContact((v) => ({ ...v, whatsapp: e.target.value }))} placeholder="WhatsApp URL" />
+                  <input className="field" value={contact.whatsapp} onChange={(e) => setContact((v) => ({ ...v, whatsapp: e.target.value }))} placeholder="WhatsApp URL (main business number)" />
+                  <input className="field" value={contact.whatsappSecondary} onChange={(e) => setContact((v) => ({ ...v, whatsappSecondary: e.target.value }))} placeholder="WhatsApp URL (Rosie's backup number)" />
                   <input className="field" value={contact.instagram} onChange={(e) => setContact((v) => ({ ...v, instagram: e.target.value }))} placeholder="Instagram URL" />
                   <input className="field md:col-span-2" value={contact.mapQuery} onChange={(e) => setContact((v) => ({ ...v, mapQuery: e.target.value }))} placeholder="Google map query" />
                   <input className="field" value={contact.hoursCafe} onChange={(e) => setContact((v) => ({ ...v, hoursCafe: e.target.value }))} placeholder="Cafe hours" />
@@ -2836,7 +2841,8 @@ export function AdminDashboardPage() {
                   <input className="field" value={siteSettings.brandName} onChange={(e) => setSiteSettings((v) => ({ ...v, brandName: e.target.value }))} placeholder="Brand name" />
                   <input className="field" value={siteSettings.footerTagline} onChange={(e) => setSiteSettings((v) => ({ ...v, footerTagline: e.target.value }))} placeholder="Footer tagline" />
                   <input className="field" value={siteSettings.supportEmail} onChange={(e) => setSiteSettings((v) => ({ ...v, supportEmail: e.target.value }))} placeholder="Support email" />
-                  <input className="field" value={siteSettings.whatsappUrl} onChange={(e) => setSiteSettings((v) => ({ ...v, whatsappUrl: e.target.value }))} placeholder="WhatsApp URL" />
+                  <input className="field" value={siteSettings.whatsappUrl} onChange={(e) => setSiteSettings((v) => ({ ...v, whatsappUrl: e.target.value }))} placeholder="WhatsApp URL (main business number)" />
+                  <input className="field" value={siteSettings.whatsappSecondaryUrl} onChange={(e) => setSiteSettings((v) => ({ ...v, whatsappSecondaryUrl: e.target.value }))} placeholder="WhatsApp URL (Rosie's backup number)" />
                   <input className="field md:col-span-2" value={siteSettings.instagramUrl} onChange={(e) => setSiteSettings((v) => ({ ...v, instagramUrl: e.target.value }))} placeholder="Instagram URL" />
                   <textarea className="field min-h-24 md:col-span-2" value={siteSettings.missionText} onChange={(e) => setSiteSettings((v) => ({ ...v, missionText: e.target.value }))} placeholder="Mission text" />
                   <div className="md:col-span-2">

@@ -1,6 +1,9 @@
 /** Test / default business WhatsApp (E.164 without +) */
 export const DEFAULT_WHATSAPP_NUMBER = '61476302477'
 
+/** Rosie's backup WhatsApp — used when the main business number isn't on hand (E.164 without +) */
+export const DEFAULT_WHATSAPP_SECONDARY_NUMBER = '61427558536'
+
 export function parseWhatsAppNumber(url: string): string {
   const trimmed = url.trim()
   const waMatch = trimmed.match(/wa\.me\/(\d+)/i)

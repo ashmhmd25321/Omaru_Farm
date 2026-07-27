@@ -3,7 +3,9 @@ import { MessageCircle } from 'lucide-react'
 import { apiUrl } from '@/utils/api'
 import {
   DEFAULT_WHATSAPP_NUMBER,
+  DEFAULT_WHATSAPP_SECONDARY_NUMBER,
   buildWhatsAppHelpUrl,
+  formatWhatsAppDisplay,
   parseWhatsAppNumber,
 } from '@/utils/whatsapp'
 
@@ -27,6 +29,7 @@ export function WhatsAppHelpForm({
   onSuccess,
 }: WhatsAppHelpFormProps) {
   const [businessNumber, setBusinessNumber] = useState(DEFAULT_WHATSAPP_NUMBER)
+  const [secondaryNumber, setSecondaryNumber] = useState(DEFAULT_WHATSAPP_SECONDARY_NUMBER)
   const [name, setName] = useState(initialName)
   const [phone, setPhone] = useState(initialPhone)
   const [message, setMessage] = useState(initialMessage)
@@ -54,13 +57,15 @@ export function WhatsAppHelpForm({
         if (value.whatsappUrl) {
           setBusinessNumber(parseWhatsAppNumber(String(value.whatsappUrl)))
         }
+        if (value.whatsappSecondaryUrl) {
+          setSecondaryNumber(parseWhatsAppNumber(String(value.whatsappSecondaryUrl)))
+        }
       })
       .catch(() => {})
     return () => controller.abort()
   }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const openChat = (number: string) => {
     setError('')
 
     const trimmedPhone = phone.trim()
@@ -70,7 +75,7 @@ export function WhatsAppHelpForm({
     }
 
     const url = buildWhatsAppHelpUrl({
-      businessNumber,
+      businessNumber: number,
       name,
       phone: trimmedPhone,
       message,
@@ -79,6 +84,11 @@ export function WhatsAppHelpForm({
 
     window.open(url, '_blank', 'noopener,noreferrer')
     onSuccess?.()
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    openChat(businessNumber)
   }
 
   return (
@@ -132,6 +142,17 @@ export function WhatsAppHelpForm({
         <MessageCircle className="h-4 w-4" aria-hidden />
         Continue on WhatsApp
       </button>
+
+      {secondaryNumber && secondaryNumber !== businessNumber ? (
+        <button
+          type="button"
+          onClick={() => openChat(secondaryNumber)}
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-sm border border-green-500/40 bg-white font-body text-sm font-semibold text-green-700 transition hover:bg-green-50"
+        >
+          <MessageCircle className="h-4 w-4" aria-hidden />
+          Or message Rosie directly ({formatWhatsAppDisplay(secondaryNumber)})
+        </button>
+      ) : null}
     </form>
   )
 }

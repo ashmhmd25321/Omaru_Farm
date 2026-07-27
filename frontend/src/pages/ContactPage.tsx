@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Seo } from '@/components/site/Seo'
 import { motion } from 'framer-motion'
-import { ArrowUpRight, ChevronDown, Clock3, Mail, MapPin, Phone } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, Clock3, Mail, MapPin, MessageCircle, Phone } from 'lucide-react'
 import { staticUrl } from '@/utils/staticUrl'
 import { apiUrl } from '@/utils/api'
+import { buildWhatsAppUrl, formatWhatsAppDisplay, parseWhatsAppNumber } from '@/utils/whatsapp'
 
 const OLIVE_BTN = '#6B5E0D'
 
@@ -13,6 +14,8 @@ type ContactDetails = {
   addressLine2: string
   email: string
   phone: string
+  whatsapp: string
+  whatsappSecondary: string
   mapQuery: string
   hoursCafe: string
   hoursStore: string
@@ -24,6 +27,8 @@ const FALLBACK_CONTACT: ContactDetails = {
   addressLine2: 'Phillip Island VIC 3922',
   email: 'Omarufarmcafe@gmail.com',
   phone: '+61 476 302 477',
+  whatsapp: 'https://wa.me/61476302477',
+  whatsappSecondary: 'https://wa.me/61427558536',
   mapQuery: '776 Ventnor Road, Ventnor, Phillip Island VIC 3922, Australia',
   hoursCafe: 'Thu–Fri: 10am–2pm & 5–8pm · Sat–Sun: 10am–8pm',
   hoursStore: 'Mon–Sun: 9am–5pm',
@@ -77,6 +82,8 @@ export function ContactPage() {
           addressLine2: String(row.addressLine2 ?? FALLBACK_CONTACT.addressLine2),
           email: String(row.email ?? FALLBACK_CONTACT.email),
           phone: String(row.phone ?? FALLBACK_CONTACT.phone),
+          whatsapp: String(row.whatsapp ?? FALLBACK_CONTACT.whatsapp),
+          whatsappSecondary: String(row.whatsappSecondary ?? FALLBACK_CONTACT.whatsappSecondary),
           mapQuery: String(row.mapQuery ?? FALLBACK_CONTACT.mapQuery),
           hoursCafe: String(row.hoursCafe ?? FALLBACK_CONTACT.hoursCafe),
           hoursStore: String(row.hoursStore ?? FALLBACK_CONTACT.hoursStore),
@@ -97,6 +104,19 @@ export function ContactPage() {
     [details.mapQuery],
   )
   const phoneHref = useMemo(() => `tel:${details.phone.replace(/[^\d+]/g, '')}`, [details.phone])
+  const whatsappNumber = useMemo(() => parseWhatsAppNumber(details.whatsapp), [details.whatsapp])
+  const whatsappSecondaryNumber = useMemo(
+    () => parseWhatsAppNumber(details.whatsappSecondary),
+    [details.whatsappSecondary],
+  )
+  const whatsappUrl = useMemo(
+    () => buildWhatsAppUrl(whatsappNumber, 'Hello Omaru Farm, I have a question from your website.'),
+    [whatsappNumber],
+  )
+  const whatsappSecondaryUrl = useMemo(
+    () => buildWhatsAppUrl(whatsappSecondaryNumber, 'Hello Omaru Farm, I have a question from your website.'),
+    [whatsappSecondaryNumber],
+  )
 
   const cafeHoursIsStructured = details.hoursCafe === FALLBACK_CONTACT.hoursCafe
 
@@ -284,6 +304,26 @@ export function ContactPage() {
                       <Phone className="h-4 w-4 shrink-0 text-gold" aria-hidden />
                       {details.phone}
                     </a>
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 flex items-center gap-2 font-body text-sm text-stone transition hover:text-gold-deep"
+                    >
+                      <MessageCircle className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+                      WhatsApp: {formatWhatsAppDisplay(whatsappNumber)}
+                    </a>
+                    {whatsappSecondaryNumber && whatsappSecondaryNumber !== whatsappNumber ? (
+                      <a
+                        href={whatsappSecondaryUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 flex items-center gap-2 font-body text-sm text-stone transition hover:text-gold-deep"
+                      >
+                        <MessageCircle className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+                        WhatsApp (Rosie): {formatWhatsAppDisplay(whatsappSecondaryNumber)}
+                      </a>
+                    ) : null}
                   </div>
                 </div>
               </motion.article>

@@ -17,6 +17,7 @@ import { apiUrl } from '@/utils/api'
 import { staticUrl } from '@/utils/staticUrl'
 import {
   DEFAULT_WHATSAPP_NUMBER,
+  DEFAULT_WHATSAPP_SECONDARY_NUMBER,
   formatWhatsAppDisplay,
   openWhatsAppBookingRequest,
   parseWhatsAppNumber,
@@ -63,6 +64,7 @@ export function BookPage() {
   const [details, setDetails] = useState('')
   const [website, setWebsite] = useState('')
   const [businessNumber, setBusinessNumber] = useState(DEFAULT_WHATSAPP_NUMBER)
+  const [secondaryNumber, setSecondaryNumber] = useState(DEFAULT_WHATSAPP_SECONDARY_NUMBER)
   const [submitState, setSubmitState] = useState<{ loading: boolean; message: string; error: string }>({
     loading: false,
     message: '',
@@ -78,6 +80,9 @@ export function BookPage() {
         const value = data as Record<string, unknown>
         if (value.whatsappUrl) {
           setBusinessNumber(parseWhatsAppNumber(String(value.whatsappUrl)))
+        }
+        if (value.whatsappSecondaryUrl) {
+          setSecondaryNumber(parseWhatsAppNumber(String(value.whatsappSecondaryUrl)))
         }
       })
       .catch(() => {})
@@ -171,6 +176,7 @@ export function BookPage() {
         : 'Tell us about your group, event, or special request…'
 
   const whatsappDisplay = formatWhatsAppDisplay(businessNumber)
+  const secondaryWhatsappDisplay = formatWhatsAppDisplay(secondaryNumber)
 
   return (
     <>
@@ -334,7 +340,7 @@ export function BookPage() {
                 custom={0.18}
                 variants={fadeUp}
               >
-                <WhatsAppContactNote businessNumber={businessNumber} pageLabel="Book" />
+                <WhatsAppContactNote businessNumber={businessNumber} secondaryNumber={secondaryNumber} pageLabel="Book" />
               </motion.div>
             </div>
 
@@ -362,6 +368,12 @@ export function BookPage() {
                   <p className="mx-auto mt-4 max-w-sm font-body text-xs leading-relaxed text-stone">
                     Didn&apos;t open? Message us on WhatsApp at{' '}
                     <span className="font-semibold text-[#128C7E]">{whatsappDisplay}</span>
+                    {secondaryWhatsappDisplay && secondaryNumber !== businessNumber ? (
+                      <>
+                        {' '}or Rosie at{' '}
+                        <span className="font-semibold text-[#128C7E]">{secondaryWhatsappDisplay}</span>
+                      </>
+                    ) : null}
                   </p>
                   <button
                     type="button"

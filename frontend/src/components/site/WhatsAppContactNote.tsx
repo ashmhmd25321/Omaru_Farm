@@ -3,6 +3,7 @@ import { buildWhatsAppUrl, formatWhatsAppDisplay } from '@/utils/whatsapp'
 
 type WhatsAppContactNoteProps = {
   businessNumber: string
+  secondaryNumber?: string
   pageLabel?: string
   className?: string
 }
@@ -11,6 +12,7 @@ const DEFAULT_GREETING = 'Hello Omaru Farm, I have a booking enquiry from your w
 
 export function WhatsAppContactNote({
   businessNumber,
+  secondaryNumber,
   pageLabel = 'Book',
   className = '',
 }: WhatsAppContactNoteProps) {
@@ -19,6 +21,10 @@ export function WhatsAppContactNote({
     businessNumber,
     `${DEFAULT_GREETING}${pageLabel ? `\n\n(Page: ${pageLabel})` : ''}`,
   )
+  const secondaryDisplay = secondaryNumber ? formatWhatsAppDisplay(secondaryNumber) : ''
+  const secondaryChatUrl = secondaryNumber
+    ? buildWhatsAppUrl(secondaryNumber, `${DEFAULT_GREETING}${pageLabel ? `\n\n(Page: ${pageLabel})` : ''}`)
+    : ''
 
   return (
     <article
@@ -48,6 +54,17 @@ export function WhatsAppContactNote({
             <span className="font-semibold tracking-wide text-[#128C7E]">{displayNumber}</span>
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-stone">Open chat →</span>
           </a>
+          {secondaryNumber && secondaryDisplay ? (
+            <a
+              href={secondaryChatUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-[#25D366]/30 bg-white px-4 py-3 font-body text-sm transition hover:border-[#25D366]/50 hover:bg-[#25D366]/5"
+            >
+              <span className="font-semibold tracking-wide text-[#128C7E]">{secondaryDisplay}</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-stone">Message Rosie →</span>
+            </a>
+          ) : null}
           <p className="mt-3 font-body text-[0.68rem] leading-relaxed text-stone/90">
             Typical reply within business hours. Include your name, preferred date, and party size so we can assist
             faster.
