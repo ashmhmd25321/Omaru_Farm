@@ -113,6 +113,7 @@ export function CafePage() {
     const day = pad2(d.getDate())
     return `${y}-${m}-${day}`
   }
+  const todayISO = toISODate(new Date())
 
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date(); d.setDate(d.getDate() + 1); return toISODate(d)
@@ -343,6 +344,7 @@ export function CafePage() {
           slot: selectedSlot,
           covers: guestCount,
           notes: notesText,
+          website,
         }),
       })
       const holdPayload = await holdRes.json().catch(() => null)
@@ -1026,6 +1028,7 @@ export function CafePage() {
                         <input
                           type="date"
                           value={selectedDate}
+                          min={todayISO}
                           ref={dateInputRef}
                           onChange={(e) => setSelectedDate(e.target.value)}
                           required

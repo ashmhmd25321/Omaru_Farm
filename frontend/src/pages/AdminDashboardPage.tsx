@@ -2658,7 +2658,8 @@ export function AdminDashboardPage() {
                           <span className="text-stone">Email:</span> {b.email || '—'}
                         </p>
                         <p className="text-sm text-charcoal">
-                          <span className="text-stone">Date:</span> {b.bookingDate || '—'}
+                          <span className="text-stone">Date:</span>{' '}
+                          {b.bookingDate ? String(b.bookingDate).slice(0, 10) : '—'}
                         </p>
                         <p className="mt-1 text-sm text-bark">{b.message || 'No message'}</p>
                         <p className="mt-1 text-xs text-stone">

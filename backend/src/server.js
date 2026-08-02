@@ -10,6 +10,7 @@ import multer from 'multer'
 import { pool } from './db.js'
 import { ensureCommerceSchema } from './commerce/schema.js'
 import { registerCommerceRoutes } from './commerce/routes.js'
+import { toDateOnly } from './dates.js'
 
 dotenv.config()
 
@@ -1247,7 +1248,13 @@ app.get('/api/admin/bookings', requireAdmin, async (_req, res) => {
       ORDER BY id DESC
       LIMIT 500`,
     )
-    res.json(rows)
+    // Normalize DATE fields to YYYY-MM-DD so admin UI never shows the previous day (UTC shift).
+    res.json(
+      rows.map((row) => ({
+        ...row,
+        bookingDate: toDateOnly(row.bookingDate) || row.bookingDate,
+      })),
+    )
   } catch (error) {
     sendServerError(res, 'Failed to load bookings', error)
   }

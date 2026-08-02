@@ -5,6 +5,13 @@ import { pool } from '../db.js'
 import { computeShippingQuote } from './shipping.js'
 import { getStripe, stripeConfigured, getPublishableKey, getCurrency, toStripeAmount } from './stripe.js'
 import { fetchAndParseIcal } from './ical.js'
+import {
+  toDateOnly,
+  isValidISODate,
+  isPastDate,
+  isValidEmail,
+  isValidPhone,
+} from '../dates.js'
 
 function toNumber(value, fallback = 0) {
   const n = Number(value)
@@ -34,26 +41,39 @@ function nightsBetween(checkIn, checkOut) {
   return Math.round((b - a) / (1000 * 60 * 60 * 24))
 }
 
-/** Normalize MySQL DATE / Date / ISO string to YYYY-MM-DD without timezone shift bugs. */
-function toDateOnly(value) {
-  if (value == null || value === '') return ''
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    const y = value.getFullYear()
-    const m = String(value.getMonth() + 1).padStart(2, '0')
-    const d = String(value.getDate()).padStart(2, '0')
-    return `${y}-${m}-${d}`
+function getClientIp(req) {
+  const xff = String(req.headers['x-forwarded-for'] ?? '')
+  if (xff.includes(',')) return xff.split(',')[0].trim()
+  if (xff) return xff.trim()
+  return String(req.ip ?? req.socket?.remoteAddress ?? 'unknown')
+}
+
+const tableHoldAttemptMap = new Map()
+const TABLE_HOLD_WINDOW_MS = Number(process.env.TABLE_HOLD_WINDOW_MS ?? 15 * 60 * 1000)
+const TABLE_HOLD_MAX_ATTEMPTS = Number(process.env.TABLE_HOLD_MAX_ATTEMPTS ?? 8)
+
+function consumeWindowedAttempt(store, key, windowMs) {
+  const now = Date.now()
+  const current = store.get(key) ?? { count: 0, resetAt: now + windowMs }
+  if (now > current.resetAt) {
+    current.count = 0
+    current.resetAt = now + windowMs
   }
-  const raw = String(value).trim()
-  const iso = raw.match(/^(\d{4}-\d{2}-\d{2})/)
-  if (iso) return iso[1]
-  const parsed = new Date(raw)
-  if (!Number.isNaN(parsed.getTime())) {
-    const y = parsed.getFullYear()
-    const m = String(parsed.getMonth() + 1).padStart(2, '0')
-    const d = String(parsed.getDate()).padStart(2, '0')
-    return `${y}-${m}-${d}`
+  current.count += 1
+  store.set(key, current)
+  return current
+}
+
+function checkWindowedLimit(store, key, maxAttempts) {
+  const now = Date.now()
+  const current = store.get(key)
+  if (!current) return null
+  if (now > current.resetAt) {
+    store.delete(key)
+    return null
   }
-  return ''
+  if (current.count >= maxAttempts) return Math.ceil((current.resetAt - now) / 1000)
+  return null
 }
 
 async function loadShippingRules() {
@@ -575,8 +595,8 @@ export function registerCommerceRoutes(app, {
     }
   }
 
-  async function getSlotBookedCovers(partyDate, slot, excludeHoldId = 0) {
-    const [rows] = await pool.query(
+  async function getSlotBookedCovers(partyDate, slot, excludeHoldId = 0, db = pool) {
+    const [rows] = await db.query(
       `SELECT COALESCE(SUM(covers), 0) AS booked
        FROM table_holds
        WHERE party_date = ? AND slot = ? AND status IN (?, ?, ?, ?)
@@ -588,14 +608,15 @@ export function registerCommerceRoutes(app, {
 
   async function getCafeAvailability(partyDate, slotInput, covers = 1, excludeHoldId = 0, options = {}) {
     const ignoreClosed = Boolean(options.ignoreClosed)
-    const settings = await getCafeCapacitySettings()
+    const db = options.db ?? pool
+    const settings = options.settings ?? (await getCafeCapacitySettings())
     const slot = normalizeCafeSlot(slotInput)
     const partyCovers = Math.max(1, Math.floor(toNumber(covers, 1)))
     const day = new Date(`${partyDate}T12:00:00`).getDay()
     const open = settings.openDays.includes(day)
     const capacity = slot === 'dinner' ? settings.dinnerCovers : settings.lunchCovers
     const treatAsOpen = open || ignoreClosed
-    const booked = treatAsOpen ? await getSlotBookedCovers(partyDate, slot, excludeHoldId) : 0
+    const booked = treatAsOpen ? await getSlotBookedCovers(partyDate, slot, excludeHoldId, db) : 0
     const remaining = treatAsOpen ? Math.max(0, capacity - booked) : 0
     let reason = ''
     if (!open && !ignoreClosed) {
@@ -688,31 +709,74 @@ export function registerCommerceRoutes(app, {
   })
 
   app.post('/api/table-holds', async (req, res) => {
+    const ip = getClientIp(req)
+    const retryAfter = checkWindowedLimit(tableHoldAttemptMap, ip, TABLE_HOLD_MAX_ATTEMPTS)
+    if (retryAfter !== null) {
+      res.setHeader('Retry-After', String(retryAfter))
+      return res.status(429).json({ message: `Too many table requests. Try again in ${retryAfter}s.` })
+    }
+    consumeWindowedAttempt(tableHoldAttemptMap, ip, TABLE_HOLD_WINDOW_MS)
+
+    const body = req.body ?? {}
+    // Honeypot — bots that fill hidden "website" get a fake success.
+    if (body.website) {
+      return res.status(202).json({
+        message: 'Request received — pending confirmation from our team.',
+        status: 'pending',
+      })
+    }
+
+    const fullName = String(body.fullName ?? '').trim().slice(0, 180)
+    const email = String(body.email ?? '').trim().toLowerCase().slice(0, 180)
+    const phone = String(body.phone ?? '').trim().slice(0, 40)
+    const normalizedPartyDate = toDateOnly(body.partyDate ?? body.date ?? '')
+    const slot = normalizeCafeSlot(body.slot)
+    const covers = Math.max(1, Math.floor(toNumber(body.covers ?? body.guestCount, 2)))
+    const notes = String(body.notes ?? '').slice(0, 2000)
+
+    if (!fullName || !email || !normalizedPartyDate) {
+      return res.status(400).json({ message: 'Name, email, and date are required' })
+    }
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: 'Please enter a valid email address.' })
+    }
+    if (!isValidPhone(phone)) {
+      return res.status(400).json({ message: 'Please enter a valid phone number so we can confirm your table.' })
+    }
+    if (!isValidISODate(normalizedPartyDate)) {
+      return res.status(400).json({ message: 'Please enter a valid dining date.' })
+    }
+    if (isPastDate(normalizedPartyDate)) {
+      return res.status(400).json({ message: 'Please choose today or a future dining date.' })
+    }
+
+    const conn = await pool.getConnection()
     try {
       await expireTableHolds()
-      const body = req.body ?? {}
-      const fullName = String(body.fullName ?? '').trim()
-      const email = String(body.email ?? '').trim()
-      const partyDate = String(body.partyDate ?? body.date ?? '')
-      const normalizedPartyDate = toDateOnly(partyDate)
-      const slot = normalizeCafeSlot(body.slot)
-      const covers = Math.max(1, Math.floor(toNumber(body.covers ?? body.guestCount, 2)))
-      if (!fullName || !email || !normalizedPartyDate) {
-        return res.status(400).json({ message: 'Name, email, and date are required' })
-      }
-      const availability = await getCafeAvailability(normalizedPartyDate, slot, covers)
+      await conn.beginTransaction()
+      // Serialize capacity checks so two concurrent requests cannot overbook.
+      await conn.query('SELECT id FROM cafe_capacity WHERE id = 1 FOR UPDATE')
+      const settings = await getCafeCapacitySettings()
+      const availability = await getCafeAvailability(normalizedPartyDate, slot, covers, 0, {
+        db: conn,
+        settings,
+      })
       if (!availability.available) {
+        await conn.rollback()
         return res.status(409).json({
           message: availability.reason || 'This service is not available',
           availability,
         })
       }
+
       const number = holdNumber()
-      const [result] = await pool.query(
+      const [result] = await conn.query(
         `INSERT INTO table_holds (hold_number, full_name, email, phone, party_date, slot, covers, notes, status, expires_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', TIMESTAMP(DATE_ADD(?, INTERVAL 1 DAY)))`,
-        [number, fullName, email, String(body.phone ?? ''), normalizedPartyDate, slot, covers, String(body.notes ?? ''), normalizedPartyDate],
+        [number, fullName, email, phone, normalizedPartyDate, slot, covers, notes, normalizedPartyDate],
       )
+      await conn.commit()
+
       res.status(201).json({
         id: result.insertId,
         holdNumber: number,
@@ -724,7 +788,14 @@ export function registerCommerceRoutes(app, {
         availability: await getCafeAvailability(normalizedPartyDate, slot, 1),
       })
     } catch (error) {
+      try {
+        await conn.rollback()
+      } catch {
+        // ignore rollback errors
+      }
       sendServerError(res, 'Failed to create table hold', error)
+    } finally {
+      conn.release()
     }
   })
 
