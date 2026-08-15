@@ -102,6 +102,83 @@ const JASMINE_GALLERY: GalleryPhoto[] = [
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
 
+const AMENITY_ICONS = {
+  BedDouble,
+  Waves,
+  UtensilsCrossed,
+  Leaf,
+  PawPrint,
+  Users,
+  MapPin,
+  Sunrise,
+  Bird,
+  CalendarDays,
+} as const
+
+type AmenityIconName = keyof typeof AMENITY_ICONS
+
+function amenityIcon(name: string) {
+  return AMENITY_ICONS[name as AmenityIconName] ?? Leaf
+}
+
+function stayImageUrl(src: string) {
+  const raw = String(src ?? '').trim()
+  if (!raw) return ''
+  if (/^https?:\/\//i.test(raw)) return raw
+  const s = raw.replace(/^\/+/, '')
+  if (s.startsWith('images/')) return staticUrl(`/${s}`)
+  if (s.startsWith('uploads/')) return staticUrl(`/images/${s}`)
+  return staticUrl(`/${s}`)
+}
+
+type StayAmenity = { icon: string; label: string }
+
+type StayListingCard = {
+  id: string | number
+  name: string
+  type: string
+  badge: string | null
+  tagline: string
+  description: string
+  amenities: StayAmenity[]
+  guests: string
+  bookingUrl: string | null
+  bookingCta?: string
+  image: string
+  gallery?: GalleryPhoto[]
+  imagePosition: 'left' | 'right'
+}
+
+type StayGroupCard = {
+  id: string | number
+  title: string
+  lead: string
+  stays: StayListingCard[]
+}
+
+type StayPageCopy = {
+  heroKicker: string
+  heroTitleLine: string
+  heroTitleItalic: string
+  heroLead: string
+  heroImage: string
+  sectionTitle: string
+  sectionLead: string
+}
+
+function resolveStayCard(stay: StayListingCard): StayListingCard {
+  const gallery = (stay.gallery ?? [])
+    .map((photo) => ({ src: stayImageUrl(photo.src), label: photo.label }))
+    .filter((photo) => photo.src)
+  return {
+    ...stay,
+    image: stayImageUrl(stay.image) || gallery[0]?.src || '',
+    gallery: gallery.length ? gallery : undefined,
+    badge: stay.badge || null,
+    bookingUrl: stay.bookingUrl || null,
+  }
+}
+
 const fadeUp = {
   hidden: { opacity: 0, y: 26 },
   show: (delay = 0) => ({
@@ -124,9 +201,9 @@ const ON_FARM_STAYS = [
     description:
       'A self-contained cabin on Omaru Farm — part of a working farm established in 1970. Enjoy life in the open paddock without compromising on comfort, with the finest farm produce on your doorstep.',
     amenities: [
-      { Icon: BedDouble, label: 'King bed + sofa bed' },
-      { Icon: Waves, label: 'Private deck, ocean views' },
-      { Icon: UtensilsCrossed, label: 'Self-contained kitchen' },
+      { icon: 'BedDouble', label: 'King bed + sofa bed' },
+      { icon: 'Waves', label: 'Private deck, ocean views' },
+      { icon: 'UtensilsCrossed', label: 'Self-contained kitchen' },
     ],
     guests: '2–4',
     bookingUrl: null,
@@ -144,9 +221,9 @@ const ON_FARM_STAYS = [
     description:
       'A self-contained heritage cabin on Omaru Farm, nestled among ancient olive groves. Stone walls carry warmth from the land while veranda views stretch across the Phillip Island farmscape.',
     amenities: [
-      { Icon: BedDouble, label: 'Queen & twin rooms' },
-      { Icon: Leaf, label: 'Olive grove outlook' },
-      { Icon: PawPrint, label: 'Dog-friendly outdoors' },
+      { icon: 'BedDouble', label: 'Queen & twin rooms' },
+      { icon: 'Leaf', label: 'Olive grove outlook' },
+      { icon: 'PawPrint', label: 'Dog-friendly outdoors' },
     ],
     guests: '2–4',
     bookingUrl: null,
@@ -167,10 +244,10 @@ const HOLIDAY_HOME_STAYS = [
     description:
       'A spacious four-bedroom holiday home in the heart of Cowes, Phillip Island. Relax in the outdoor hot tub after exploring the island, unwind in cosy living spaces, and enjoy a fully equipped kitchen close to local beaches, cafes, shops, and the Penguin Parade.',
     amenities: [
-      { Icon: Users, label: '10 guests' },
-      { Icon: BedDouble, label: '4 bedrooms, 5 beds, 2 baths' },
-      { Icon: Waves, label: 'Outdoor hot tub' },
-      { Icon: UtensilsCrossed, label: 'Kitchen, wifi, parking' },
+      { icon: 'Users', label: '10 guests' },
+      { icon: 'BedDouble', label: '4 bedrooms, 5 beds, 2 baths' },
+      { icon: 'Waves', label: 'Outdoor hot tub' },
+      { icon: 'UtensilsCrossed', label: 'Kitchen, wifi, parking' },
     ],
     guests: '10',
     bookingUrl: 'https://www.airbnb.com.au/rooms/1377277021524589149?guests=1&adults=1&s=67&unique_share_id=9414357d-89c2-4786-b862-7b94c999640f&source_impression_id=p3_1779517969_P3IRQGtTZUwYTH6T',
@@ -188,10 +265,10 @@ const HOLIDAY_HOME_STAYS = [
     description:
       'A warm and welcoming five-bedroom holiday home for families or friends seeking a peaceful Phillip Island escape. Walk to Cowes town centre, cafes, and the foreshore, enjoy a game on the pool table or relaxed barbeque, and explore Red Rocks Beach, the Grand Prix Circuit, the Penguin Parade, and the Nobbies.',
     amenities: [
-      { Icon: Users, label: '12 guests' },
-      { Icon: BedDouble, label: '5 bedrooms, 6 beds, 2.5 baths' },
-      { Icon: MapPin, label: 'Walk to Cowes and foreshore' },
-      { Icon: UtensilsCrossed, label: 'Kitchen, wifi, workspace, parking' },
+      { icon: 'Users', label: '12 guests' },
+      { icon: 'BedDouble', label: '5 bedrooms, 6 beds, 2.5 baths' },
+      { icon: 'MapPin', label: 'Walk to Cowes and foreshore' },
+      { icon: 'UtensilsCrossed', label: 'Kitchen, wifi, workspace, parking' },
     ],
     guests: '12',
     bookingUrl: 'https://www.airbnb.com.au/rooms/1387952701303020884?guests=1&adults=1&s=67&unique_share_id=19c46540-f704-42d5-9848-e975de620952&source_impression_id=p3_1779517989_P34-Oun_Clb_uWZm',
@@ -201,7 +278,19 @@ const HOLIDAY_HOME_STAYS = [
   },
 ]
 
-const STAY_GROUPS = [
+const FALLBACK_STAY_PAGE: StayPageCopy = {
+  heroKicker: 'Welcome to Omaru',
+  heroTitleLine: 'A Sanctuary',
+  heroTitleItalic: 'Silence',
+  heroLead:
+    'Only our self-contained cabins are on Omaru Farm. Holiday homes are separate properties on Phillip Island — each a comfortable base minutes from the farm and the Penguin Parade.',
+  heroImage: '/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.jpg',
+  sectionTitle: 'The Stays',
+  sectionLead:
+    'Stay in a self-contained cabin on the farm, or choose a holiday home elsewhere on Phillip Island — both keep you close to Omaru, the café, and island adventures.',
+}
+
+const FALLBACK_STAY_GROUPS: StayGroupCard[] = [
   {
     id: 'on-farm',
     title: 'On the Farm',
@@ -214,9 +303,7 @@ const STAY_GROUPS = [
     lead: 'Rose and Jasmine by Omaru Farm are separate holiday homes in Cowes, available for accommodation with easy access to Omaru Farm, beaches, cafes, and island attractions.',
     stays: HOLIDAY_HOME_STAYS,
   },
-] as const
-
-const ALL_BOOKABLE_STAYS = [...ON_FARM_STAYS, ...HOLIDAY_HOME_STAYS]
+]
 
 const EXPERIENCES = [
   { Icon: Sunrise,         label: 'Taste the Life',      desc: 'Savour breakfast on your private deck as mist lifts from the paddocks at dawn.' },
@@ -240,13 +327,20 @@ export function StayPage() {
   const [website, setWebsite]   = useState('')
   const [businessNumber, setBusinessNumber] = useState(DEFAULT_WHATSAPP_NUMBER)
   const [secondaryNumber, setSecondaryNumber] = useState(DEFAULT_WHATSAPP_SECONDARY_NUMBER)
+  const [stayPage, setStayPage] = useState<StayPageCopy>(FALLBACK_STAY_PAGE)
+  const [stayGroups, setStayGroups] = useState<StayGroupCard[]>(FALLBACK_STAY_GROUPS)
   const [formState, setFormState] = useState({ loading: false, success: false, error: '' })
 
   const [lightbox, setLightbox] = useState<{ images: GalleryPhoto[]; index: number; name: string } | null>(null)
 
+  const allBookableStays = useMemo(
+    () => stayGroups.flatMap((group) => group.stays),
+    [stayGroups],
+  )
+
   const selectedStay = useMemo(
-    () => ALL_BOOKABLE_STAYS.find((stay) => stay.name === cabin) ?? ALL_BOOKABLE_STAYS[0],
-    [cabin],
+    () => allBookableStays.find((stay) => stay.name === cabin) ?? allBookableStays[0],
+    [allBookableStays, cabin],
   )
 
   const selectedStayPhotos = useMemo((): GalleryPhoto[] => {
@@ -272,6 +366,63 @@ export function StayPage() {
       .catch(() => {})
     return () => controller.abort()
   }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(apiUrl('/api/content/stay'), { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('stay content unavailable'))))
+      .then((data: unknown) => {
+        if (!data || typeof data !== 'object') return
+        const value = data as {
+          page?: Partial<StayPageCopy>
+          groups?: Array<{
+            id?: number
+            slug?: string
+            title?: string
+            lead?: string
+            listings?: Array<Partial<StayListingCard> & { type?: string; slug?: string }>
+          }>
+        }
+        if (value.page) {
+          setStayPage({ ...FALLBACK_STAY_PAGE, ...value.page })
+        }
+        if (!Array.isArray(value.groups) || value.groups.length === 0) return
+        const nextGroups = value.groups
+          .map((group, groupIdx) => ({
+            id: group.slug ?? group.id ?? groupIdx,
+            title: String(group.title ?? ''),
+            lead: String(group.lead ?? ''),
+            stays: (group.listings ?? []).map((listing, idx) =>
+              resolveStayCard({
+                id: listing.slug ?? listing.id ?? listing.name ?? `${groupIdx}-${idx}`,
+                name: String(listing.name ?? ''),
+                type: String(listing.type ?? ''),
+                badge: listing.badge ?? null,
+                tagline: String(listing.tagline ?? ''),
+                description: String(listing.description ?? ''),
+                amenities: Array.isArray(listing.amenities) ? listing.amenities : [],
+                guests: String(listing.guests ?? ''),
+                bookingUrl: listing.bookingUrl ?? null,
+                bookingCta: listing.bookingCta,
+                image: String(listing.image ?? ''),
+                gallery: listing.gallery,
+                imagePosition: listing.imagePosition === 'right' ? 'right' : 'left',
+              }),
+            ),
+          }))
+          .filter((group) => group.title)
+        if (nextGroups.length) setStayGroups(nextGroups)
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    if (!allBookableStays.length) return
+    if (!allBookableStays.some((stay) => stay.name === cabin)) {
+      setCabin(allBookableStays[0]!.name)
+    }
+  }, [allBookableStays, cabin])
 
   const handleStayEnquiry = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -389,7 +540,7 @@ export function StayPage() {
         ══════════════════════════════════════════ */}
         <section className="relative flex min-h-[80vh] items-end overflow-hidden bg-surface">
           <img
-            src={staticUrl('/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.jpg')}
+            src={stayImageUrl(stayPage.heroImage) || staticUrl('/images/farm/image-farm/Gemini_Generated_Image_f9njj4f9njj4f9nj.jpg')}
             alt="Terrace dining at Omaru Farm overlooking Phillip Island coastline at sunset"
             className="absolute inset-0 h-full w-full object-cover object-[center_45%]"
             loading="eager"
@@ -407,14 +558,14 @@ export function StayPage() {
               className="max-w-xl"
             >
               <p className="mb-4 font-body text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-gold drop-shadow-[0_1px_10px_rgba(255,255,255,0.75)]">
-                Welcome to Omaru
+                {stayPage.heroKicker}
               </p>
               <h1 className="hero-headline font-heading text-[2.6rem] font-semibold leading-[1.04] tracking-[-0.03em] text-white drop-shadow-[0_2px_24px_rgba(22,14,4,0.48)] sm:text-5xl md:text-[3.5rem] lg:text-[4rem]">
-                A Sanctuary<br />
-                of <span className="italic text-gold">Silence</span>
+                {stayPage.heroTitleLine}<br />
+                of <span className="italic text-gold">{stayPage.heroTitleItalic}</span>
               </h1>
               <p className="mt-5 font-body text-base leading-[1.78] text-white/92 drop-shadow-[0_2px_16px_rgba(22,14,4,0.42)] md:text-lg">
-                Only our self-contained cabins are on Omaru Farm. Holiday homes are separate properties on Phillip Island — each a comfortable base minutes from the farm and the Penguin Parade.
+                {stayPage.heroLead}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
@@ -451,15 +602,15 @@ export function StayPage() {
               variants={fadeUp}
             >
               <h2 className="font-heading text-4xl font-semibold leading-[1.07] tracking-[-0.025em] text-charcoal md:text-5xl">
-                The Stays
+                {stayPage.sectionTitle}
               </h2>
               <p className="mt-4 max-w-xl font-body text-base leading-[1.75] text-stone">
-                Stay in a self-contained cabin on the farm, or choose a holiday home elsewhere on Phillip Island — both keep you close to Omaru, the café, and island adventures.
+                {stayPage.sectionLead}
               </p>
             </motion.div>
 
             <motion.div className="space-y-24 md:space-y-32">
-              {STAY_GROUPS.map((group, groupIdx) => (
+              {stayGroups.map((group, groupIdx) => (
                 <motion.div key={group.id}>
                   <div className={`mb-12 ${groupIdx > 0 ? 'border-t border-charcoal/8 pt-12' : ''}`}>
                     <h3 className="font-heading text-2xl font-semibold tracking-[-0.02em] text-charcoal md:text-3xl">
@@ -475,8 +626,8 @@ export function StayPage() {
                 const isLeft = stay.imagePosition === 'left'
                 return (
                   <motion.div
-                    key={stay.id}
-                    id={stay.id}
+                    key={String(stay.id)}
+                    id={String(stay.id)}
                     className={`scroll-mt-28 grid items-center gap-10 md:grid-cols-[5fr_6fr] md:gap-14 lg:gap-20 ${isLeft ? '' : 'md:[&>*:first-child]:order-2 md:[&>*:last-child]:order-1'}`}
                     initial="hidden"
                     whileInView="show"
@@ -567,12 +718,15 @@ export function StayPage() {
 
                       {/* Amenity icons */}
                       <div className="mt-6 flex flex-wrap gap-5">
-                        {stay.amenities.map(({ Icon, label }) => (
+                        {stay.amenities.map(({ icon, label }) => {
+                          const Icon = amenityIcon(icon)
+                          return (
                           <span key={label} className="inline-flex items-center gap-2 font-body text-sm text-bark">
                             <Icon className="h-4 w-4 shrink-0 text-gold" strokeWidth={1.75} aria-hidden />
                             {label}
                           </span>
-                        ))}
+                          )
+                        })}
                       </div>
 
                       {/* Enquire link */}
@@ -582,7 +736,7 @@ export function StayPage() {
                         rel={stay.bookingUrl ? 'noreferrer' : undefined}
                         className="mt-7 inline-flex items-center gap-2 font-body text-xs font-semibold uppercase tracking-[0.16em] text-gold-deep transition hover:text-gold"
                       >
-                        {stay.bookingUrl ? 'View on Airbnb' : 'Enquire to Book Details'} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                        {stay.bookingUrl ? (stay.bookingCta || 'View on Airbnb') : (stay.bookingCta || 'Enquire to Book Details')} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
                       </a>
                     </div>
                   </motion.div>
@@ -847,14 +1001,15 @@ export function StayPage() {
                           className="field w-full appearance-none pr-8"
                           aria-label="Select accommodation"
                         >
-                          <optgroup label="On-Farm · Self-Contained Cabins">
-                            <option>The Glass Pavilion</option>
-                            <option>Heritage Stone Cottage</option>
-                          </optgroup>
-                          <optgroup label="Holiday Homes · Phillip Island">
-                            <option>Rose by Omaru Farm</option>
-                            <option>Jasmine by Omaru Farm</option>
-                          </optgroup>
+                          {stayGroups.map((group) => (
+                            <optgroup key={String(group.id)} label={group.title}>
+                              {group.stays.map((stay) => (
+                                <option key={String(stay.id)} value={stay.name}>
+                                  {stay.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
                         </select>
                         <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/55" aria-hidden />
                       </div>
@@ -899,12 +1054,15 @@ export function StayPage() {
                               {selectedStay.description}
                             </p>
                             <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
-                              {selectedStay.amenities.slice(0, 3).map(({ Icon, label }) => (
+                              {selectedStay.amenities.slice(0, 3).map(({ icon, label }) => {
+                                const Icon = amenityIcon(icon)
+                                return (
                                 <li key={label} className="inline-flex items-center gap-1.5 font-body text-[0.7rem] text-bark">
                                   <Icon className="h-3.5 w-3.5 text-gold" aria-hidden />
                                   {label}
                                 </li>
-                              ))}
+                                )
+                              })}
                               <li className="inline-flex items-center gap-1.5 font-body text-[0.7rem] text-bark">
                                 <Users className="h-3.5 w-3.5 text-gold" aria-hidden />
                                 Up to {selectedStay.guests} guests

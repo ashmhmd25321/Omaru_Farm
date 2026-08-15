@@ -11,6 +11,7 @@ import { pool } from './db.js'
 import { ensureCommerceSchema } from './commerce/schema.js'
 import { registerCommerceRoutes } from './commerce/routes.js'
 import { toDateOnly } from './dates.js'
+import { ensureStayCmsSchema, registerStayCmsRoutes } from './stayCms.js'
 
 dotenv.config()
 
@@ -180,7 +181,7 @@ app.use((req, res, next) => {
   if (req.originalUrl === '/api/stripe/webhook') {
     return express.raw({ type: 'application/json' })(req, res, next)
   }
-  return express.json({ limit: '1mb' })(req, res, next)
+  return express.json({ limit: '5mb' })(req, res, next)
 })
 
 const storage = multer.diskStorage({
@@ -560,6 +561,7 @@ async function ensureSchemaAndSeed() {
   await setSetting('about_page', await getSetting('about_page', DEFAULT_ABOUT_CONTENT))
   await setSetting('contact_details', await getSetting('contact_details', DEFAULT_CONTACT_CONTENT))
   await setSetting('site_settings', await getSetting('site_settings', DEFAULT_SITE_SETTINGS))
+  await ensureStayCmsSchema({ getSetting, setSetting, toNumber })
 
   const [adminRows] = await pool.query(
     'SELECT id, password_hash AS passwordHash FROM admin_users WHERE username = ? LIMIT 1',
@@ -1373,6 +1375,14 @@ registerCommerceRoutes(app, {
   sendServerError,
   parseCookies,
   cookieSecure: COOKIE_SECURE,
+})
+
+registerStayCmsRoutes(app, {
+  requireAdmin,
+  getSetting,
+  setSetting,
+  toNumber,
+  sendServerError,
 })
 
 ensureSchemaAndSeed()

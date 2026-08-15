@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { Seo } from '@/components/site/Seo'
 import { AdminCommercePanels } from '@/components/admin/AdminCommercePanels'
+import { AdminStayContentPanel } from '@/components/admin/AdminStayContentPanel'
 import {
   BarChart3,
   BedDouble,
@@ -17,6 +18,7 @@ import {
   Loader2,
   LogOut,
   Menu,
+  NotebookPen,
   Package,
   Phone,
   Plus,
@@ -140,7 +142,7 @@ type Booking = {
   updatedAt?: string
 }
 
-type TabKey = 'products' | 'orders' | 'shipping' | 'stays' | 'tables' | 'sales' | 'testimonials' | 'about' | 'menu' | 'bookings' | 'contact' | 'media' | 'settings'
+type TabKey = 'products' | 'orders' | 'shipping' | 'stays' | 'stay-page' | 'tables' | 'sales' | 'testimonials' | 'about' | 'menu' | 'bookings' | 'contact' | 'media' | 'settings'
 
 const MENU_SECTIONS = ['Lunch', 'Dinner', 'Beverages'] as const
 
@@ -161,6 +163,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'Bookings & Stays',
     items: [
       { id: 'stays', label: 'Stays', icon: BedDouble },
+      { id: 'stay-page', label: 'Stay page', icon: NotebookPen },
       { id: 'tables', label: 'Table holds', icon: Table2 },
       { id: 'bookings', label: 'Bookings', icon: CalendarDays },
     ],
@@ -2076,6 +2079,12 @@ export function AdminDashboardPage() {
           {(tab === 'orders' || tab === 'shipping' || tab === 'stays' || tab === 'tables' || tab === 'sales') && (
             <section className="mt-5">
               <AdminCommercePanels section={tab} />
+            </section>
+          )}
+
+          {tab === 'stay-page' && (
+            <section className="mt-5">
+              <AdminStayContentPanel />
             </section>
           )}
 
