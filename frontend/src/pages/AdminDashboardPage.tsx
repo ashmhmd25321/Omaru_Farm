@@ -163,7 +163,6 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'Bookings & Stays',
     items: [
       { id: 'stays', label: 'Stays', icon: BedDouble },
-      { id: 'stay-page', label: 'Stay page', icon: NotebookPen },
       { id: 'tables', label: 'Table holds', icon: Table2 },
       { id: 'bookings', label: 'Bookings', icon: CalendarDays },
     ],
@@ -173,6 +172,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'testimonials', label: 'Testimonials', icon: Star },
       { id: 'about', label: 'About Content', icon: Info },
+      { id: 'stay-page', label: 'Stay page', icon: NotebookPen },
       { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
       { id: 'contact', label: 'Contact Details', icon: Phone },
       { id: 'media', label: 'Media Library', icon: Image },
