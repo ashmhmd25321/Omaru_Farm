@@ -342,7 +342,7 @@ export function AdminStayContentPanel({ token }: { token: string }) {
                       onClick={async () => {
                         setError('')
                         try {
-                          const created = await adminFetch<{ id: number }>('/api/admin/stay-listings', {
+                          const created = await adminFetch<{ id: number }>('/api/admin/stay-listings', token, {
                             method: 'POST',
                             body: JSON.stringify({
                               name: newStayListing.name,
