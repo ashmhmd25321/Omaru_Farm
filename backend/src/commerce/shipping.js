@@ -62,15 +62,12 @@ export function matchShippingRule(rules, postcode) {
   return fallback
 }
 
-function freeShippingThreshold(rules, postcode) {
+function auspostFreeShippingThreshold() {
   const envFree = process.env.SHIPPING_FREE_OVER
   if (envFree != null && String(envFree).trim() !== '') {
     const n = Number(envFree)
     if (Number.isFinite(n) && n > 0) return n
   }
-  const rule = matchShippingRule(rules, postcode)
-  const freeOver = rule?.free_over ?? rule?.freeOver
-  if (freeOver != null && Number(freeOver) > 0) return Number(freeOver)
   return null
 }
 
@@ -185,7 +182,9 @@ export async function resolveShippingQuote({
   const weightKg = actualGrams / 1000
   const volumetricKg = volume > 0 ? volume / VOLUMETRIC_DIVISOR : 0
   const chargeableKg = chargeable / 1000
-  const freeOver = freeShippingThreshold(rules, postcode)
+  // Matrix thresholds are placeholder/fallback data and must not silently
+  // override live carrier pricing. Set SHIPPING_FREE_OVER explicitly if wanted.
+  const freeOver = auspostFreeShippingThreshold()
 
   const useAuspost = auspostConfigured() && process.env.AUSPOST_ENABLED !== 'false'
   if (useAuspost) {
@@ -226,7 +225,10 @@ export async function resolveShippingQuote({
         },
       }
     } catch (error) {
-      const fallback = process.env.AUSPOST_FALLBACK_TO_MATRIX !== 'false'
+      // Invalid postcodes, overweight parcels, and address errors must never
+      // silently become a matrix quote.
+      if (Number(error?.status) === 400) throw error
+      const fallback = process.env.AUSPOST_FALLBACK_TO_MATRIX === 'true'
       if (!fallback) throw error
       console.warn('[shipping] AusPost PAC failed, using matrix fallback:', error.message)
     }

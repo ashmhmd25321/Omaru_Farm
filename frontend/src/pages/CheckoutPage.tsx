@@ -15,6 +15,8 @@ type Quote = {
     fee: number
     ruleName: string
     method: string
+    provider?: string
+    serviceCode?: string
     breakdown?: {
       baseFee?: number
       perKgFee?: number
@@ -24,6 +26,9 @@ type Quote = {
       chargeableKg?: number
       freeShippingApplied?: boolean
       freeOver?: number | null
+      packageLengthCm?: number
+      packageWidthCm?: number
+      packageHeightCm?: number
     }
   }
 }
@@ -118,7 +123,7 @@ export function CheckoutPage() {
 
   useEffect(() => {
     if (lines.length === 0) return
-    if (form.shippingMethod === 'delivery' && form.postcode.replace(/\s/g, '').length < 3) {
+    if (form.shippingMethod === 'delivery' && !/^\d{4}$/.test(form.postcode.replace(/\s/g, ''))) {
       setQuote(null)
       setQuoteError('')
       return
@@ -212,8 +217,21 @@ export function CheckoutPage() {
                   <input className="field" placeholder="Address line 2" value={form.line2} onChange={(e) => setForm({ ...form, line2: e.target.value })} />
                   <div className="grid grid-cols-3 gap-2">
                     <input className="field" placeholder="City" required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-                    <input className="field" placeholder="State" required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
-                    <input className="field" placeholder="Postcode" required value={form.postcode} onChange={(e) => setForm({ ...form, postcode: e.target.value })} />
+                    <select className="field" required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })}>
+                      {['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'].map((state) => (
+                        <option key={state} value={state}>{state}</option>
+                      ))}
+                    </select>
+                    <input
+                      className="field"
+                      placeholder="Postcode"
+                      inputMode="numeric"
+                      pattern="[0-9]{4}"
+                      maxLength={4}
+                      required
+                      value={form.postcode}
+                      onChange={(e) => setForm({ ...form, postcode: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                    />
                     <p className="col-span-3 text-xs text-stone">
                     Shipping zone is chosen from your postcode. Live Australia Post Parcel Post rates are used when configured (from 3922).
                     </p>
@@ -221,7 +239,15 @@ export function CheckoutPage() {
                 </>
               ) : null}
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
-              <Button type="submit" disabled={busy || !stripePromise} className="w-full">
+              <Button
+                type="submit"
+                disabled={
+                  busy ||
+                  !stripePromise ||
+                  (form.shippingMethod === 'delivery' && (!quote || Boolean(quoteError)))
+                }
+                className="w-full"
+              >
                 {busy ? 'Preparing payment…' : 'Continue to payment'}
               </Button>
               {!stripePromise ? (
@@ -277,7 +303,9 @@ export function CheckoutPage() {
                           ? `volumetric ${Number(quote.shipping.breakdown.volumetricKg).toFixed(2)} kg`
                           : null,
                         `chargeable ${Number(quote.shipping.breakdown.chargeableKg ?? 0).toFixed(2)} kg`,
-                        `base $${Number(quote.shipping.breakdown.baseFee ?? 0).toFixed(2)} + $${Number(quote.shipping.breakdown.perKgFee ?? 0).toFixed(2)}/kg`,
+                        quote.shipping.provider === 'auspost'
+                          ? `AusPost live rate · package ${Number(quote.shipping.breakdown.packageLengthCm ?? 0)}×${Number(quote.shipping.breakdown.packageWidthCm ?? 0)}×${Number(quote.shipping.breakdown.packageHeightCm ?? 0)} cm`
+                          : `base $${Number(quote.shipping.breakdown.baseFee ?? 0).toFixed(2)} + $${Number(quote.shipping.breakdown.perKgFee ?? 0).toFixed(2)}/kg`,
                       ]
                         .filter(Boolean)
                         .join(' · ')}

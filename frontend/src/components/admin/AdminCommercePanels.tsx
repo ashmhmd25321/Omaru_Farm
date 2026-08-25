@@ -258,9 +258,9 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
         <>
           <p className="text-sm text-stone">
             Live Australia Post rates are used at checkout when <code className="text-charcoal">AUSPOST_PAC_API_KEY</code> is set
-            (origin 3922, preferred Parcel Post). These admin rules remain as
-            fallback and for free-shipping thresholds. Zones match the first postcode prefix in sort order. Chargeable kg is the
-            higher of packed weight and volume ÷ 5000.
+            (origin 3922, preferred Parcel Post). These matrix rules are used only when AusPost is disabled or fallback is explicitly
+            enabled. AusPost failures are blocked by default so customers are never charged placeholder rates. Configure
+            <code className="text-charcoal"> SHIPPING_FREE_OVER</code> separately if free AusPost delivery is approved.
           </p>
           <Card>
             <CardHeader>

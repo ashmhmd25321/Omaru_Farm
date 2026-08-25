@@ -13,6 +13,7 @@ type Quote = {
     fee: number
     ruleName: string
     method: string
+    provider?: string
     breakdown?: {
       baseFee?: number
       perKgFee?: number
@@ -22,6 +23,9 @@ type Quote = {
       chargeableKg?: number
       freeShippingApplied?: boolean
       freeOver?: number | null
+      packageLengthCm?: number
+      packageWidthCm?: number
+      packageHeightCm?: number
     }
   }
 }
@@ -44,7 +48,7 @@ export function CartPage() {
       setQuoteError('')
       return
     }
-    if (method === 'delivery' && postcode.replace(/\s/g, '').length < 3) {
+    if (method === 'delivery' && !/^\d{4}$/.test(postcode.replace(/\s/g, ''))) {
       setQuote(null)
       setQuoteError('')
       return
@@ -147,8 +151,11 @@ export function CartPage() {
                   <input
                     className="field"
                     placeholder="Postcode (e.g. 3922, 3000, 2010)"
+                    inputMode="numeric"
+                    pattern="[0-9]{4}"
+                    maxLength={4}
                     value={postcode}
-                    onChange={(e) => setPostcode(e.target.value)}
+                    onChange={(e) => setPostcode(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   />
                 ) : null}
                 {quoteError ? <p className="text-sm text-red-600">{quoteError}</p> : null}
@@ -162,7 +169,9 @@ export function CartPage() {
                       <p className="text-xs">
                         {breakdown.freeShippingApplied
                           ? `Free shipping over $${Number(breakdown.freeOver ?? 0).toFixed(0)}`
-                          : `Chargeable ${Number(breakdown.chargeableKg ?? 0).toFixed(2)} kg · base $${Number(breakdown.baseFee ?? 0).toFixed(2)} + $${Number(breakdown.perKgFee ?? 0).toFixed(2)}/kg`}
+                          : quote.shipping.provider === 'auspost'
+                            ? `AusPost live rate · chargeable ${Number(breakdown.chargeableKg ?? 0).toFixed(2)} kg · package ${Number(breakdown.packageLengthCm ?? 0)}×${Number(breakdown.packageWidthCm ?? 0)}×${Number(breakdown.packageHeightCm ?? 0)} cm`
+                            : `Chargeable ${Number(breakdown.chargeableKg ?? 0).toFixed(2)} kg · base $${Number(breakdown.baseFee ?? 0).toFixed(2)} + $${Number(breakdown.perKgFee ?? 0).toFixed(2)}/kg`}
                       </p>
                     ) : null}
                     <p className="flex justify-between font-semibold text-charcoal">

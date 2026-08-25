@@ -13,6 +13,8 @@ const DEFAULT_LENGTH_CM = Math.max(5, Number(process.env.AUSPOST_DEFAULT_LENGTH_
 const DEFAULT_WIDTH_CM = Math.max(5, Number(process.env.AUSPOST_DEFAULT_WIDTH_CM ?? 15) || 15)
 const DEFAULT_HEIGHT_CM = Math.max(5, Number(process.env.AUSPOST_DEFAULT_HEIGHT_CM ?? 10) || 10)
 const REQUEST_TIMEOUT_MS = Math.max(2000, Number(process.env.AUSPOST_TIMEOUT_MS ?? 8000) || 8000)
+const postcodeCache = new Map()
+const POSTCODE_CACHE_MS = 24 * 60 * 60 * 1000
 
 export function auspostConfigured() {
   return Boolean(String(process.env.AUSPOST_PAC_API_KEY ?? '').trim())
@@ -24,7 +26,7 @@ export function packageDimensionsCm(volumeCm3 = 0) {
   let width = DEFAULT_WIDTH_CM
   let height = DEFAULT_HEIGHT_CM
   const baseVol = length * width * height
-  if (volume > baseVol) {
+  if (volume > 0) {
     const scale = Math.cbrt(volume / baseVol)
     length = Math.max(5, Math.ceil(length * scale))
     width = Math.max(5, Math.ceil(width * scale))
@@ -46,6 +48,75 @@ function normalizeServices(payload) {
       price: Number(s.price),
     }))
     .filter((s) => s.code && Number.isFinite(s.price) && s.price >= 0)
+}
+
+function normalizeLocalities(payload) {
+  const raw = payload?.localities?.locality
+  if (!raw) return []
+  const list = Array.isArray(raw) ? raw : [raw]
+  return list
+    .map((row) => ({
+      postcode: String(row.postcode ?? '').trim(),
+      state: String(row.state ?? '').trim().toUpperCase(),
+      locality: String(row.location ?? row.locality ?? '').trim().toUpperCase(),
+    }))
+    .filter((row) => /^\d{4}$/.test(row.postcode) && row.state && row.locality)
+}
+
+function normalizeState(value) {
+  const state = String(value ?? '').trim().toUpperCase()
+  const aliases = {
+    'NEW SOUTH WALES': 'NSW',
+    VICTORIA: 'VIC',
+    QUEENSLAND: 'QLD',
+    'SOUTH AUSTRALIA': 'SA',
+    'WESTERN AUSTRALIA': 'WA',
+    TASMANIA: 'TAS',
+    'NORTHERN TERRITORY': 'NT',
+    'AUSTRALIAN CAPITAL TERRITORY': 'ACT',
+  }
+  return aliases[state] ?? state
+}
+
+export async function lookupAustralianPostcode(postcode) {
+  const pc = String(postcode ?? '').replace(/\s+/g, '').trim()
+  if (!/^\d{4}$/.test(pc)) {
+    throw Object.assign(new Error('Enter a valid 4-digit Australian postcode'), { status: 400 })
+  }
+
+  const cached = postcodeCache.get(pc)
+  if (cached && Date.now() - cached.savedAt < POSTCODE_CACHE_MS) return cached.localities
+
+  const qs = new URLSearchParams({ q: pc })
+  const payload = await pacGet(`/postcode/search.json?${qs}`)
+  const localities = normalizeLocalities(payload).filter((row) => row.postcode === pc)
+  if (localities.length === 0) {
+    throw Object.assign(new Error('Enter a valid Australian delivery postcode'), { status: 400 })
+  }
+  postcodeCache.set(pc, { savedAt: Date.now(), localities })
+  return localities
+}
+
+export async function validateAustralianDestination({ postcode, city, state } = {}) {
+  const localities = await lookupAustralianPostcode(postcode)
+  const expectedState = normalizeState(state)
+  if (expectedState && !localities.some((row) => row.state === expectedState)) {
+    const actual = [...new Set(localities.map((row) => row.state))].join(' / ')
+    throw Object.assign(
+      new Error(`Postcode ${String(postcode).trim()} is in ${actual}, not ${expectedState}`),
+      { status: 400 },
+    )
+  }
+
+  const expectedCity = String(city ?? '').trim().toUpperCase().replace(/\s+/g, ' ')
+  if (expectedCity && !localities.some((row) => row.locality === expectedCity)) {
+    const examples = localities.slice(0, 4).map((row) => row.locality).join(', ')
+    throw Object.assign(
+      new Error(`Suburb does not match postcode ${String(postcode).trim()}. Expected: ${examples}`),
+      { status: 400 },
+    )
+  }
+  return localities
 }
 
 /** Prefer Parcel Post (regular); otherwise cheapest non-express; otherwise cheapest. */
@@ -100,6 +171,21 @@ async function pacGet(pathWithQuery) {
   }
 }
 
+function calculatePrice(payload) {
+  const candidates = [
+    payload?.postage_result?.total_cost,
+    payload?.postage_result?.cost,
+    payload?.postage_result?.price,
+    payload?.total_cost,
+    payload?.price,
+  ]
+  for (const value of candidates) {
+    const price = Number(value)
+    if (Number.isFinite(price) && price >= 0) return price
+  }
+  return null
+}
+
 /**
  * Quote domestic parcel postage from farm origin to destination postcode.
  * @returns {{ fee: number, serviceCode: string, serviceName: string, options: object[] }}
@@ -114,8 +200,22 @@ export async function quoteAusPostDomesticParcel({
     throw Object.assign(new Error('Enter a valid 4-digit Australian postcode'), { status: 400 })
   }
 
-  const weight = Math.max(0.05, Math.min(22, Number(weightKg) || 0.05))
+  const requestedWeight = Number(weightKg)
+  if (!Number.isFinite(requestedWeight) || requestedWeight <= 0) {
+    throw Object.assign(new Error('Shipping weight must be greater than 0 kg'), { status: 400 })
+  }
+  if (requestedWeight > 22) {
+    throw Object.assign(new Error('This order exceeds Australia Post’s 22 kg parcel limit'), { status: 400 })
+  }
+  const weight = Math.max(0.05, requestedWeight)
   const dims = packageDimensionsCm(volumeCm3)
+  const cubicVolume = dims.length * dims.width * dims.height
+  if (dims.length > 105 || cubicVolume > 250000) {
+    throw Object.assign(new Error('This order exceeds Australia Post’s parcel-size limits'), { status: 400 })
+  }
+
+  await lookupAustralianPostcode(dest)
+
   const qs = new URLSearchParams({
     from_postcode: ORIGIN_POSTCODE,
     to_postcode: dest,
@@ -134,8 +234,14 @@ export async function quoteAusPostDomesticParcel({
     })
   }
 
+  const calculateQs = new URLSearchParams(qs)
+  calculateQs.set('service_code', chosen.code)
+  const calculatePayload = await pacGet(`/postage/parcel/domestic/calculate.json?${calculateQs}`)
+  const calculatedPrice = calculatePrice(calculatePayload)
+  const fee = calculatedPrice ?? chosen.price
+
   return {
-    fee: +Number(chosen.price).toFixed(2),
+    fee: +Number(fee).toFixed(2),
     serviceCode: chosen.code,
     serviceName: chosen.name,
     options: services.map((s) => ({

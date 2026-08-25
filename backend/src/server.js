@@ -243,10 +243,12 @@ function sanitizePrice(value) {
   return Number(n.toFixed(2))
 }
 
-/** Size (display) + weight grams (shipping) are required on create/update. */
+/** Shopper size + packed weight/volume are required for shippable products. */
 function validateProductShippingFields(body) {
   const size = String(body?.size ?? '').trim()
   if (!size) return 'Size is required (e.g. 250ml or 175g)'
+  const shippable = !(body?.shippable === false || body?.shippable === 0 || body?.shippable === '0')
+  if (!shippable) return null
   if (body?.weightGrams === undefined || body?.weightGrams === null || body?.weightGrams === '') {
     return 'Weight (grams) is required'
   }
@@ -254,7 +256,12 @@ function validateProductShippingFields(body) {
   if (!Number.isFinite(weight) || weight <= 0 || !Number.isInteger(weight)) {
     return 'Weight (grams) must be a whole number greater than 0'
   }
-  if (weight > 100000) return 'Weight (grams) is too large'
+  if (weight > 22000) return 'Weight exceeds Australia Post’s 22 kg parcel limit'
+  const volume = Number(body?.volumeCm3)
+  if (!Number.isFinite(volume) || volume <= 0 || !Number.isInteger(volume)) {
+    return 'Packed volume (cm³) must be a whole number greater than 0'
+  }
+  if (volume > 250000) return 'Packed volume exceeds Australia Post’s parcel-size limit'
   return null
 }
 

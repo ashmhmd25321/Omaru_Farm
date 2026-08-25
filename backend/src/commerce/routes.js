@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { pool } from '../db.js'
 import { resolveShippingQuote } from './shipping.js'
-import { auspostConfigured } from './auspost.js'
+import { auspostConfigured, validateAustralianDestination } from './auspost.js'
 import { getStripe, stripeConfigured, getPublishableKey, getCurrency, toStripeAmount } from './stripe.js'
 import { fetchAndParseIcal } from './ical.js'
 import {
@@ -105,8 +105,18 @@ async function quoteCartLines(items) {
     }
     const unit = toNumber(product.price, 0)
     const lineTotal = +(unit * qty).toFixed(2)
-    const weight = toNumber(product.weightGrams, 500) * qty
-    const volume = toNumber(product.volumeCm3, 0) * qty
+    const shippable = Boolean(product.shippable)
+    const weight = shippable ? toNumber(product.weightGrams, 0) * qty : 0
+    const volume = shippable ? toNumber(product.volumeCm3, 0) * qty : 0
+    if (shippable && weight <= 0) {
+      throw Object.assign(new Error(`Shipping weight is missing for ${product.name}`), { status: 400 })
+    }
+    if (shippable && volume <= 0) {
+      throw Object.assign(
+        new Error(`Packed volume is missing for ${product.name}. Add length × width × height in Admin → Products.`),
+        { status: 400 },
+      )
+    }
     subtotal += lineTotal
     totalWeightGrams += weight
     totalVolumeCm3 += volume
@@ -116,10 +126,10 @@ async function quoteCartLines(items) {
       size: product.size,
       unitPrice: unit,
       quantity: qty,
-      weightGrams: toNumber(product.weightGrams, 500),
+      weightGrams: toNumber(product.weightGrams, 0),
       volumeCm3: toNumber(product.volumeCm3, 0),
       lineTotal,
-      shippable: Boolean(product.shippable),
+      shippable,
     })
   }
   return { lines, subtotal: +subtotal.toFixed(2), totalWeightGrams, totalVolumeCm3 }
@@ -248,6 +258,18 @@ export function registerCommerceRoutes(app, {
       const email = String(body.email ?? req.customer?.email ?? '').trim()
       const fullName = String(body.fullName ?? req.customer?.fullName ?? '').trim()
       if (!email || !fullName) return res.status(400).json({ message: 'Name and email are required' })
+      if (method === 'delivery') {
+        const line1 = String(body.line1 ?? '').trim()
+        const city = String(body.city ?? '').trim()
+        const state = String(body.state ?? '').trim()
+        const postcode = String(body.postcode ?? '').trim()
+        if (!line1 || !city || !state || !postcode) {
+          return res.status(400).json({ message: 'Complete delivery address is required' })
+        }
+        if (auspostConfigured() && process.env.AUSPOST_ENABLED !== 'false') {
+          await validateAustralianDestination({ postcode, city, state })
+        }
+      }
 
       const { lines, subtotal, totalWeightGrams, totalVolumeCm3 } = await quoteCartLines(body.items ?? [])
       if (lines.length === 0) return res.status(400).json({ message: 'Cart is empty' })

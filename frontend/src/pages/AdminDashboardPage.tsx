@@ -1507,17 +1507,20 @@ export function AdminDashboardPage() {
                             <p className="mt-1 text-[11px] text-stone">Required. Packed weight for shipping (jar + contents).</p>
                           </div>
                           <div>
-                            <AdminLabel htmlFor="new-prod-volume">Packed volume (cm³)</AdminLabel>
+                            <AdminLabel htmlFor="new-prod-volume">Packed volume (cm³) *</AdminLabel>
                             <input
                               id="new-prod-volume"
                               className="field"
                               inputMode="numeric"
-                              placeholder="0"
+                              placeholder="3000"
+                              required={newProduct.shippable}
+                              min={1}
+                              step={1}
                               value={newProduct.volumeCm3}
                               onChange={(e) => setNewProduct((v) => ({ ...v, volumeCm3: e.target.value }))}
                             />
                             <p className="mt-1 text-[11px] text-stone">
-                              Optional. Length × width × height in cm. Charge uses the higher of actual kg or volume ÷ 5000.
+                              Required for shipping. Enter packed length × width × height in centimetres.
                             </p>
                           </div>
                           <div className="sm:col-span-2">
@@ -1622,18 +1625,24 @@ export function AdminDashboardPage() {
                         !newProduct.name.trim() ||
                         !newProduct.category.trim() ||
                         !newProduct.size.trim() ||
-                        !(Number(newProduct.weightGrams) > 0)
+                        (newProduct.shippable &&
+                          (!(Number(newProduct.weightGrams) > 0) || !(Number(newProduct.volumeCm3) > 0)))
                       }
                       onClick={async () => {
                         setError('')
                         const size = newProduct.size.trim()
                         const weightGrams = Math.floor(Number(newProduct.weightGrams))
+                        const volumeCm3 = Math.floor(Number(newProduct.volumeCm3))
                         if (!size) {
                           setError('Size is required (e.g. 250ml or 175g)')
                           return
                         }
-                        if (!Number.isFinite(weightGrams) || weightGrams <= 0) {
+                        if (newProduct.shippable && (!Number.isFinite(weightGrams) || weightGrams <= 0)) {
                           setError('Weight (grams) must be a whole number greater than 0')
+                          return
+                        }
+                        if (newProduct.shippable && (!Number.isFinite(volumeCm3) || volumeCm3 <= 0)) {
+                          setError('Packed volume (cm³) must be a whole number greater than 0')
                           return
                         }
                         setSavingProductId('new')
@@ -1651,7 +1660,7 @@ export function AdminDashboardPage() {
                               featured: newProduct.featured,
                               stockQty: Number(newProduct.stockQty || 0),
                               weightGrams,
-                              volumeCm3: Number(newProduct.volumeCm3 || 0),
+                              volumeCm3,
                               shippable: newProduct.shippable,
                             }),
                           })
@@ -1970,11 +1979,14 @@ export function AdminDashboardPage() {
                                             <p className="mt-1 text-[11px] text-stone">Required for shipping quotes.</p>
                                           </div>
                                           <div>
-                                            <AdminLabel htmlFor={`prod-${p.id}-volume`}>Packed volume (cm³)</AdminLabel>
+                                            <AdminLabel htmlFor={`prod-${p.id}-volume`}>Packed volume (cm³) *</AdminLabel>
                                             <input
                                               id={`prod-${p.id}-volume`}
                                               className="field"
                                               inputMode="numeric"
+                                              required={p.shippable !== false}
+                                              min={1}
+                                              step={1}
                                               value={String(p.volumeCm3 ?? 0)}
                                               onChange={(e) =>
                                                 setProducts((rows) =>
@@ -1984,6 +1996,7 @@ export function AdminDashboardPage() {
                                                 )
                                               }
                                             />
+                                            <p className="mt-1 text-[11px] text-stone">Required: packed length × width × height in cm.</p>
                                           </div>
                                         </div>
                                         <div className="flex flex-col gap-3 rounded-lg border border-gold/10 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -2066,7 +2079,8 @@ export function AdminDashboardPage() {
                                       disabled={
                                         savingProductId === p.id ||
                                         !String(p.size ?? '').trim() ||
-                                        !(Number(p.weightGrams) > 0) ||
+                                        (p.shippable !== false &&
+                                          (!(Number(p.weightGrams) > 0) || !(Number(p.volumeCm3) > 0))) ||
                                         !String(p.name ?? '').trim() ||
                                         !String(p.category ?? '').trim()
                                       }
@@ -2075,12 +2089,17 @@ export function AdminDashboardPage() {
                                         setError('')
                                         const size = String(p.size ?? '').trim()
                                         const weightGrams = Math.floor(Number(p.weightGrams))
+                                        const volumeCm3 = Math.floor(Number(p.volumeCm3))
                                         if (!size) {
                                           setError('Size is required (e.g. 250ml or 175g)')
                                           return
                                         }
-                                        if (!Number.isFinite(weightGrams) || weightGrams <= 0) {
+                                        if (p.shippable !== false && (!Number.isFinite(weightGrams) || weightGrams <= 0)) {
                                           setError('Weight (grams) must be a whole number greater than 0')
+                                          return
+                                        }
+                                        if (p.shippable !== false && (!Number.isFinite(volumeCm3) || volumeCm3 <= 0)) {
+                                          setError('Packed volume (cm³) must be a whole number greater than 0')
                                           return
                                         }
                                         setSavingProductId(p.id)
@@ -2098,7 +2117,7 @@ export function AdminDashboardPage() {
                                               featured: !!p.featured,
                                               stockQty: p.stockQty,
                                               weightGrams,
-                                              volumeCm3: p.volumeCm3 ?? 0,
+                                              volumeCm3,
                                               shippable: p.shippable !== false,
                                             }),
                                           })
