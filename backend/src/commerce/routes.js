@@ -2,7 +2,8 @@ import crypto from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { pool } from '../db.js'
-import { computeShippingQuote } from './shipping.js'
+import { resolveShippingQuote } from './shipping.js'
+import { auspostConfigured } from './auspost.js'
 import { getStripe, stripeConfigured, getPublishableKey, getCurrency, toStripeAmount } from './stripe.js'
 import { fetchAndParseIcal } from './ical.js'
 import {
@@ -87,12 +88,13 @@ async function quoteCartLines(items) {
   const lines = []
   let subtotal = 0
   let totalWeightGrams = 0
+  let totalVolumeCm3 = 0
   for (const item of items ?? []) {
     const productId = toNumber(item.productId ?? item.id, 0)
     const qty = Math.max(0, Math.floor(toNumber(item.quantity, 0)))
     if (!productId || qty < 1) continue
     const [rows] = await pool.query(
-      `SELECT id, name, size, price, weight_grams AS weightGrams, stock_qty AS stockQty, shippable
+      `SELECT id, name, size, price, weight_grams AS weightGrams, volume_cm3 AS volumeCm3, stock_qty AS stockQty, shippable
        FROM products WHERE id = ? LIMIT 1`,
       [productId],
     )
@@ -104,8 +106,10 @@ async function quoteCartLines(items) {
     const unit = toNumber(product.price, 0)
     const lineTotal = +(unit * qty).toFixed(2)
     const weight = toNumber(product.weightGrams, 500) * qty
+    const volume = toNumber(product.volumeCm3, 0) * qty
     subtotal += lineTotal
     totalWeightGrams += weight
+    totalVolumeCm3 += volume
     lines.push({
       productId: product.id,
       name: product.name,
@@ -113,11 +117,12 @@ async function quoteCartLines(items) {
       unitPrice: unit,
       quantity: qty,
       weightGrams: toNumber(product.weightGrams, 500),
+      volumeCm3: toNumber(product.volumeCm3, 0),
       lineTotal,
       shippable: Boolean(product.shippable),
     })
   }
-  return { lines, subtotal: +subtotal.toFixed(2), totalWeightGrams }
+  return { lines, subtotal: +subtotal.toFixed(2), totalWeightGrams, totalVolumeCm3 }
 }
 
 export function registerCommerceRoutes(app, {
@@ -190,6 +195,8 @@ export function registerCommerceRoutes(app, {
       stripeConfigured: stripeConfigured(),
       publishableKey: getPublishableKey(),
       currency: getCurrency(),
+      auspostConfigured: auspostConfigured() && process.env.AUSPOST_ENABLED !== 'false',
+      shippingOriginPostcode: String(process.env.AUSPOST_ORIGIN_POSTCODE ?? '3922'),
     })
   })
 
@@ -198,22 +205,24 @@ export function registerCommerceRoutes(app, {
     try {
       const method = String(req.body?.shippingMethod ?? 'delivery')
       const postcode = String(req.body?.postcode ?? '')
-      const { lines, subtotal, totalWeightGrams } = await quoteCartLines(req.body?.items ?? [])
+      const { lines, subtotal, totalWeightGrams, totalVolumeCm3 } = await quoteCartLines(req.body?.items ?? [])
       if (lines.length === 0) return res.status(400).json({ message: 'Cart is empty' })
       const needsShipping = lines.some((l) => l.shippable)
       const rules = await loadShippingRules()
       const shipping = needsShipping
-        ? computeShippingQuote({
+        ? await resolveShippingQuote({
             rules,
             postcode,
             subtotal,
             totalWeightGrams,
+            totalVolumeCm3,
             method,
           })
         : {
             method: 'pickup',
             fee: 0,
             ruleName: 'Digital / non-shippable',
+            provider: 'none',
             breakdown: {},
           }
       if (method === 'delivery' && needsShipping && shipping.breakdown?.error === 'NO_RULE') {
@@ -240,17 +249,21 @@ export function registerCommerceRoutes(app, {
       const fullName = String(body.fullName ?? req.customer?.fullName ?? '').trim()
       if (!email || !fullName) return res.status(400).json({ message: 'Name and email are required' })
 
-      const { lines, subtotal, totalWeightGrams } = await quoteCartLines(body.items ?? [])
+      const { lines, subtotal, totalWeightGrams, totalVolumeCm3 } = await quoteCartLines(body.items ?? [])
       if (lines.length === 0) return res.status(400).json({ message: 'Cart is empty' })
 
       const rules = await loadShippingRules()
-      const shipping = computeShippingQuote({
+      const shipping = await resolveShippingQuote({
         rules,
         postcode: body.postcode,
         subtotal,
         totalWeightGrams,
+        totalVolumeCm3,
         method,
       })
+      if (method === 'delivery' && shipping.breakdown?.error === 'NO_RULE') {
+        return res.status(400).json({ message: 'No shipping rule matches this postcode' })
+      }
       const total = +(subtotal + shipping.fee).toFixed(2)
       const number = orderNumber()
 

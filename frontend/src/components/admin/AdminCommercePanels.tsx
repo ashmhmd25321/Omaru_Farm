@@ -3,14 +3,22 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { apiUrl } from '@/utils/api'
 
-async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function adminFetch<T>(path: string, token: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers instanceof Headers
+      ? Object.fromEntries(init.headers.entries())
+      : Array.isArray(init?.headers)
+        ? Object.fromEntries(init.headers)
+        : { ...((init?.headers as Record<string, string> | undefined) ?? {}) }),
+  }
+  if (token && token !== 'cookie-session') {
+    headers.Authorization = `Bearer ${token}`
+  }
   const res = await fetch(apiUrl(path), {
     ...init,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
+    headers,
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.message ?? `Request failed (${res.status})`)
@@ -101,7 +109,7 @@ function holdStatusClass(status: string) {
   return 'text-charcoal'
 }
 
-export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping' | 'stays' | 'tables' | 'sales' }) {
+export function AdminCommercePanels({ section, token }: { section: 'orders' | 'shipping' | 'stays' | 'tables' | 'sales'; token: string }) {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [orders, setOrders] = useState<Order[]>([])
@@ -139,22 +147,22 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
   const load = useCallback(async () => {
     setError('')
     try {
-      if (section === 'orders') setOrders(await adminFetch('/api/admin/orders'))
-      if (section === 'shipping') setRules(await adminFetch('/api/admin/shipping-rules'))
-      if (section === 'stays') setProperties(await adminFetch('/api/admin/properties'))
+      if (section === 'orders') setOrders(await adminFetch('/api/admin/orders', token))
+      if (section === 'shipping') setRules(await adminFetch('/api/admin/shipping-rules', token))
+      if (section === 'stays') setProperties(await adminFetch('/api/admin/properties', token))
       if (section === 'tables') {
         const [holdRows, capacity] = await Promise.all([
-          adminFetch<TableHold[]>('/api/admin/table-holds'),
-          adminFetch<CafeCapacity>('/api/admin/cafe-capacity'),
+          adminFetch<TableHold[]>('/api/admin/table-holds', token),
+          adminFetch<CafeCapacity>('/api/admin/cafe-capacity', token),
         ])
         setHolds(holdRows)
         setCafeCapacity(capacity)
       }
-      if (section === 'sales') setSales(await adminFetch('/api/admin/sales-summary'))
+      if (section === 'sales') setSales(await adminFetch('/api/admin/sales-summary', token))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Load failed')
     }
-  }, [section])
+  }, [section, token])
 
   useEffect(() => {
     void load()
@@ -164,7 +172,7 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
     setError('')
     setMessage('')
     try {
-      const result = await adminFetch<{ ok: boolean; hold?: TableHold }>(`/api/admin/table-holds/${holdId}`, {
+      const result = await adminFetch<{ ok: boolean; hold?: TableHold }>(`/api/admin/table-holds/${holdId}`, token, {
         method: 'PUT',
         body: JSON.stringify({ status }),
       })
@@ -226,7 +234,7 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
                   className="field w-auto"
                   value={o.fulfillmentStatus}
                   onChange={async (e) => {
-                    await adminFetch(`/api/admin/orders/${o.id}`, {
+                    await adminFetch(`/api/admin/orders/${o.id}`, token, {
                       method: 'PUT',
                       body: JSON.stringify({ fulfillmentStatus: e.target.value }),
                     })
@@ -248,6 +256,12 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
 
       {section === 'shipping' ? (
         <>
+          <p className="text-sm text-stone">
+            Live Australia Post rates are used at checkout when <code className="text-charcoal">AUSPOST_PAC_API_KEY</code> is set
+            (origin 3922, preferred Parcel Post). These admin rules remain as
+            fallback and for free-shipping thresholds. Zones match the first postcode prefix in sort order. Chargeable kg is the
+            higher of packed weight and volume ÷ 5000.
+          </p>
           <Card>
             <CardHeader>
               <CardTitle>Add shipping rule</CardTitle>
@@ -261,7 +275,7 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
               <Button
                 type="button"
                 onClick={async () => {
-                  await adminFetch('/api/admin/shipping-rules', {
+                  await adminFetch('/api/admin/shipping-rules', token, {
                     method: 'POST',
                     body: JSON.stringify({
                       name: newRule.name,
@@ -310,7 +324,7 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
                 type="button"
                 variant="outline"
                 onClick={async () => {
-                  const result = await adminFetch<{ imported: number }>('/api/admin/ical-sync', { method: 'POST' })
+                  const result = await adminFetch<{ imported: number }>('/api/admin/ical-sync', token, { method: 'POST' })
                   setMessage(`iCal sync imported ${result.imported} blocks`)
                 }}
               >
@@ -327,7 +341,7 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
                       type="number"
                       defaultValue={p.nightlyRate}
                       onBlur={async (e) => {
-                        await adminFetch(`/api/admin/properties/${p.id}`, {
+                        await adminFetch(`/api/admin/properties/${p.id}`, token, {
                           method: 'PUT',
                           body: JSON.stringify({ ...p, nightlyRate: Number(e.target.value) }),
                         })
@@ -339,7 +353,7 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
                       placeholder="Airbnb iCal URL"
                       defaultValue={p.icalAirbnbUrl ?? ''}
                       onBlur={async (e) => {
-                        await adminFetch(`/api/admin/properties/${p.id}`, {
+                        await adminFetch(`/api/admin/properties/${p.id}`, token, {
                           method: 'PUT',
                           body: JSON.stringify({ ...p, icalAirbnbUrl: e.target.value }),
                         })
@@ -350,7 +364,7 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
                       placeholder="Booking.com iCal URL"
                       defaultValue={p.icalBookingUrl ?? ''}
                       onBlur={async (e) => {
-                        await adminFetch(`/api/admin/properties/${p.id}`, {
+                        await adminFetch(`/api/admin/properties/${p.id}`, token, {
                           method: 'PUT',
                           body: JSON.stringify({ ...p, icalBookingUrl: e.target.value }),
                         })
@@ -385,7 +399,7 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
                 type="button"
                 className="sm:col-span-2"
                 onClick={async () => {
-                  await adminFetch(`/api/admin/properties/${blockForm.propertyId}/blocks`, {
+                  await adminFetch(`/api/admin/properties/${blockForm.propertyId}/blocks`, token, {
                     method: 'POST',
                     body: JSON.stringify(blockForm),
                   })
@@ -474,7 +488,7 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
                   onClick={async () => {
                     try {
                       setMessage('')
-                      const next = await adminFetch<CafeCapacity>('/api/admin/cafe-capacity', {
+                      const next = await adminFetch<CafeCapacity>('/api/admin/cafe-capacity', token, {
                         method: 'PUT',
                         body: JSON.stringify(cafeCapacity),
                       })
@@ -693,7 +707,7 @@ export function AdminCommercePanels({ section }: { section: 'orders' | 'shipping
                               try {
                                 setError('')
                                 setMessage('')
-                                await adminFetch(`/api/admin/table-holds/${h.id}`, {
+                                await adminFetch(`/api/admin/table-holds/${h.id}`, token, {
                                   method: 'PUT',
                                   body: JSON.stringify({
                                     fullName: holdDraft.fullName,

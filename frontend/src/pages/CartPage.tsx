@@ -1,11 +1,80 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Seo } from '@/components/site/Seo'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/context/CartContext'
+import { apiUrl } from '@/utils/api'
 import { productImageUrl } from '@/utils/productImage'
+
+type Quote = {
+  subtotal: number
+  total: number
+  shipping: {
+    fee: number
+    ruleName: string
+    method: string
+    breakdown?: {
+      baseFee?: number
+      perKgFee?: number
+      weightFee?: number
+      weightKg?: number
+      volumetricKg?: number
+      chargeableKg?: number
+      freeShippingApplied?: boolean
+      freeOver?: number | null
+    }
+  }
+}
 
 export function CartPage() {
   const { lines, subtotal, setQuantity, removeItem } = useCart()
+  const [postcode, setPostcode] = useState('')
+  const [method, setMethod] = useState<'delivery' | 'pickup'>('delivery')
+  const [quote, setQuote] = useState<Quote | null>(null)
+  const [quoteError, setQuoteError] = useState('')
+
+  const itemsPayload = useMemo(
+    () => lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+    [lines],
+  )
+
+  useEffect(() => {
+    if (lines.length === 0) {
+      setQuote(null)
+      setQuoteError('')
+      return
+    }
+    if (method === 'delivery' && postcode.replace(/\s/g, '').length < 3) {
+      setQuote(null)
+      setQuoteError('')
+      return
+    }
+    const controller = new AbortController()
+    fetch(apiUrl('/api/cart/quote'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        items: itemsPayload,
+        postcode,
+        shippingMethod: method,
+      }),
+    })
+      .then(async (r) => {
+        const data = await r.json()
+        if (!r.ok) throw new Error(data.message ?? 'Quote failed')
+        setQuoteError('')
+        setQuote(data)
+      })
+      .catch((e) => {
+        if (e.name === 'AbortError') return
+        setQuote(null)
+        setQuoteError(e instanceof Error ? e.message : 'Quote failed')
+      })
+    return () => controller.abort()
+  }, [itemsPayload, postcode, method, lines.length])
+
+  const breakdown = quote?.shipping.breakdown
 
   return (
     <>
@@ -50,11 +119,61 @@ export function CartPage() {
                 </div>
               </div>
             ))}
-            <div className="flex flex-col items-end gap-3 border-t border-parchment pt-6">
+            <div className="flex flex-col items-stretch gap-4 border-t border-parchment pt-6 sm:items-end">
               <p className="text-lg text-charcoal">
                 Subtotal: <span className="font-semibold text-gold">${subtotal.toFixed(2)}</span>
               </p>
-              <p className="text-xs text-stone">Shipping calculated at checkout from your postcode.</p>
+              <div className="w-full max-w-md space-y-3 rounded-lg border border-parchment bg-white p-4">
+                <p className="text-sm font-semibold text-charcoal">Estimate shipping</p>
+                <div className="flex gap-4 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={method === 'delivery'}
+                      onChange={() => setMethod('delivery')}
+                    />
+                    Delivery
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={method === 'pickup'}
+                      onChange={() => setMethod('pickup')}
+                    />
+                    Farm pickup
+                  </label>
+                </div>
+                {method === 'delivery' ? (
+                  <input
+                    className="field"
+                    placeholder="Postcode (e.g. 3922, 3000, 2010)"
+                    value={postcode}
+                    onChange={(e) => setPostcode(e.target.value)}
+                  />
+                ) : null}
+                {quoteError ? <p className="text-sm text-red-600">{quoteError}</p> : null}
+                {quote ? (
+                  <div className="space-y-1 text-sm text-stone">
+                    <p className="flex justify-between text-charcoal">
+                      <span>Shipping ({quote.shipping.ruleName})</span>
+                      <span>${quote.shipping.fee.toFixed(2)}</span>
+                    </p>
+                    {method === 'delivery' && breakdown ? (
+                      <p className="text-xs">
+                        {breakdown.freeShippingApplied
+                          ? `Free shipping over $${Number(breakdown.freeOver ?? 0).toFixed(0)}`
+                          : `Chargeable ${Number(breakdown.chargeableKg ?? 0).toFixed(2)} kg · base $${Number(breakdown.baseFee ?? 0).toFixed(2)} + $${Number(breakdown.perKgFee ?? 0).toFixed(2)}/kg`}
+                      </p>
+                    ) : null}
+                    <p className="flex justify-between font-semibold text-charcoal">
+                      <span>Estimated total</span>
+                      <span>${quote.total.toFixed(2)}</span>
+                    </p>
+                  </div>
+                ) : method === 'delivery' ? (
+                  <p className="text-xs text-stone">Enter a postcode to see the zone and fee for this mixed cart.</p>
+                ) : null}
+              </div>
               <Link
                 to="/checkout"
                 className="inline-flex h-11 items-center rounded-sm px-6 text-sm font-semibold text-white"

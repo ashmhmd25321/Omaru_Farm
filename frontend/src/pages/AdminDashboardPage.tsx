@@ -57,6 +57,7 @@ type Product = {
   featured?: boolean
   stockQty?: number
   weightGrams?: number
+  volumeCm3?: number
   shippable?: boolean
 }
 
@@ -186,9 +187,42 @@ const NAV_ITEM_BY_ID: Record<TabKey, NavItem> = NAV_GROUPS.flatMap((g) => g.item
   {} as Record<TabKey, NavItem>,
 )
 
+const ADMIN_TOKEN_KEY = 'omaru_admin_token'
+
+function readStoredAdminToken() {
+  try {
+    return sessionStorage.getItem(ADMIN_TOKEN_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function writeStoredAdminToken(token: string) {
+  try {
+    if (token) sessionStorage.setItem(ADMIN_TOKEN_KEY, token)
+    else sessionStorage.removeItem(ADMIN_TOKEN_KEY)
+  } catch {
+    // ignore storage failures (private mode)
+  }
+}
+
+function adminAuthHeaders(token: string, initHeaders?: HeadersInit): HeadersInit {
+  const headers: Record<string, string> = {
+    ...(initHeaders instanceof Headers
+      ? Object.fromEntries(initHeaders.entries())
+      : Array.isArray(initHeaders)
+        ? Object.fromEntries(initHeaders)
+        : { ...(initHeaders ?? {}) }),
+  }
+  if (token && token !== 'cookie-session') {
+    headers.Authorization = `Bearer ${token}`
+  }
+  return headers
+}
+
 async function request<T>(
   path: string,
-  _session: string,
+  token: string,
   init: RequestInit = {},
 ): Promise<T> {
   const res = await fetch(apiUrl(path), {
@@ -196,7 +230,7 @@ async function request<T>(
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
+      ...adminAuthHeaders(token, init.headers),
     },
   })
 
@@ -209,12 +243,13 @@ async function request<T>(
   return res.json() as Promise<T>
 }
 
-async function uploadProductImage(_session: string, file: File): Promise<string> {
+async function uploadProductImage(token: string, file: File): Promise<string> {
   const fd = new FormData()
   fd.append('file', file)
   const res = await fetch(apiUrl('/api/admin/media/upload'), {
     method: 'POST',
     credentials: 'include',
+    headers: adminAuthHeaders(token),
     body: fd,
   })
   const payload = (await res.json().catch(() => null)) as { message?: string; name?: string } | null
@@ -739,6 +774,7 @@ export function AdminDashboardPage() {
     featured: false,
     stockQty: '100',
     weightGrams: '500',
+    volumeCm3: '0',
     shippable: true,
   })
   const [draftPreviewOpen, setDraftPreviewOpen] = useState(false)
@@ -842,17 +878,32 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     let cancelled = false
-    fetch(apiUrl('/api/admin/me'), { credentials: 'include' })
-      .then((res) => {
+    const stored = readStoredAdminToken()
+
+    async function restoreSession() {
+      try {
+        if (stored) {
+          const res = await fetch(apiUrl('/api/admin/me'), {
+            credentials: 'include',
+            headers: adminAuthHeaders(stored),
+          })
+          if (!res.ok) throw new Error('Stored session expired')
+          if (!cancelled) setToken(stored)
+          return
+        }
+
+        const res = await fetch(apiUrl('/api/admin/me'), { credentials: 'include' })
         if (!res.ok) throw new Error('No active session')
         if (!cancelled) setToken('cookie-session')
-      })
-      .catch(() => {
+      } catch {
+        writeStoredAdminToken('')
         if (!cancelled) setToken('')
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setCheckingSession(false)
-      })
+      }
+    }
+
+    void restoreSession()
     return () => {
       cancelled = true
     }
@@ -874,7 +925,11 @@ export function AdminDashboardPage() {
         body: JSON.stringify({ username, password }),
       })
       if (!res.ok) throw new Error('Invalid admin credentials')
-      setToken('cookie-session')
+      const payload = (await res.json().catch(() => null)) as { token?: string } | null
+      const nextToken = String(payload?.token ?? '').trim()
+      if (!nextToken) throw new Error('Login succeeded but no session token was returned')
+      writeStoredAdminToken(nextToken)
+      setToken(nextToken)
       setPassword('')
       setMessage('Logged in')
     } catch (err) {
@@ -891,6 +946,7 @@ export function AdminDashboardPage() {
     } catch {
       // best effort
     }
+    writeStoredAdminToken('')
     setToken('')
     setMessage('Logged out')
   }
@@ -1376,17 +1432,19 @@ export function AdminDashboardPage() {
                             </div>
                           </div>
                           <div>
-                            <AdminLabel htmlFor="new-prod-size">Size / volume</AdminLabel>
+                            <AdminLabel htmlFor="new-prod-size">Size / volume *</AdminLabel>
                             <div className="relative">
                               <Ruler className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/45" />
                               <input
                                 id="new-prod-size"
                                 className="field pl-10"
                                 placeholder="250ml"
+                                required
                                 value={newProduct.size}
                                 onChange={(e) => setNewProduct((v) => ({ ...v, size: e.target.value }))}
                               />
                             </div>
+                            <p className="mt-1 text-[11px] text-stone">Pack label shown to shoppers (e.g. 250ml, 175g).</p>
                           </div>
                           <div>
                             <AdminLabel htmlFor="new-prod-price">Price (AUD)</AdminLabel>
@@ -1434,16 +1492,33 @@ export function AdminDashboardPage() {
                             <p className="mt-1 text-[11px] text-stone">Set to 0 to mark out of stock.</p>
                           </div>
                           <div>
-                            <AdminLabel htmlFor="new-prod-weight">Weight (grams)</AdminLabel>
+                            <AdminLabel htmlFor="new-prod-weight">Weight (grams) *</AdminLabel>
                             <input
                               id="new-prod-weight"
                               className="field"
                               inputMode="numeric"
                               placeholder="500"
+                              required
+                              min={1}
+                              step={1}
                               value={newProduct.weightGrams}
                               onChange={(e) => setNewProduct((v) => ({ ...v, weightGrams: e.target.value }))}
                             />
-                            <p className="mt-1 text-[11px] text-stone">Used for per‑kg shipping pricing.</p>
+                            <p className="mt-1 text-[11px] text-stone">Required. Packed weight for shipping (jar + contents).</p>
+                          </div>
+                          <div>
+                            <AdminLabel htmlFor="new-prod-volume">Packed volume (cm³)</AdminLabel>
+                            <input
+                              id="new-prod-volume"
+                              className="field"
+                              inputMode="numeric"
+                              placeholder="0"
+                              value={newProduct.volumeCm3}
+                              onChange={(e) => setNewProduct((v) => ({ ...v, volumeCm3: e.target.value }))}
+                            />
+                            <p className="mt-1 text-[11px] text-stone">
+                              Optional. Length × width × height in cm. Charge uses the higher of actual kg or volume ÷ 5000.
+                            </p>
                           </div>
                           <div className="sm:col-span-2">
                             <div className="flex flex-col gap-3 rounded-lg border border-gold/10 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1542,16 +1617,32 @@ export function AdminDashboardPage() {
                   <div className="flex flex-wrap items-center gap-3 border-t border-gold/10 pt-5">
                     <Button
                       className="gap-2 px-6"
-                      disabled={savingProductId === 'new' || !newProduct.name.trim() || !newProduct.category.trim()}
+                      disabled={
+                        savingProductId === 'new' ||
+                        !newProduct.name.trim() ||
+                        !newProduct.category.trim() ||
+                        !newProduct.size.trim() ||
+                        !(Number(newProduct.weightGrams) > 0)
+                      }
                       onClick={async () => {
                         setError('')
+                        const size = newProduct.size.trim()
+                        const weightGrams = Math.floor(Number(newProduct.weightGrams))
+                        if (!size) {
+                          setError('Size is required (e.g. 250ml or 175g)')
+                          return
+                        }
+                        if (!Number.isFinite(weightGrams) || weightGrams <= 0) {
+                          setError('Weight (grams) must be a whole number greater than 0')
+                          return
+                        }
                         setSavingProductId('new')
                         try {
                           await request('/api/admin/products', token, {
                             method: 'POST',
                             body: JSON.stringify({
                               name: newProduct.name,
-                              size: newProduct.size,
+                              size,
                               price: Number(newProduct.price || 0),
                               image: newProduct.image,
                               images: newProduct.images,
@@ -1559,7 +1650,8 @@ export function AdminDashboardPage() {
                               category: newProduct.category,
                               featured: newProduct.featured,
                               stockQty: Number(newProduct.stockQty || 0),
-                              weightGrams: Number(newProduct.weightGrams || 0),
+                              weightGrams,
+                              volumeCm3: Number(newProduct.volumeCm3 || 0),
                               shippable: newProduct.shippable,
                             }),
                           })
@@ -1574,6 +1666,7 @@ export function AdminDashboardPage() {
                             featured: false,
                             stockQty: '100',
                             weightGrams: '500',
+                            volumeCm3: '0',
                             shippable: true,
                           })
                           setMessage('Product added')
@@ -1798,10 +1891,11 @@ export function AdminDashboardPage() {
                                         </div>
                                         <div className="grid gap-3 sm:grid-cols-2">
                                           <div>
-                                            <AdminLabel htmlFor={`prod-${p.id}-size`}>Size</AdminLabel>
+                                            <AdminLabel htmlFor={`prod-${p.id}-size`}>Size *</AdminLabel>
                                             <input
                                               id={`prod-${p.id}-size`}
                                               className="field"
+                                              required
                                               value={p.size}
                                               onChange={(e) =>
                                                 setProducts((rows) => rows.map((x) => (x.id === p.id ? { ...x, size: e.target.value } : x)))
@@ -1856,16 +1950,36 @@ export function AdminDashboardPage() {
                                             />
                                           </div>
                                           <div>
-                                            <AdminLabel htmlFor={`prod-${p.id}-weight`}>Weight (grams)</AdminLabel>
+                                            <AdminLabel htmlFor={`prod-${p.id}-weight`}>Weight (grams) *</AdminLabel>
                                             <input
                                               id={`prod-${p.id}-weight`}
                                               className="field"
                                               inputMode="numeric"
+                                              required
+                                              min={1}
+                                              step={1}
                                               value={String(p.weightGrams ?? 0)}
                                               onChange={(e) =>
                                                 setProducts((rows) =>
                                                   rows.map((x) =>
                                                     x.id === p.id ? { ...x, weightGrams: Number(e.target.value || 0) } : x,
+                                                  ),
+                                                )
+                                              }
+                                            />
+                                            <p className="mt-1 text-[11px] text-stone">Required for shipping quotes.</p>
+                                          </div>
+                                          <div>
+                                            <AdminLabel htmlFor={`prod-${p.id}-volume`}>Packed volume (cm³)</AdminLabel>
+                                            <input
+                                              id={`prod-${p.id}-volume`}
+                                              className="field"
+                                              inputMode="numeric"
+                                              value={String(p.volumeCm3 ?? 0)}
+                                              onChange={(e) =>
+                                                setProducts((rows) =>
+                                                  rows.map((x) =>
+                                                    x.id === p.id ? { ...x, volumeCm3: Number(e.target.value || 0) } : x,
                                                   ),
                                                 )
                                               }
@@ -1949,17 +2063,33 @@ export function AdminDashboardPage() {
                                       variant="outline"
                                       className="gap-1.5 border-gold/35 px-3 py-1.5 text-xs"
                                       type="button"
-                                      disabled={savingProductId === p.id}
+                                      disabled={
+                                        savingProductId === p.id ||
+                                        !String(p.size ?? '').trim() ||
+                                        !(Number(p.weightGrams) > 0) ||
+                                        !String(p.name ?? '').trim() ||
+                                        !String(p.category ?? '').trim()
+                                      }
                                       onClick={async (e) => {
                                         e.stopPropagation()
                                         setError('')
+                                        const size = String(p.size ?? '').trim()
+                                        const weightGrams = Math.floor(Number(p.weightGrams))
+                                        if (!size) {
+                                          setError('Size is required (e.g. 250ml or 175g)')
+                                          return
+                                        }
+                                        if (!Number.isFinite(weightGrams) || weightGrams <= 0) {
+                                          setError('Weight (grams) must be a whole number greater than 0')
+                                          return
+                                        }
                                         setSavingProductId(p.id)
                                         try {
                                           await request(`/api/admin/products/${p.id}`, token, {
                                             method: 'PUT',
                                             body: JSON.stringify({
                                               name: p.name,
-                                              size: p.size,
+                                              size,
                                               price: p.price,
                                               image: p.image,
                                               images: (p.images && p.images.length ? p.images : (p.image ? [p.image] : [])),
@@ -1967,7 +2097,8 @@ export function AdminDashboardPage() {
                                               category: p.category,
                                               featured: !!p.featured,
                                               stockQty: p.stockQty,
-                                              weightGrams: p.weightGrams,
+                                              weightGrams,
+                                              volumeCm3: p.volumeCm3 ?? 0,
                                               shippable: p.shippable !== false,
                                             }),
                                           })
@@ -2078,13 +2209,13 @@ export function AdminDashboardPage() {
 
           {(tab === 'orders' || tab === 'shipping' || tab === 'stays' || tab === 'tables' || tab === 'sales') && (
             <section className="mt-5">
-              <AdminCommercePanels section={tab} />
+              <AdminCommercePanels section={tab} token={token} />
             </section>
           )}
 
           {tab === 'stay-page' && (
             <section className="mt-5">
-              <AdminStayContentPanel />
+              <AdminStayContentPanel token={token} />
             </section>
           )}
 

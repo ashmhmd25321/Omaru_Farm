@@ -11,7 +11,21 @@ import { apiUrl } from '@/utils/api'
 type Quote = {
   subtotal: number
   total: number
-  shipping: { fee: number; ruleName: string; method: string }
+  shipping: {
+    fee: number
+    ruleName: string
+    method: string
+    breakdown?: {
+      baseFee?: number
+      perKgFee?: number
+      weightFee?: number
+      weightKg?: number
+      volumetricKg?: number
+      chargeableKg?: number
+      freeShippingApplied?: boolean
+      freeOver?: number | null
+    }
+  }
 }
 
 function PayForm({ orderTotal, onPaid }: { orderTotal: number; onPaid: () => void }) {
@@ -57,6 +71,7 @@ export function CheckoutPage() {
   const [clientSecret, setClientSecret] = useState('')
   const [orderTotal, setOrderTotal] = useState(0)
   const [quote, setQuote] = useState<Quote | null>(null)
+  const [quoteError, setQuoteError] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({
@@ -103,6 +118,11 @@ export function CheckoutPage() {
 
   useEffect(() => {
     if (lines.length === 0) return
+    if (form.shippingMethod === 'delivery' && form.postcode.replace(/\s/g, '').length < 3) {
+      setQuote(null)
+      setQuoteError('')
+      return
+    }
     const controller = new AbortController()
     fetch(apiUrl('/api/cart/quote'), {
       method: 'POST',
@@ -117,10 +137,13 @@ export function CheckoutPage() {
       .then(async (r) => {
         const data = await r.json()
         if (!r.ok) throw new Error(data.message ?? 'Quote failed')
+        setQuoteError('')
         setQuote(data)
       })
       .catch((e) => {
-        if (e.name !== 'AbortError') setQuote(null)
+        if (e.name === 'AbortError') return
+        setQuote(null)
+        setQuoteError(e instanceof Error ? e.message : 'Quote failed')
       })
     return () => controller.abort()
   }, [itemsPayload, form.postcode, form.shippingMethod, lines.length])
@@ -191,6 +214,9 @@ export function CheckoutPage() {
                     <input className="field" placeholder="City" required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
                     <input className="field" placeholder="State" required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
                     <input className="field" placeholder="Postcode" required value={form.postcode} onChange={(e) => setForm({ ...form, postcode: e.target.value })} />
+                    <p className="col-span-3 text-xs text-stone">
+                    Shipping zone is chosen from your postcode. Live Australia Post Parcel Post rates are used when configured (from 3922).
+                    </p>
                   </div>
                 </>
               ) : null}
@@ -228,6 +254,9 @@ export function CheckoutPage() {
               </li>
             ))}
           </ul>
+          {quoteError && form.shippingMethod === 'delivery' && form.postcode ? (
+            <p className="mt-4 text-sm text-red-600">{quoteError}</p>
+          ) : null}
           {quote ? (
             <div className="mt-4 space-y-1 border-t border-parchment pt-4 text-sm">
               <p className="flex justify-between">
@@ -238,6 +267,22 @@ export function CheckoutPage() {
                 <span>Shipping ({quote.shipping.ruleName})</span>
                 <span>${quote.shipping.fee.toFixed(2)}</span>
               </p>
+              {quote.shipping.method === 'delivery' && quote.shipping.breakdown ? (
+                <p className="text-xs text-stone">
+                  {quote.shipping.breakdown.freeShippingApplied
+                    ? `Free over $${Number(quote.shipping.breakdown.freeOver ?? 0).toFixed(0)}`
+                    : [
+                        `Actual ${Number(quote.shipping.breakdown.weightKg ?? 0).toFixed(2)} kg`,
+                        Number(quote.shipping.breakdown.volumetricKg ?? 0) > 0
+                          ? `volumetric ${Number(quote.shipping.breakdown.volumetricKg).toFixed(2)} kg`
+                          : null,
+                        `chargeable ${Number(quote.shipping.breakdown.chargeableKg ?? 0).toFixed(2)} kg`,
+                        `base $${Number(quote.shipping.breakdown.baseFee ?? 0).toFixed(2)} + $${Number(quote.shipping.breakdown.perKgFee ?? 0).toFixed(2)}/kg`,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                </p>
+              ) : null}
               <p className="flex justify-between font-semibold text-charcoal">
                 <span>Total</span>
                 <span>${quote.total.toFixed(2)}</span>

@@ -1,5 +1,5 @@
-/** Origin for API calls. Empty string = same-origin relative paths (production). */
-const rawBase = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'
+/** Origin for API calls. Empty string = same-origin relative paths (Vite /api proxy in local dev). */
+const rawBase = import.meta.env.VITE_API_BASE_URL ?? ''
 
 export const API_BASE = String(rawBase).replace(/\/+$/, '')
 

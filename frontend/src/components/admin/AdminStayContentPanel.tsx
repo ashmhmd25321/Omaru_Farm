@@ -6,14 +6,22 @@ import { apiUrl } from '@/utils/api'
 import { productImageUrl } from '@/utils/productImage'
 import { cn } from '@/lib/utils'
 
-async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function adminFetch<T>(path: string, token: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers instanceof Headers
+      ? Object.fromEntries(init.headers.entries())
+      : Array.isArray(init?.headers)
+        ? Object.fromEntries(init.headers)
+        : { ...((init?.headers as Record<string, string> | undefined) ?? {}) }),
+  }
+  if (token && token !== 'cookie-session') {
+    headers.Authorization = `Bearer ${token}`
+  }
   const res = await fetch(apiUrl(path), {
     ...init,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
+    headers,
   })
   if (res.status === 204) return undefined as T
   const data = await res.json().catch(() => ({}))
@@ -21,12 +29,15 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T
 }
 
-async function uploadStayImage(file: File): Promise<string> {
+async function uploadStayImage(token: string, file: File): Promise<string> {
   const fd = new FormData()
   fd.append('file', file)
+  const headers: Record<string, string> = {}
+  if (token && token !== 'cookie-session') headers.Authorization = `Bearer ${token}`
   const res = await fetch(apiUrl('/api/admin/media/upload'), {
     method: 'POST',
     credentials: 'include',
+    headers,
     body: fd,
   })
   const payload = (await res.json().catch(() => null)) as { message?: string; name?: string } | null
@@ -106,7 +117,7 @@ const EMPTY_STAY_PAGE: StayPageCopy = {
   sectionLead: '',
 }
 
-export function AdminStayContentPanel() {
+export function AdminStayContentPanel({ token }: { token: string }) {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [stayPageCopy, setStayPageCopy] = useState<StayPageCopy>(EMPTY_STAY_PAGE)
@@ -118,16 +129,17 @@ export function AdminStayContentPanel() {
   const [savingStayId, setSavingStayId] = useState<number | 'page' | 'group' | null>(null)
 
   const load = useCallback(async () => {
+    if (!token) return
     setError('')
     const [page, groups, listings] = await Promise.all([
-      adminFetch<StayPageCopy>('/api/admin/content/stay-page'),
-      adminFetch<StayGroup[]>('/api/admin/stay-groups'),
-      adminFetch<StayListing[]>('/api/admin/stay-listings'),
+      adminFetch<StayPageCopy>('/api/admin/content/stay-page', token),
+      adminFetch<StayGroup[]>('/api/admin/stay-groups', token),
+      adminFetch<StayListing[]>('/api/admin/stay-listings', token),
     ])
     setStayPageCopy(page)
     setStayGroups(groups)
     setStayListings(listings)
-  }, [])
+  }, [token])
 
   useEffect(() => {
     load().catch((err) => setError(err instanceof Error ? err.message : 'Failed to load stay content'))
@@ -188,7 +200,7 @@ export function AdminStayContentPanel() {
                         e.target.value = ''
                         if (!file) return
                         try {
-                          const path = stayPublicPath(await uploadStayImage(file))
+                          const path = stayPublicPath(await uploadStayImage(token, file))
                           setStayPageCopy((v) => ({ ...v, heroImage: path }))
                         } catch (err) {
                           setError(err instanceof Error ? err.message : 'Hero image upload failed')
@@ -206,7 +218,7 @@ export function AdminStayContentPanel() {
                         setError('')
                         setSavingStayId('page')
                         try {
-                          await adminFetch('/api/admin/content/stay-page', {
+                          await adminFetch('/api/admin/content/stay-page', token, {
                             method: 'PUT',
                             body: JSON.stringify(stayPageCopy),
                           })
@@ -254,7 +266,7 @@ export function AdminStayContentPanel() {
                           onClick={async () => {
                             setError('')
                             try {
-                              await adminFetch(`/api/admin/stay-groups/${group.id}`, { method: 'PUT', body: JSON.stringify(group) })
+                              await adminFetch(`/api/admin/stay-groups/${group.id}`, token, { method: 'PUT', body: JSON.stringify(group) })
                               setMessage(`Saved section “${group.title}”`)
                             } catch (err) {
                               setError(err instanceof Error ? err.message : 'Failed to save section')
@@ -269,7 +281,7 @@ export function AdminStayContentPanel() {
                             if (!window.confirm(`Delete section “${group.title}”?`)) return
                             setError('')
                             try {
-                              await adminFetch(`/api/admin/stay-groups/${group.id}`, { method: 'DELETE' })
+                              await adminFetch(`/api/admin/stay-groups/${group.id}`, token, { method: 'DELETE' })
                               setMessage('Section deleted')
                               await load()
                             } catch (err) {
@@ -290,7 +302,7 @@ export function AdminStayContentPanel() {
                       onClick={async () => {
                         setError('')
                         try {
-                          await adminFetch('/api/admin/stay-groups', { method: 'POST', body: JSON.stringify(newStayGroup) })
+                          await adminFetch('/api/admin/stay-groups', token, { method: 'POST', body: JSON.stringify(newStayGroup) })
                           setNewStayGroup({ title: '', lead: '' })
                           setMessage('Section added')
                           await load()
@@ -462,7 +474,7 @@ export function AdminStayContentPanel() {
                                       e.target.value = ''
                                       if (!file) return
                                       try {
-                                        const path = stayPublicPath(await uploadStayImage(file))
+                                        const path = stayPublicPath(await uploadStayImage(token, file))
                                         setStayListings((rows) => rows.map((x) => (x.id === listing.id ? { ...x, image: path } : x)))
                                       } catch (err) {
                                         setError(err instanceof Error ? err.message : 'Photo upload failed')
@@ -511,7 +523,7 @@ export function AdminStayContentPanel() {
                                       try {
                                         const uploaded: StayGalleryPhoto[] = []
                                         for (const file of files) {
-                                          uploaded.push({ src: stayPublicPath(await uploadStayImage(file)), label: '' })
+                                          uploaded.push({ src: stayPublicPath(await uploadStayImage(token, file)), label: '' })
                                         }
                                         setStayListings((rows) => rows.map((x) => (x.id === listing.id ? { ...x, gallery: [...(x.gallery ?? []), ...uploaded], image: x.image || uploaded[0]!.src } : x)))
                                       } catch (err) {
@@ -576,7 +588,7 @@ export function AdminStayContentPanel() {
                                       setError('')
                                       setSavingStayId(listing.id)
                                       try {
-                                        await adminFetch(`/api/admin/stay-listings/${listing.id}`, {
+                                        await adminFetch(`/api/admin/stay-listings/${listing.id}`, token, {
                                           method: 'PUT',
                                           body: JSON.stringify(listing),
                                         })
@@ -597,7 +609,7 @@ export function AdminStayContentPanel() {
                                       if (!window.confirm(`Delete “${listing.name}”? This removes it from the Stay page.`)) return
                                       setError('')
                                       try {
-                                        await adminFetch(`/api/admin/stay-listings/${listing.id}`, { method: 'DELETE' })
+                                        await adminFetch(`/api/admin/stay-listings/${listing.id}`, token, { method: 'DELETE' })
                                         setMessage('Listing deleted')
                                         await load()
                                       } catch (err) {

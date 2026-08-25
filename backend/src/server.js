@@ -172,9 +172,14 @@ app.use(helmet())
 app.use(cors({
   origin(origin, callback) {
     if (!origin || corsOrigins.includes(origin)) return callback(null, true)
+    // Local Vite often hops ports (5173/5174/5180); allow any localhost origin outside production.
+    if (!isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(String(origin))) {
+      return callback(null, true)
+    }
     return callback(new Error('Not allowed by CORS'))
   },
   credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Token'],
 }))
 // Stripe webhooks need the raw body; everything else uses JSON.
 app.use((req, res, next) => {
@@ -236,6 +241,21 @@ function toNumber(value, fallback = 0) {
 function sanitizePrice(value) {
   const n = toNumber(value, 0)
   return Number(n.toFixed(2))
+}
+
+/** Size (display) + weight grams (shipping) are required on create/update. */
+function validateProductShippingFields(body) {
+  const size = String(body?.size ?? '').trim()
+  if (!size) return 'Size is required (e.g. 250ml or 175g)'
+  if (body?.weightGrams === undefined || body?.weightGrams === null || body?.weightGrams === '') {
+    return 'Weight (grams) is required'
+  }
+  const weight = Number(body.weightGrams)
+  if (!Number.isFinite(weight) || weight <= 0 || !Number.isInteger(weight)) {
+    return 'Weight (grams) must be a whole number greater than 0'
+  }
+  if (weight > 100000) return 'Weight (grams) is too large'
+  return null
 }
 
 async function ensureProductCategoryName(rawName) {
@@ -343,7 +363,13 @@ function getAdminToken(req) {
   const cookies = parseCookies(req)
   const cookieToken = cookies[ADMIN_COOKIE_NAME]
   if (cookieToken) return cookieToken
-  // Header token is kept only for local development tooling; production uses httpOnly cookies.
+
+  const authHeader = String(req.headers.authorization ?? '')
+  if (authHeader.toLowerCase().startsWith('bearer ')) {
+    return authHeader.slice(7).trim()
+  }
+
+  // Header token is kept only for local development tooling; production prefers httpOnly cookies.
   if (!isProduction) return String(req.headers['x-admin-token'] ?? '')
   return ''
 }
@@ -584,7 +610,8 @@ app.get('/api/products', async (_req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT id, name, size, price, image, description, images_json AS imagesJson, category,
-              is_featured AS featured, stock_qty AS stockQty, weight_grams AS weightGrams, shippable
+              is_featured AS featured, stock_qty AS stockQty, weight_grams AS weightGrams,
+              volume_cm3 AS volumeCm3, shippable
        FROM products
        ORDER BY id ASC
        LIMIT 1000`,
@@ -768,6 +795,7 @@ app.post('/api/admin/login', async (req, res) => {
     )
     res.cookie(ADMIN_COOKIE_NAME, token, adminCookieOptions())
     res.json({
+      token,
       user: { id: user.id, username: user.username },
     })
   } catch (error) {
@@ -788,7 +816,8 @@ app.get('/api/admin/products', requireAdmin, async (_req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT id, name, size, price, image, description, images_json AS imagesJson, category,
-              is_featured AS featured, stock_qty AS stockQty, weight_grams AS weightGrams, shippable
+              is_featured AS featured, stock_qty AS stockQty, weight_grams AS weightGrams,
+              volume_cm3 AS volumeCm3, shippable
        FROM products
        ORDER BY id ASC
        LIMIT 2000`,
@@ -856,17 +885,20 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
   if (!body.name || !body.category) {
     return res.status(400).json({ message: 'name and category are required' })
   }
+  const shippingError = validateProductShippingFields(body)
+  if (shippingError) return res.status(400).json({ message: shippingError })
 
   try {
     const featured = body.featured === true || body.featured === 1 || body.featured === '1' ? 1 : 0
     const images = normalizeProductImages(body.images, body.image)
     const primaryImage = images[0] ?? String(body.image ?? '')
     const description = body.description !== undefined ? String(body.description) : ''
+    const weightGrams = Math.floor(Number(body.weightGrams))
     const [result] = await pool.query(
-      'INSERT INTO products (name, size, price, image, description, images_json, category, is_featured, stock_qty, weight_grams, shippable) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO products (name, size, price, image, description, images_json, category, is_featured, stock_qty, weight_grams, volume_cm3, shippable) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         String(body.name),
-        String(body.size ?? ''),
+        String(body.size).trim(),
         sanitizePrice(body.price),
         primaryImage,
         description,
@@ -874,7 +906,8 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
         String(body.category),
         featured,
         body.stockQty !== undefined ? toNumber(body.stockQty, 100) : 100,
-        body.weightGrams !== undefined ? toNumber(body.weightGrams, 500) : 500,
+        weightGrams,
+        body.volumeCm3 !== undefined ? Math.max(0, Math.floor(toNumber(body.volumeCm3, 0))) : 0,
         body.shippable === false || body.shippable === 0 || body.shippable === '0' ? 0 : 1,
       ],
     )
@@ -890,24 +923,32 @@ app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
   if (!id) return res.status(400).json({ message: 'Invalid product id' })
 
   const body = req.body ?? {}
+  if (!String(body.name ?? '').trim() || !String(body.category ?? '').trim()) {
+    return res.status(400).json({ message: 'name and category are required' })
+  }
+  const shippingError = validateProductShippingFields(body)
+  if (shippingError) return res.status(400).json({ message: shippingError })
+
   const featured = body.featured === true || body.featured === 1 || body.featured === '1' ? 1 : 0
   try {
     const images = normalizeProductImages(body.images, body.image)
     const primaryImage = images[0] ?? String(body.image ?? '')
     const description = body.description !== undefined ? String(body.description) : ''
+    const weightGrams = Math.floor(Number(body.weightGrams))
     await pool.query(
-      'UPDATE products SET name = ?, size = ?, price = ?, image = ?, description = ?, images_json = ?, category = ?, is_featured = ?, stock_qty = ?, weight_grams = ?, shippable = ? WHERE id = ?',
+      'UPDATE products SET name = ?, size = ?, price = ?, image = ?, description = ?, images_json = ?, category = ?, is_featured = ?, stock_qty = ?, weight_grams = ?, volume_cm3 = ?, shippable = ? WHERE id = ?',
       [
-        String(body.name ?? ''),
-        String(body.size ?? ''),
+        String(body.name ?? '').trim(),
+        String(body.size).trim(),
         sanitizePrice(body.price),
         primaryImage,
         description,
         JSON.stringify(images),
-        String(body.category ?? ''),
+        String(body.category ?? '').trim(),
         featured,
         body.stockQty !== undefined ? toNumber(body.stockQty, 100) : 100,
-        body.weightGrams !== undefined ? toNumber(body.weightGrams, 500) : 500,
+        weightGrams,
+        body.volumeCm3 !== undefined ? Math.max(0, Math.floor(toNumber(body.volumeCm3, 0))) : 0,
         body.shippable === false || body.shippable === 0 || body.shippable === '0' ? 0 : 1,
         id,
       ],

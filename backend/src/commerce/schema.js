@@ -1,4 +1,5 @@
 import { pool } from '../db.js'
+import { seedShippingMatrix } from './shipping.js'
 
 function toNumber(value, fallback = 0) {
   const n = Number(value)
@@ -19,6 +20,7 @@ async function addColumnIfMissing(tableName, columnName, definitionSql) {
 export async function ensureCommerceSchema() {
   await addColumnIfMissing('products', 'stock_qty', 'INT NOT NULL DEFAULT 100')
   await addColumnIfMissing('products', 'weight_grams', 'INT NOT NULL DEFAULT 500')
+  await addColumnIfMissing('products', 'volume_cm3', 'INT NOT NULL DEFAULT 0')
   await addColumnIfMissing('products', 'shippable', 'TINYINT(1) NOT NULL DEFAULT 1')
 
   await pool.query(`
@@ -224,17 +226,7 @@ export async function ensureCommerceSchema() {
   // Legacy soft holds used status "held"; treat them as pending confirmation.
   await pool.query(`UPDATE table_holds SET status = 'pending' WHERE status = 'held'`)
 
-  const [ruleCount] = await pool.query('SELECT COUNT(*) AS c FROM shipping_rules')
-  if (toNumber(ruleCount[0]?.c, 0) === 0) {
-    // Compact prefix placeholders until the client shipping matrix arrives.
-    // Matching uses startsWith, so "30,31,32" covers metro-ish VIC and "39" covers Phillip Island / Bass Coast.
-    await pool.query(
-      `INSERT INTO shipping_rules (name, postcode_prefixes, base_fee, per_kg_fee, free_over, sort_order) VALUES
-       ('Metro VIC', '30,31,32', 12.00, 2.50, 150.00, 10),
-       ('Regional VIC / Phillip Island', '39', 15.00, 3.00, 180.00, 20),
-       ('Interstate AU (default)', '*', 25.00, 4.50, 250.00, 100)`,
-    )
-  }
+  await seedShippingMatrix(pool)
 
   const [propCount] = await pool.query('SELECT COUNT(*) AS c FROM properties')
   if (toNumber(propCount[0]?.c, 0) === 0) {
