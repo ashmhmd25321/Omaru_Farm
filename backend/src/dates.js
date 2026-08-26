@@ -4,15 +4,16 @@ export const FARM_TIMEZONE = process.env.FARM_TIMEZONE ?? 'Australia/Melbourne'
 
 /**
  * Normalize MySQL DATE / Date / ISO string to YYYY-MM-DD.
- * Uses UTC parts for Date objects so DATE '2026-07-30' does not become the previous day in AU/IST.
+ * mysql2 returns DATE columns as JS Date at local midnight — use local calendar parts
+ * so IST/AU hosts do not shift the day when reading UTC components.
  */
 export function toDateOnly(value) {
   if (value == null || value === '') return ''
 
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    const y = value.getUTCFullYear()
-    const m = String(value.getUTCMonth() + 1).padStart(2, '0')
-    const d = String(value.getUTCDate()).padStart(2, '0')
+    const y = value.getFullYear()
+    const m = String(value.getMonth() + 1).padStart(2, '0')
+    const d = String(value.getDate()).padStart(2, '0')
     return `${y}-${m}-${d}`
   }
 
@@ -22,9 +23,9 @@ export function toDateOnly(value) {
 
   const parsed = new Date(raw)
   if (!Number.isNaN(parsed.getTime())) {
-    const y = parsed.getUTCFullYear()
-    const m = String(parsed.getUTCMonth() + 1).padStart(2, '0')
-    const d = String(parsed.getUTCDate()).padStart(2, '0')
+    const y = parsed.getFullYear()
+    const m = String(parsed.getMonth() + 1).padStart(2, '0')
+    const d = String(parsed.getDate()).padStart(2, '0')
     return `${y}-${m}-${d}`
   }
 

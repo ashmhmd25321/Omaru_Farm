@@ -213,7 +213,7 @@ export function registerCommerceRoutes(app, {
   // ── Cart quote ──────────────────────────────────────────
   app.post('/api/cart/quote', async (req, res) => {
     try {
-      const method = String(req.body?.shippingMethod ?? 'delivery')
+      const method = String(req.body?.shippingMethod ?? req.body?.method ?? 'delivery')
       const postcode = String(req.body?.postcode ?? '')
       const { lines, subtotal, totalWeightGrams, totalVolumeCm3 } = await quoteCartLines(req.body?.items ?? [])
       if (lines.length === 0) return res.status(400).json({ message: 'Cart is empty' })
@@ -226,7 +226,7 @@ export function registerCommerceRoutes(app, {
             subtotal,
             totalWeightGrams,
             totalVolumeCm3,
-            method,
+            method: method === 'pickup' ? 'pickup' : 'delivery',
           })
         : {
             method: 'pickup',
@@ -967,7 +967,13 @@ export function registerCommerceRoutes(app, {
          ORDER BY start_date ASC`,
         to ? [id, from, to] : [id, from],
       )
-      res.json({ blocks })
+      res.json({
+        blocks: blocks.map((b) => ({
+          ...b,
+          startDate: toDateOnly(b.startDate),
+          endDate: toDateOnly(b.endDate),
+        })),
+      })
     } catch (error) {
       sendServerError(res, 'Failed to load availability', error)
     }
@@ -1014,12 +1020,14 @@ export function registerCommerceRoutes(app, {
   })
 
   async function isStayAvailable(propertyId, checkIn, checkOut) {
+    const start = toDateOnly(checkIn)
+    const end = toDateOnly(checkOut)
     const [blocks] = await pool.query(
       `SELECT start_date AS startDate, end_date AS endDate FROM availability_blocks WHERE property_id = ?`,
       [propertyId],
     )
     for (const b of blocks) {
-      if (datesOverlap(checkIn, checkOut, String(b.startDate).slice(0, 10), String(b.endDate).slice(0, 10))) {
+      if (datesOverlap(start, end, toDateOnly(b.startDate), toDateOnly(b.endDate))) {
         return false
       }
     }
@@ -1029,7 +1037,7 @@ export function registerCommerceRoutes(app, {
       [propertyId],
     )
     for (const b of bookings) {
-      if (datesOverlap(checkIn, checkOut, String(b.checkIn).slice(0, 10), String(b.checkOut).slice(0, 10))) {
+      if (datesOverlap(start, end, toDateOnly(b.checkIn), toDateOnly(b.checkOut))) {
         return false
       }
     }
