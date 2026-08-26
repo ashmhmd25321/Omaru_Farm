@@ -232,8 +232,10 @@ export async function ensureCommerceSchema() {
   if (toNumber(propCount[0]?.c, 0) === 0) {
     await pool.query(
       `INSERT INTO properties (slug, name, description, nightly_rate, min_nights, max_guests, cleaning_fee, sort_order) VALUES
-       ('glass-pavilion', 'Glass Pavilion', 'On-farm cabin with sweeping views.', 280.00, 2, 2, 80.00, 10),
-       ('heritage-stone-cottage', 'Heritage Stone Cottage', 'Self-contained stone cottage on Omaru Farm.', 320.00, 2, 4, 90.00, 20)`,
+       ('rose-by-omaru-farm', 'Rose by Omaru Farm', 'Four-bedroom holiday home in Cowes with outdoor hot tub. Sleeps up to 10.', 450.00, 2, 10, 150.00, 10),
+       ('jasmine-by-omaru-farm', 'Jasmine by Omaru Farm', 'Five-bedroom holiday home near Cowes. Sleeps up to 12.', 520.00, 2, 12, 160.00, 20),
+       ('daisy-by-omaru-farm', 'Daisy by Omaru Farm', 'Daisy holiday home on Phillip Island (Airbnb sync enabled).', 380.00, 2, 8, 120.00, 30),
+       ('daphne-by-omaru-farm', 'Daphne by Omaru Farm', 'Daphne holiday home on Phillip Island (Airbnb sync enabled).', 380.00, 2, 8, 120.00, 40)`,
     )
   }
 }
