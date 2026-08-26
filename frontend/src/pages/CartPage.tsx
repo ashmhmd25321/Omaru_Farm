@@ -26,6 +26,7 @@ type Quote = {
       packageLengthCm?: number
       packageWidthCm?: number
       packageHeightCm?: number
+      provisionalData?: boolean
     }
   }
 }
@@ -166,13 +167,20 @@ export function CartPage() {
                       <span>${quote.shipping.fee.toFixed(2)}</span>
                     </p>
                     {method === 'delivery' && breakdown ? (
-                      <p className="text-xs">
-                        {breakdown.freeShippingApplied
-                          ? `Free shipping over $${Number(breakdown.freeOver ?? 0).toFixed(0)}`
-                          : quote.shipping.provider === 'auspost'
-                            ? `AusPost live rate · chargeable ${Number(breakdown.chargeableKg ?? 0).toFixed(2)} kg · package ${Number(breakdown.packageLengthCm ?? 0)}×${Number(breakdown.packageWidthCm ?? 0)}×${Number(breakdown.packageHeightCm ?? 0)} cm`
-                            : `Chargeable ${Number(breakdown.chargeableKg ?? 0).toFixed(2)} kg · base $${Number(breakdown.baseFee ?? 0).toFixed(2)} + $${Number(breakdown.perKgFee ?? 0).toFixed(2)}/kg`}
-                      </p>
+                      <>
+                        <p className="text-xs">
+                          {breakdown.freeShippingApplied
+                            ? `Free shipping over $${Number(breakdown.freeOver ?? 0).toFixed(0)}`
+                            : quote.shipping.provider === 'auspost'
+                              ? `AusPost live rate · chargeable ${Number(breakdown.chargeableKg ?? 0).toFixed(2)} kg · package ${Number(breakdown.packageLengthCm ?? 0)}×${Number(breakdown.packageWidthCm ?? 0)}×${Number(breakdown.packageHeightCm ?? 0)} cm`
+                              : `Chargeable ${Number(breakdown.chargeableKg ?? 0).toFixed(2)} kg · base $${Number(breakdown.baseFee ?? 0).toFixed(2)} + $${Number(breakdown.perKgFee ?? 0).toFixed(2)}/kg`}
+                        </p>
+                        {breakdown.provisionalData ? (
+                          <p className="text-xs font-semibold text-amber-700">
+                            Testing estimate — product pack measurements are provisional.
+                          </p>
+                        ) : null}
+                      </>
                     ) : null}
                     <p className="flex justify-between font-semibold text-charcoal">
                       <span>Estimated total</span>

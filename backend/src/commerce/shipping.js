@@ -222,6 +222,7 @@ export async function resolveShippingQuote({
           packageHeightCm: pac.dimensions.height,
           fromPostcode: pac.fromPostcode,
           options: pac.options,
+          provisionalData: process.env.SHIPPING_DATA_PROVISIONAL === 'true',
         },
       }
     } catch (error) {

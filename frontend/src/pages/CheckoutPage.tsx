@@ -29,6 +29,7 @@ type Quote = {
       packageLengthCm?: number
       packageWidthCm?: number
       packageHeightCm?: number
+      provisionalData?: boolean
     }
   }
 }
@@ -294,22 +295,29 @@ export function CheckoutPage() {
                 <span>${quote.shipping.fee.toFixed(2)}</span>
               </p>
               {quote.shipping.method === 'delivery' && quote.shipping.breakdown ? (
-                <p className="text-xs text-stone">
-                  {quote.shipping.breakdown.freeShippingApplied
-                    ? `Free over $${Number(quote.shipping.breakdown.freeOver ?? 0).toFixed(0)}`
-                    : [
-                        `Actual ${Number(quote.shipping.breakdown.weightKg ?? 0).toFixed(2)} kg`,
-                        Number(quote.shipping.breakdown.volumetricKg ?? 0) > 0
-                          ? `volumetric ${Number(quote.shipping.breakdown.volumetricKg).toFixed(2)} kg`
-                          : null,
-                        `chargeable ${Number(quote.shipping.breakdown.chargeableKg ?? 0).toFixed(2)} kg`,
-                        quote.shipping.provider === 'auspost'
-                          ? `AusPost live rate · package ${Number(quote.shipping.breakdown.packageLengthCm ?? 0)}×${Number(quote.shipping.breakdown.packageWidthCm ?? 0)}×${Number(quote.shipping.breakdown.packageHeightCm ?? 0)} cm`
-                          : `base $${Number(quote.shipping.breakdown.baseFee ?? 0).toFixed(2)} + $${Number(quote.shipping.breakdown.perKgFee ?? 0).toFixed(2)}/kg`,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                </p>
+                <>
+                  <p className="text-xs text-stone">
+                    {quote.shipping.breakdown.freeShippingApplied
+                      ? `Free over $${Number(quote.shipping.breakdown.freeOver ?? 0).toFixed(0)}`
+                      : [
+                          `Actual ${Number(quote.shipping.breakdown.weightKg ?? 0).toFixed(2)} kg`,
+                          Number(quote.shipping.breakdown.volumetricKg ?? 0) > 0
+                            ? `volumetric ${Number(quote.shipping.breakdown.volumetricKg).toFixed(2)} kg`
+                            : null,
+                          `chargeable ${Number(quote.shipping.breakdown.chargeableKg ?? 0).toFixed(2)} kg`,
+                          quote.shipping.provider === 'auspost'
+                            ? `AusPost live rate · package ${Number(quote.shipping.breakdown.packageLengthCm ?? 0)}×${Number(quote.shipping.breakdown.packageWidthCm ?? 0)}×${Number(quote.shipping.breakdown.packageHeightCm ?? 0)} cm`
+                            : `base $${Number(quote.shipping.breakdown.baseFee ?? 0).toFixed(2)} + $${Number(quote.shipping.breakdown.perKgFee ?? 0).toFixed(2)}/kg`,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                  </p>
+                  {quote.shipping.breakdown.provisionalData ? (
+                    <p className="text-xs font-semibold text-amber-700">
+                      Testing estimate — product pack measurements are provisional.
+                    </p>
+                  ) : null}
+                </>
               ) : null}
               <p className="flex justify-between font-semibold text-charcoal">
                 <span>Total</span>
