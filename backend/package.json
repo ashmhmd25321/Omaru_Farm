@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "align:live-data": "node scripts/align-live-data.js",
     "check": "node --check src/server.js",
-    "qa:phase04": "node scripts/phase04.qa.js"
+    "qa:phase04": "node scripts/phase04.qa.js",
+    "qa:a2z": "node scripts/a2z.qa.js"
   },
   "keywords": [],
   "author": "Omaru Farm",
