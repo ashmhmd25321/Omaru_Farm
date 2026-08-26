@@ -74,6 +74,7 @@ export function CheckoutPage() {
   const { user } = useCustomerAuth()
   const navigate = useNavigate()
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null)
+  const [checkoutEnabled, setCheckoutEnabled] = useState(true)
   const [clientSecret, setClientSecret] = useState('')
   const [orderTotal, setOrderTotal] = useState(0)
   const [quote, setQuote] = useState<Quote | null>(null)
@@ -111,7 +112,8 @@ export function CheckoutPage() {
   useEffect(() => {
     fetch(apiUrl('/api/commerce/config'))
       .then((r) => r.json())
-      .then((cfg: { publishableKey?: string }) => {
+      .then((cfg: { publishableKey?: string; checkoutEnabled?: boolean }) => {
+        setCheckoutEnabled(cfg.checkoutEnabled !== false)
         if (cfg.publishableKey) setStripePromise(loadStripe(cfg.publishableKey))
       })
       .catch(() => undefined)
@@ -197,7 +199,12 @@ export function CheckoutPage() {
       <main className="mx-auto grid max-w-5xl gap-10 px-5 py-12 md:grid-cols-2 md:py-16">
         <div>
           <h1 className="font-heading text-4xl text-charcoal">Checkout</h1>
-          {!clientSecret ? (
+          {!checkoutEnabled ? (
+            <p className="mt-6 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Online checkout is temporarily unavailable. Please try again later or contact Omaru Farm.
+            </p>
+          ) : null}
+          {!clientSecret && checkoutEnabled ? (
             <form onSubmit={startPayment} className="mt-6 space-y-3">
               <input className="field" placeholder="Full name" required value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
               <input className="field" type="email" placeholder="Email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />

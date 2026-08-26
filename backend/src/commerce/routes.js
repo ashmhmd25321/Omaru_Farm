@@ -13,6 +13,14 @@ import {
   isValidEmail,
   isValidPhone,
 } from '../dates.js'
+import {
+  PENDING_HOLD_MS,
+  pendingExpiresAtDate,
+  restoreOrderStock,
+  expirePendingPayments,
+  cancelByPaymentIntent,
+  cancelPendingOrderById,
+} from './holds.js'
 
 function toNumber(value, fallback = 0) {
   const n = Number(value)
@@ -142,7 +150,23 @@ export function registerCommerceRoutes(app, {
   cookieSecure,
 }) {
   const CUSTOMER_COOKIE = process.env.CUSTOMER_COOKIE_NAME ?? 'omaru_customer_session'
-  const CUSTOMER_JWT_SECRET = process.env.CUSTOMER_JWT_SECRET ?? process.env.ADMIN_JWT_SECRET ?? 'dev_customer_jwt'
+  const isProduction = process.env.NODE_ENV === 'production'
+  const adminJwtSecret = process.env.ADMIN_JWT_SECRET ?? ''
+  let CUSTOMER_JWT_SECRET = process.env.CUSTOMER_JWT_SECRET ?? ''
+  if (!CUSTOMER_JWT_SECRET) {
+    if (isProduction) {
+      throw new Error('CUSTOMER_JWT_SECRET must be set in production')
+    }
+    CUSTOMER_JWT_SECRET = 'dev_customer_jwt'
+  }
+  if (isProduction) {
+    if (CUSTOMER_JWT_SECRET.length < 32) {
+      throw new Error('CUSTOMER_JWT_SECRET must be at least 32 characters in production')
+    }
+    if (CUSTOMER_JWT_SECRET === adminJwtSecret) {
+      throw new Error('CUSTOMER_JWT_SECRET must be distinct from ADMIN_JWT_SECRET')
+    }
+  }
   const FEATURE_CHECKOUT = process.env.FEATURE_CHECKOUT !== 'false'
 
   function customerCookieOptions() {
@@ -167,6 +191,9 @@ export function registerCommerceRoutes(app, {
       const token = getCustomerToken(req)
       if (!token) return res.status(401).json({ message: 'Sign in required' })
       const payload = jwt.verify(token, CUSTOMER_JWT_SECRET)
+      if (payload.role && payload.role !== 'customer') {
+        return res.status(401).json({ message: 'Invalid session' })
+      }
       const [rows] = await pool.query(
         'SELECT id, email, full_name AS fullName, phone, delivery_line1 AS deliveryLine1, delivery_line2 AS deliveryLine2, delivery_city AS deliveryCity, delivery_state AS deliveryState, delivery_postcode AS deliveryPostcode, stripe_customer_id AS stripeCustomerId FROM customers WHERE id = ? LIMIT 1',
         [payload.sub],
@@ -253,6 +280,7 @@ export function registerCommerceRoutes(app, {
     if (!stripe) return res.status(503).json({ message: 'Stripe is not configured (set STRIPE_SECRET_KEY)' })
 
     try {
+      await expirePendingPayments()
       const body = req.body ?? {}
       const method = String(body.shippingMethod ?? 'delivery')
       const email = String(body.email ?? req.customer?.email ?? '').trim()
@@ -291,15 +319,18 @@ export function registerCommerceRoutes(app, {
 
       const conn = await pool.getConnection()
       let orderId
+      const expiresAt = pendingExpiresAtDate()
       try {
         await conn.beginTransaction()
-        // Re-check stock under lock
+        // Reserve stock under lock (decrement now; restore on expire/fail/refund)
         for (const line of lines) {
-          const [stockRows] = await conn.query('SELECT stock_qty AS stockQty, name FROM products WHERE id = ? FOR UPDATE', [
-            line.productId,
-          ])
-          if (!stockRows[0] || toNumber(stockRows[0].stockQty, 0) < line.quantity) {
-            throw Object.assign(new Error(`Insufficient stock for ${stockRows[0]?.name ?? line.name}`), { status: 409 })
+          const [upd] = await conn.query(
+            'UPDATE products SET stock_qty = stock_qty - ? WHERE id = ? AND stock_qty >= ?',
+            [line.quantity, line.productId, line.quantity],
+          )
+          if (upd.affectedRows === 0) {
+            const [names] = await conn.query('SELECT name FROM products WHERE id = ? LIMIT 1', [line.productId])
+            throw Object.assign(new Error(`Insufficient stock for ${names[0]?.name ?? line.name}`), { status: 409 })
           }
         }
 
@@ -307,8 +338,9 @@ export function registerCommerceRoutes(app, {
           `INSERT INTO orders (
             order_number, customer_id, email, full_name, phone, shipping_method,
             shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postcode,
-            subtotal, shipping_fee, total, currency, status, fulfillment_status, shipping_breakdown_json
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', 'unfulfilled', ?)`,
+            subtotal, shipping_fee, total, currency, status, fulfillment_status, shipping_breakdown_json,
+            expires_at, stock_reserved
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', 'unfulfilled', ?, ?, 1)`,
           [
             number,
             req.customer?.id ?? null,
@@ -326,6 +358,7 @@ export function registerCommerceRoutes(app, {
             total,
             getCurrency(),
             JSON.stringify(shipping),
+            expiresAt,
           ],
         )
         orderId = result.insertId
@@ -344,14 +377,20 @@ export function registerCommerceRoutes(app, {
         conn.release()
       }
 
-      const pi = await stripe.paymentIntents.create({
-        amount: toStripeAmount(total),
-        currency: getCurrency(),
-        automatic_payment_methods: { enabled: true },
-        receipt_email: email,
-        metadata: { orderId: String(orderId), orderNumber: number, type: 'store_order' },
-        customer: req.customer?.stripeCustomerId || undefined,
-      })
+      let pi
+      try {
+        pi = await stripe.paymentIntents.create({
+          amount: toStripeAmount(total),
+          currency: getCurrency(),
+          automatic_payment_methods: { enabled: true },
+          receipt_email: email,
+          metadata: { orderId: String(orderId), orderNumber: number, type: 'store_order' },
+          customer: req.customer?.stripeCustomerId || undefined,
+        })
+      } catch (piError) {
+        await cancelPendingOrderById(orderId, { cancelStripe: false })
+        throw piError
+      }
 
       await pool.query('UPDATE orders SET stripe_payment_intent_id = ? WHERE id = ?', [pi.id, orderId])
 
@@ -361,6 +400,8 @@ export function registerCommerceRoutes(app, {
         clientSecret: pi.client_secret,
         total,
         currency: getCurrency(),
+        expiresAt: expiresAt.toISOString(),
+        holdMinutes: Math.round(PENDING_HOLD_MS / 60000),
       })
     } catch (error) {
       if (error.status) return res.status(error.status).json({ message: error.message })
@@ -373,11 +414,13 @@ export function registerCommerceRoutes(app, {
     const stripe = getStripe()
     if (!stripe) return res.status(503).send('Stripe not configured')
     const sig = req.headers['stripe-signature']
-    const secret = process.env.STRIPE_WEBHOOK_SECRET
+    const secret = String(process.env.STRIPE_WEBHOOK_SECRET ?? '').trim()
     let event
     try {
       if (secret) {
         event = stripe.webhooks.constructEvent(req.body, sig, secret)
+      } else if (isProduction) {
+        return res.status(500).send('STRIPE_WEBHOOK_SECRET is required in production')
       } else {
         // Local/dev without webhook secret: parse JSON body
         event = typeof req.body === 'string' || Buffer.isBuffer(req.body)
@@ -389,6 +432,14 @@ export function registerCommerceRoutes(app, {
     }
 
     try {
+      if (event?.id) {
+        const [seen] = await pool.query(
+          'SELECT event_id FROM stripe_webhook_events WHERE event_id = ? LIMIT 1',
+          [event.id],
+        )
+        if (seen[0]) return res.json({ received: true, duplicate: true })
+      }
+
       if (event.type === 'payment_intent.succeeded') {
         const pi = event.data.object
         const type = pi.metadata?.type
@@ -397,6 +448,22 @@ export function registerCommerceRoutes(app, {
         } else if (type === 'stay_booking') {
           await fulfillStayBooking(pi)
         }
+      } else if (
+        event.type === 'payment_intent.payment_failed' ||
+        event.type === 'payment_intent.canceled'
+      ) {
+        await cancelByPaymentIntent(event.data.object?.id)
+      } else if (event.type === 'charge.refunded') {
+        const charge = event.data.object
+        const piId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id
+        if (piId) await syncExternalRefund(piId, charge)
+      }
+
+      if (event?.id) {
+        await pool.query(
+          'INSERT IGNORE INTO stripe_webhook_events (event_id, event_type) VALUES (?, ?)',
+          [event.id, String(event.type ?? '')],
+        )
       }
       res.json({ received: true })
     } catch (error) {
@@ -405,29 +472,102 @@ export function registerCommerceRoutes(app, {
     }
   })
 
-  async function fulfillStoreOrder(pi) {
+  async function syncExternalRefund(piId, charge) {
+    const refunded = toNumber(charge.amount_refunded, 0) / 100
     const [orders] = await pool.query(
       `SELECT id, status FROM orders WHERE stripe_payment_intent_id = ? LIMIT 1`,
+      [piId],
+    )
+    if (orders[0] && orders[0].status === 'paid') {
+      await applyStoreRefund(orders[0].id, {
+        amount: refunded,
+        note: 'Synced from Stripe charge.refunded',
+        stripeRefundId: charge.refunds?.data?.[0]?.id ?? null,
+        alreadyRefundedInStripe: true,
+      })
+      return
+    }
+    const [stays] = await pool.query(
+      `SELECT id, status FROM stay_bookings WHERE stripe_payment_intent_id = ? LIMIT 1`,
+      [piId],
+    )
+    if (stays[0] && ['confirmed', 'refund_requested'].includes(stays[0].status)) {
+      await applyStayRefund(stays[0].id, {
+        amount: refunded,
+        note: 'Synced from Stripe charge.refunded',
+        stripeRefundId: charge.refunds?.data?.[0]?.id ?? null,
+        alreadyRefundedInStripe: true,
+      })
+    }
+  }
+
+  async function fulfillStoreOrder(pi) {
+    const [orders] = await pool.query(
+      `SELECT id, status, total, currency, stock_reserved AS stockReserved
+       FROM orders WHERE stripe_payment_intent_id = ? LIMIT 1`,
       [pi.id],
     )
     const order = orders[0]
-    if (!order || order.status === 'paid') return
+    if (!order || order.status === 'paid' || order.status === 'refunded') return
+    if (order.status === 'cancelled') {
+      throw new Error(`Payment succeeded for cancelled order ${order.id}`)
+    }
+    const expectedAmount = toStripeAmount(order.total)
+    const currency = String(order.currency ?? getCurrency()).toLowerCase()
+    if (toNumber(pi.amount, 0) !== expectedAmount || String(pi.currency ?? '').toLowerCase() !== currency) {
+      throw new Error(`PaymentIntent amount/currency mismatch for order ${order.id}`)
+    }
+    await pool.query(`UPDATE orders SET status = 'paid', expires_at = NULL WHERE id = ?`, [order.id])
+  }
+
+  async function fulfillStayBooking(pi) {
     const conn = await pool.getConnection()
     try {
       await conn.beginTransaction()
-      const [items] = await conn.query('SELECT product_id AS productId, quantity FROM order_items WHERE order_id = ?', [
-        order.id,
-      ])
-      for (const item of items) {
-        const [upd] = await conn.query(
-          'UPDATE products SET stock_qty = stock_qty - ? WHERE id = ? AND stock_qty >= ?',
-          [item.quantity, item.productId, item.quantity],
-        )
-        if (upd.affectedRows === 0) {
-          throw new Error(`Stock race for product ${item.productId}`)
-        }
+      const [rows] = await conn.query(
+        `SELECT id, property_id AS propertyId, check_in AS checkIn, check_out AS checkOut, status, total
+         FROM stay_bookings WHERE stripe_payment_intent_id = ? FOR UPDATE`,
+        [pi.id],
+      )
+      const booking = rows[0]
+      if (!booking || booking.status === 'confirmed' || booking.status === 'refunded') {
+        await conn.commit()
+        return
       }
-      await conn.query(`UPDATE orders SET status = 'paid' WHERE id = ?`, [order.id])
+      if (booking.status === 'cancelled') {
+        throw new Error(`Payment succeeded for cancelled stay ${booking.id}`)
+      }
+      const expectedAmount = toStripeAmount(booking.total)
+      const currency = getCurrency().toLowerCase()
+      if (toNumber(pi.amount, 0) !== expectedAmount || String(pi.currency ?? '').toLowerCase() !== currency) {
+        throw new Error(`PaymentIntent amount/currency mismatch for stay ${booking.id}`)
+      }
+
+      await conn.query('SELECT id FROM properties WHERE id = ? FOR UPDATE', [booking.propertyId])
+      const available = await isStayAvailable(booking.propertyId, booking.checkIn, booking.checkOut, conn, booking.id)
+      if (!available) {
+        await conn.query(
+          `UPDATE stay_bookings SET status = 'refund_requested', refund_status = 'requested',
+           refund_reason = ?, refund_requested_at = NOW(), refund_note = ?
+           WHERE id = ?`,
+          [
+            'Automatic: dates became unavailable after payment',
+            'Needs admin refund — double-booking conflict after payment',
+            booking.id,
+          ],
+        )
+        await conn.commit()
+        console.error(`Stay ${booking.id} paid but dates conflict — flagged for refund`)
+        return
+      }
+
+      await conn.query(`UPDATE stay_bookings SET status = 'confirmed', expires_at = NULL WHERE id = ?`, [booking.id])
+      await conn.query(
+        `INSERT INTO availability_blocks (property_id, start_date, end_date, source, external_uid, note)
+         VALUES (?, ?, ?, 'booking', ?, 'Confirmed stay booking')
+         ON DUPLICATE KEY UPDATE note = VALUES(note)`,
+        [booking.propertyId, toDateOnly(booking.checkIn), toDateOnly(booking.checkOut), `stay-${booking.id}`],
+      )
       await conn.commit()
     } catch (e) {
       await conn.rollback()
@@ -437,21 +577,129 @@ export function registerCommerceRoutes(app, {
     }
   }
 
-  async function fulfillStayBooking(pi) {
+  async function applyStoreRefund(orderId, { amount, note, stripeRefundId, alreadyRefundedInStripe = false } = {}) {
+    const stripe = getStripe()
     const [rows] = await pool.query(
-      `SELECT id, property_id AS propertyId, check_in AS checkIn, check_out AS checkOut, status
-       FROM stay_bookings WHERE stripe_payment_intent_id = ? LIMIT 1`,
-      [pi.id],
+      `SELECT id, status, total, stripe_payment_intent_id AS pi, stock_reserved AS stockReserved,
+              stripe_refund_id AS existingRefundId
+       FROM orders WHERE id = ? LIMIT 1`,
+      [orderId],
+    )
+    const order = rows[0]
+    if (!order) throw Object.assign(new Error('Order not found'), { status: 404 })
+    if (order.status === 'refunded' || order.existingRefundId) {
+      throw Object.assign(new Error('Order already refunded'), { status: 409 })
+    }
+    if (!['paid', 'refund_requested'].includes(order.status)) {
+      throw Object.assign(new Error('Order is not eligible for refund'), { status: 400 })
+    }
+    const refundAmount = amount == null || amount === '' ? toNumber(order.total, 0) : toNumber(amount, 0)
+    if (refundAmount <= 0 || refundAmount > toNumber(order.total, 0) + 0.001) {
+      throw Object.assign(new Error('Invalid refund amount'), { status: 400 })
+    }
+    let refundId = stripeRefundId
+    if (!alreadyRefundedInStripe) {
+      if (!stripe || !order.pi) throw Object.assign(new Error('Stripe not configured'), { status: 503 })
+      const refund = await stripe.refunds.create({
+        payment_intent: order.pi,
+        amount: toStripeAmount(refundAmount),
+        reason: 'requested_by_customer',
+        metadata: { orderId: String(orderId) },
+      })
+      refundId = refund.id
+    }
+
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
+      const [locked] = await conn.query(
+        `SELECT id, status, stock_reserved AS stockReserved, stripe_refund_id AS existingRefundId
+         FROM orders WHERE id = ? FOR UPDATE`,
+        [orderId],
+      )
+      if (!locked[0] || locked[0].status === 'refunded' || locked[0].existingRefundId) {
+        await conn.rollback()
+        return { refundId, refundAmount, alreadyDone: true }
+      }
+      if (locked[0].stockReserved) {
+        await restoreOrderStock(conn, orderId)
+      }
+      await conn.query(
+        `UPDATE orders SET status = 'refunded', fulfillment_status = 'cancelled', stock_reserved = 0,
+         refund_status = 'refunded', refunded_amount = ?, stripe_refund_id = ?, refund_note = ?
+         WHERE id = ?`,
+        [refundAmount, refundId ?? null, note ?? null, orderId],
+      )
+      await conn.commit()
+      return { refundId, refundAmount }
+    } catch (e) {
+      await conn.rollback()
+      throw e
+    } finally {
+      conn.release()
+    }
+  }
+
+  async function applyStayRefund(bookingId, { amount, note, stripeRefundId, alreadyRefundedInStripe = false } = {}) {
+    const stripe = getStripe()
+    const [rows] = await pool.query(
+      `SELECT id, status, total, stripe_payment_intent_id AS pi, stripe_refund_id AS existingRefundId
+       FROM stay_bookings WHERE id = ? LIMIT 1`,
+      [bookingId],
     )
     const booking = rows[0]
-    if (!booking || booking.status === 'confirmed') return
-    await pool.query(`UPDATE stay_bookings SET status = 'confirmed' WHERE id = ?`, [booking.id])
-    await pool.query(
-      `INSERT INTO availability_blocks (property_id, start_date, end_date, source, external_uid, note)
-       VALUES (?, ?, ?, 'booking', ?, 'Confirmed stay booking')
-       ON DUPLICATE KEY UPDATE note = VALUES(note)`,
-      [booking.propertyId, booking.checkIn, booking.checkOut, `stay-${booking.id}`],
-    )
+    if (!booking) throw Object.assign(new Error('Stay booking not found'), { status: 404 })
+    if (booking.status === 'refunded' || booking.existingRefundId) {
+      throw Object.assign(new Error('Stay already refunded'), { status: 409 })
+    }
+    if (!['confirmed', 'refund_requested'].includes(booking.status)) {
+      throw Object.assign(new Error('Stay is not eligible for refund'), { status: 400 })
+    }
+    const refundAmount = amount == null || amount === '' ? toNumber(booking.total, 0) : toNumber(amount, 0)
+    if (refundAmount <= 0 || refundAmount > toNumber(booking.total, 0) + 0.001) {
+      throw Object.assign(new Error('Invalid refund amount'), { status: 400 })
+    }
+    let refundId = stripeRefundId
+    if (!alreadyRefundedInStripe) {
+      if (!stripe || !booking.pi) throw Object.assign(new Error('Stripe not configured'), { status: 503 })
+      const refund = await stripe.refunds.create({
+        payment_intent: booking.pi,
+        amount: toStripeAmount(refundAmount),
+        reason: 'requested_by_customer',
+        metadata: { stayBookingId: String(bookingId) },
+      })
+      refundId = refund.id
+    }
+
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
+      const [locked] = await conn.query(
+        `SELECT id, status, stripe_refund_id AS existingRefundId FROM stay_bookings WHERE id = ? FOR UPDATE`,
+        [bookingId],
+      )
+      if (!locked[0] || locked[0].status === 'refunded' || locked[0].existingRefundId) {
+        await conn.rollback()
+        return { refundId, refundAmount, alreadyDone: true }
+      }
+      await conn.query(
+        `UPDATE stay_bookings SET status = 'refunded', refund_status = 'refunded',
+         refunded_amount = ?, stripe_refund_id = ?, refund_note = ?, expires_at = NULL
+         WHERE id = ?`,
+        [refundAmount, refundId ?? null, note ?? null, bookingId],
+      )
+      await conn.query(
+        `DELETE FROM availability_blocks WHERE source = 'booking' AND external_uid = ? LIMIT 1`,
+        [`stay-${bookingId}`],
+      )
+      await conn.commit()
+      return { refundId, refundAmount }
+    } catch (e) {
+      await conn.rollback()
+      throw e
+    } finally {
+      conn.release()
+    }
   }
 
   // ── Admin: shipping rules ───────────────────────────────
@@ -528,7 +776,9 @@ export function registerCommerceRoutes(app, {
       const [rows] = await pool.query(
         `SELECT id, order_number AS orderNumber, email, full_name AS fullName, phone, shipping_method AS shippingMethod,
                 shipping_postcode AS shippingPostcode, subtotal, shipping_fee AS shippingFee, total, status,
-                fulfillment_status AS fulfillmentStatus, shipping_breakdown_json AS shippingBreakdownJson, created_at AS createdAt
+                fulfillment_status AS fulfillmentStatus, shipping_breakdown_json AS shippingBreakdownJson,
+                refund_status AS refundStatus, refund_reason AS refundReason, refund_note AS refundNote,
+                refunded_amount AS refundedAmount, created_at AS createdAt
          FROM orders ORDER BY id DESC LIMIT 500`,
       )
       res.json(
@@ -571,6 +821,40 @@ export function registerCommerceRoutes(app, {
       res.json({ ok: true })
     } catch (error) {
       sendServerError(res, 'Failed to update order', error)
+    }
+  })
+
+  app.post('/api/admin/orders/:id/refund', requireAdmin, async (req, res) => {
+    const id = toNumber(req.params.id, 0)
+    if (!id) return res.status(400).json({ message: 'Invalid id' })
+    try {
+      const result = await applyStoreRefund(id, {
+        amount: req.body?.amount,
+        note: req.body?.note ? String(req.body.note) : 'Admin approved refund',
+      })
+      res.json({ ok: true, ...result })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Failed to refund order', error)
+    }
+  })
+
+  app.post('/api/admin/orders/:id/refund-reject', requireAdmin, async (req, res) => {
+    const id = toNumber(req.params.id, 0)
+    if (!id) return res.status(400).json({ message: 'Invalid id' })
+    try {
+      const [rows] = await pool.query(`SELECT id, status FROM orders WHERE id = ? LIMIT 1`, [id])
+      if (!rows[0]) return res.status(404).json({ message: 'Order not found' })
+      if (rows[0].status !== 'refund_requested') {
+        return res.status(400).json({ message: 'No refund request to reject' })
+      }
+      await pool.query(
+        `UPDATE orders SET status = 'paid', refund_status = 'rejected', refund_note = ? WHERE id = ?`,
+        [String(req.body?.note ?? 'Refund request declined'), id],
+      )
+      res.json({ ok: true })
+    } catch (error) {
+      sendServerError(res, 'Failed to reject refund', error)
     }
   })
 
@@ -981,10 +1265,20 @@ export function registerCommerceRoutes(app, {
 
   app.post('/api/stays/quote', async (req, res) => {
     try {
+      await expirePendingPayments()
       const propertyId = toNumber(req.body?.propertyId, 0)
-      const checkIn = String(req.body?.checkIn ?? '')
-      const checkOut = String(req.body?.checkOut ?? '')
+      const checkIn = toDateOnly(req.body?.checkIn)
+      const checkOut = toDateOnly(req.body?.checkOut)
       const guests = Math.max(1, Math.floor(toNumber(req.body?.guests, 1)))
+      if (!isValidISODate(checkIn) || !isValidISODate(checkOut)) {
+        return res.status(400).json({ message: 'Valid check-in and check-out dates are required' })
+      }
+      if (isPastDate(checkIn)) {
+        return res.status(400).json({ message: 'Check-in must be today or later' })
+      }
+      if (!(checkIn < checkOut)) {
+        return res.status(400).json({ message: 'Check-out must be after check-in' })
+      }
       const [props] = await pool.query(
         `SELECT id, nightly_rate AS nightlyRate, min_nights AS minNights, max_guests AS maxGuests, cleaning_fee AS cleaningFee, name
          FROM properties WHERE id = ? AND is_active = 1 LIMIT 1`,
@@ -993,6 +1287,9 @@ export function registerCommerceRoutes(app, {
       const property = props[0]
       if (!property) return res.status(404).json({ message: 'Property not found' })
       const nights = nightsBetween(checkIn, checkOut)
+      if (nights < 1) {
+        return res.status(400).json({ message: 'Stay must be at least 1 night' })
+      }
       if (nights < property.minNights) {
         return res.status(400).json({ message: `Minimum stay is ${property.minNights} nights` })
       }
@@ -1019,10 +1316,10 @@ export function registerCommerceRoutes(app, {
     }
   })
 
-  async function isStayAvailable(propertyId, checkIn, checkOut) {
+  async function isStayAvailable(propertyId, checkIn, checkOut, db = pool, excludeBookingId = null) {
     const start = toDateOnly(checkIn)
     const end = toDateOnly(checkOut)
-    const [blocks] = await pool.query(
+    const [blocks] = await db.query(
       `SELECT start_date AS startDate, end_date AS endDate FROM availability_blocks WHERE property_id = ?`,
       [propertyId],
     )
@@ -1031,12 +1328,17 @@ export function registerCommerceRoutes(app, {
         return false
       }
     }
-    const [bookings] = await pool.query(
-      `SELECT check_in AS checkIn, check_out AS checkOut FROM stay_bookings
-       WHERE property_id = ? AND status IN ('pending_payment','confirmed')`,
+    const [bookings] = await db.query(
+      `SELECT id, check_in AS checkIn, check_out AS checkOut FROM stay_bookings
+       WHERE property_id = ?
+         AND (
+           status IN ('confirmed', 'refund_requested')
+           OR (status = 'pending_payment' AND (expires_at IS NULL OR expires_at > NOW()))
+         )`,
       [propertyId],
     )
     for (const b of bookings) {
+      if (excludeBookingId && toNumber(b.id, 0) === toNumber(excludeBookingId, 0)) continue
       if (datesOverlap(start, end, toDateOnly(b.checkIn), toDateOnly(b.checkOut))) {
         return false
       }
@@ -1049,70 +1351,115 @@ export function registerCommerceRoutes(app, {
     const stripe = getStripe()
     if (!stripe) return res.status(503).json({ message: 'Stripe is not configured' })
     try {
+      await expirePendingPayments()
       const body = req.body ?? {}
       const propertyId = toNumber(body.propertyId, 0)
-      const checkIn = String(body.checkIn ?? '')
-      const checkOut = String(body.checkOut ?? '')
+      const checkIn = toDateOnly(body.checkIn)
+      const checkOut = toDateOnly(body.checkOut)
       const guests = Math.max(1, Math.floor(toNumber(body.guests, 1)))
       const email = String(body.email ?? req.customer?.email ?? '').trim()
       const fullName = String(body.fullName ?? req.customer?.fullName ?? '').trim()
       if (!email || !fullName) return res.status(400).json({ message: 'Name and email required' })
-
-      const [props] = await pool.query(
-        `SELECT * FROM properties WHERE id = ? AND is_active = 1 LIMIT 1`,
-        [propertyId],
-      )
-      const property = props[0]
-      if (!property) return res.status(404).json({ message: 'Property not found' })
-      const nights = nightsBetween(checkIn, checkOut)
-      if (nights < property.min_nights) return res.status(400).json({ message: 'Below minimum nights' })
-      if (!(await isStayAvailable(propertyId, checkIn, checkOut))) {
-        return res.status(409).json({ message: 'Dates unavailable' })
+      if (!isValidISODate(checkIn) || !isValidISODate(checkOut)) {
+        return res.status(400).json({ message: 'Valid check-in and check-out dates are required' })
       }
-      const nightly = toNumber(property.nightly_rate, 0)
-      const cleaning = toNumber(property.cleaning_fee, 0)
-      const total = +(nights * nightly + cleaning).toFixed(2)
-      const number = stayNumber()
+      if (isPastDate(checkIn)) {
+        return res.status(400).json({ message: 'Check-in must be today or later' })
+      }
+      if (!(checkIn < checkOut)) {
+        return res.status(400).json({ message: 'Check-out must be after check-in' })
+      }
 
-      const [result] = await pool.query(
-        `INSERT INTO stay_bookings (
-          booking_number, property_id, customer_id, email, full_name, phone,
-          check_in, check_out, guests, nights, nightly_rate, cleaning_fee, total, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment')`,
-        [
-          number,
-          propertyId,
-          req.customer?.id ?? null,
-          email,
-          fullName,
-          String(body.phone ?? ''),
-          checkIn,
-          checkOut,
-          guests,
-          nights,
-          nightly,
-          cleaning,
-          total,
-        ],
-      )
+      const conn = await pool.getConnection()
+      let bookingId
+      let property
+      let nights
+      let total
+      let number
+      const expiresAt = pendingExpiresAtDate()
+      try {
+        await conn.beginTransaction()
+        const [props] = await conn.query(
+          `SELECT * FROM properties WHERE id = ? AND is_active = 1 LIMIT 1 FOR UPDATE`,
+          [propertyId],
+        )
+        property = props[0]
+        if (!property) {
+          throw Object.assign(new Error('Property not found'), { status: 404 })
+        }
+        nights = nightsBetween(checkIn, checkOut)
+        if (nights < 1) throw Object.assign(new Error('Stay must be at least 1 night'), { status: 400 })
+        if (nights < property.min_nights) {
+          throw Object.assign(new Error('Below minimum nights'), { status: 400 })
+        }
+        if (guests > property.max_guests) {
+          throw Object.assign(new Error(`Max guests is ${property.max_guests}`), { status: 400 })
+        }
+        if (!(await isStayAvailable(propertyId, checkIn, checkOut, conn))) {
+          throw Object.assign(new Error('Dates unavailable'), { status: 409 })
+        }
+        const nightly = toNumber(property.nightly_rate, 0)
+        const cleaning = toNumber(property.cleaning_fee, 0)
+        total = +(nights * nightly + cleaning).toFixed(2)
+        number = stayNumber()
 
-      const pi = await stripe.paymentIntents.create({
-        amount: toStripeAmount(total),
-        currency: getCurrency(),
-        automatic_payment_methods: { enabled: true },
-        receipt_email: email,
-        metadata: { stayBookingId: String(result.insertId), bookingNumber: number, type: 'stay_booking' },
-      })
-      await pool.query('UPDATE stay_bookings SET stripe_payment_intent_id = ? WHERE id = ?', [pi.id, result.insertId])
+        const [result] = await conn.query(
+          `INSERT INTO stay_bookings (
+            booking_number, property_id, customer_id, email, full_name, phone,
+            check_in, check_out, guests, nights, nightly_rate, cleaning_fee, total, status, expires_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', ?)`,
+          [
+            number,
+            propertyId,
+            req.customer?.id ?? null,
+            email,
+            fullName,
+            String(body.phone ?? ''),
+            checkIn,
+            checkOut,
+            guests,
+            nights,
+            nightly,
+            cleaning,
+            total,
+            expiresAt,
+          ],
+        )
+        bookingId = result.insertId
+        await conn.commit()
+      } catch (e) {
+        await conn.rollback()
+        throw e
+      } finally {
+        conn.release()
+      }
+
+      let pi
+      try {
+        pi = await stripe.paymentIntents.create({
+          amount: toStripeAmount(total),
+          currency: getCurrency(),
+          automatic_payment_methods: { enabled: true },
+          receipt_email: email,
+          metadata: { stayBookingId: String(bookingId), bookingNumber: number, type: 'stay_booking' },
+        })
+      } catch (piError) {
+        await pool.query(`UPDATE stay_bookings SET status = 'cancelled' WHERE id = ?`, [bookingId])
+        throw piError
+      }
+      await pool.query('UPDATE stay_bookings SET stripe_payment_intent_id = ? WHERE id = ?', [pi.id, bookingId])
 
       res.status(201).json({
-        bookingId: result.insertId,
+        bookingId,
         bookingNumber: number,
         clientSecret: pi.client_secret,
         total,
         currency: getCurrency(),
+        expiresAt: expiresAt.toISOString(),
+        holdMinutes: Math.round(PENDING_HOLD_MS / 60000),
       })
     } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
       sendServerError(res, 'Failed to start stay checkout', error)
     }
   })
@@ -1195,7 +1542,8 @@ export function registerCommerceRoutes(app, {
       const [rows] = await pool.query(
         `SELECT sb.id, sb.booking_number AS bookingNumber, sb.email, sb.full_name AS fullName,
                 sb.check_in AS checkIn, sb.check_out AS checkOut, sb.guests, sb.nights, sb.total, sb.status,
-                p.name AS propertyName
+                sb.refund_status AS refundStatus, sb.refund_reason AS refundReason, sb.refund_note AS refundNote,
+                sb.refunded_amount AS refundedAmount, p.name AS propertyName
          FROM stay_bookings sb
          JOIN properties p ON p.id = sb.property_id
          ORDER BY sb.id DESC LIMIT 500`,
@@ -1203,6 +1551,40 @@ export function registerCommerceRoutes(app, {
       res.json(rows)
     } catch (error) {
       sendServerError(res, 'Failed to load stay bookings', error)
+    }
+  })
+
+  app.post('/api/admin/stay-bookings/:id/refund', requireAdmin, async (req, res) => {
+    const id = toNumber(req.params.id, 0)
+    if (!id) return res.status(400).json({ message: 'Invalid id' })
+    try {
+      const result = await applyStayRefund(id, {
+        amount: req.body?.amount,
+        note: req.body?.note ? String(req.body.note) : 'Admin approved stay refund',
+      })
+      res.json({ ok: true, ...result })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Failed to refund stay', error)
+    }
+  })
+
+  app.post('/api/admin/stay-bookings/:id/refund-reject', requireAdmin, async (req, res) => {
+    const id = toNumber(req.params.id, 0)
+    if (!id) return res.status(400).json({ message: 'Invalid id' })
+    try {
+      const [rows] = await pool.query(`SELECT id, status FROM stay_bookings WHERE id = ? LIMIT 1`, [id])
+      if (!rows[0]) return res.status(404).json({ message: 'Stay booking not found' })
+      if (rows[0].status !== 'refund_requested') {
+        return res.status(400).json({ message: 'No refund request to reject' })
+      }
+      await pool.query(
+        `UPDATE stay_bookings SET status = 'confirmed', refund_status = 'rejected', refund_note = ? WHERE id = ?`,
+        [String(req.body?.note ?? 'Refund request declined'), id],
+      )
+      res.json({ ok: true })
+    } catch (error) {
+      sendServerError(res, 'Failed to reject stay refund', error)
     }
   })
 
@@ -1253,8 +1635,17 @@ export function registerCommerceRoutes(app, {
   }, 15 * 60 * 1000)
 
   setInterval(() => {
+    expirePendingPayments().catch((e) => console.warn('expire pending payments', e.message))
+  }, 5 * 60 * 1000)
+
+  setInterval(() => {
     syncAllIcalFeeds().catch((e) => console.warn('ical sync', e.message))
   }, 30 * 60 * 1000)
+
+  // Kick off once shortly after boot
+  setTimeout(() => {
+    expirePendingPayments().catch((e) => console.warn('expire pending payments', e.message))
+  }, 10_000)
 
   // ── Customer auth & dashboard ───────────────────────────
   app.post('/api/auth/register', async (req, res) => {
@@ -1270,7 +1661,7 @@ export function registerCommerceRoutes(app, {
         `INSERT INTO customers (email, password_hash, full_name, phone) VALUES (?, ?, ?, ?)`,
         [email, hash, fullName, String(req.body?.phone ?? '')],
       )
-      const token = jwt.sign({ sub: result.insertId, email }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' })
+      const token = jwt.sign({ sub: result.insertId, email, role: 'customer' }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' })
       res.cookie(CUSTOMER_COOKIE, token, customerCookieOptions())
       res.status(201).json({ id: result.insertId, email, fullName })
     } catch (error) {
@@ -1291,7 +1682,9 @@ export function registerCommerceRoutes(app, {
       if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
         return res.status(401).json({ message: 'Invalid credentials' })
       }
-      const token = jwt.sign({ sub: user.id, email: user.email }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' })
+      const token = jwt.sign({ sub: user.id, email: user.email, role: 'customer' }, CUSTOMER_JWT_SECRET, {
+        expiresIn: '30d',
+      })
       res.cookie(CUSTOMER_COOKIE, token, customerCookieOptions())
       res.json({ id: user.id, email: user.email, fullName: user.fullName })
     } catch (error) {
@@ -1333,7 +1726,9 @@ export function registerCommerceRoutes(app, {
   app.get('/api/account/orders', requireCustomer, async (req, res) => {
     try {
       const [rows] = await pool.query(
-        `SELECT id, order_number AS orderNumber, total, status, fulfillment_status AS fulfillmentStatus, created_at AS createdAt
+        `SELECT id, order_number AS orderNumber, total, status, fulfillment_status AS fulfillmentStatus,
+                refund_status AS refundStatus, refund_reason AS refundReason, refund_note AS refundNote,
+                refunded_amount AS refundedAmount, created_at AS createdAt
          FROM orders WHERE customer_id = ? OR email = ? ORDER BY id DESC LIMIT 100`,
         [req.customer.id, req.customer.email],
       )
@@ -1343,11 +1738,42 @@ export function registerCommerceRoutes(app, {
     }
   })
 
+  app.post('/api/account/orders/:id/refund-request', requireCustomer, async (req, res) => {
+    const id = toNumber(req.params.id, 0)
+    const reason = String(req.body?.reason ?? '').trim()
+    if (!id) return res.status(400).json({ message: 'Invalid id' })
+    if (reason.length < 5) return res.status(400).json({ message: 'Please provide a short reason (5+ characters)' })
+    try {
+      const [rows] = await pool.query(
+        `SELECT id, status, customer_id AS customerId, email FROM orders WHERE id = ? LIMIT 1`,
+        [id],
+      )
+      const order = rows[0]
+      if (!order) return res.status(404).json({ message: 'Order not found' })
+      const owns =
+        toNumber(order.customerId, 0) === req.customer.id ||
+        String(order.email).toLowerCase() === String(req.customer.email).toLowerCase()
+      if (!owns) return res.status(403).json({ message: 'Not your order' })
+      if (order.status !== 'paid') {
+        return res.status(400).json({ message: 'Only paid orders can request a refund' })
+      }
+      await pool.query(
+        `UPDATE orders SET status = 'refund_requested', refund_status = 'requested',
+         refund_reason = ?, refund_requested_at = NOW() WHERE id = ?`,
+        [reason.slice(0, 1000), id],
+      )
+      res.json({ ok: true })
+    } catch (error) {
+      sendServerError(res, 'Failed to request refund', error)
+    }
+  })
+
   app.get('/api/account/stays', requireCustomer, async (req, res) => {
     try {
       const [rows] = await pool.query(
         `SELECT sb.id, sb.booking_number AS bookingNumber, sb.check_in AS checkIn, sb.check_out AS checkOut,
-                sb.total, sb.status, p.name AS propertyName
+                sb.total, sb.status, sb.refund_status AS refundStatus, sb.refund_reason AS refundReason,
+                sb.refund_note AS refundNote, sb.refunded_amount AS refundedAmount, p.name AS propertyName
          FROM stay_bookings sb
          JOIN properties p ON p.id = sb.property_id
          WHERE sb.customer_id = ? OR sb.email = ?
@@ -1357,6 +1783,36 @@ export function registerCommerceRoutes(app, {
       res.json(rows)
     } catch (error) {
       sendServerError(res, 'Failed to load stays', error)
+    }
+  })
+
+  app.post('/api/account/stays/:id/refund-request', requireCustomer, async (req, res) => {
+    const id = toNumber(req.params.id, 0)
+    const reason = String(req.body?.reason ?? '').trim()
+    if (!id) return res.status(400).json({ message: 'Invalid id' })
+    if (reason.length < 5) return res.status(400).json({ message: 'Please provide a short reason (5+ characters)' })
+    try {
+      const [rows] = await pool.query(
+        `SELECT id, status, customer_id AS customerId, email FROM stay_bookings WHERE id = ? LIMIT 1`,
+        [id],
+      )
+      const booking = rows[0]
+      if (!booking) return res.status(404).json({ message: 'Stay booking not found' })
+      const owns =
+        toNumber(booking.customerId, 0) === req.customer.id ||
+        String(booking.email).toLowerCase() === String(req.customer.email).toLowerCase()
+      if (!owns) return res.status(403).json({ message: 'Not your booking' })
+      if (booking.status !== 'confirmed') {
+        return res.status(400).json({ message: 'Only confirmed stays can request a refund' })
+      }
+      await pool.query(
+        `UPDATE stay_bookings SET status = 'refund_requested', refund_status = 'requested',
+         refund_reason = ?, refund_requested_at = NOW() WHERE id = ?`,
+        [reason.slice(0, 1000), id],
+      )
+      res.json({ ok: true })
+    } catch (error) {
+      sendServerError(res, 'Failed to request stay refund', error)
     }
   })
 
@@ -1447,5 +1903,5 @@ export function registerCommerceRoutes(app, {
   })
 
   // Export for tests / manual sync
-  return { syncAllIcalFeeds, expireTableHolds, fulfillStoreOrder }
+  return { syncAllIcalFeeds, expireTableHolds, expirePendingPayments, fulfillStoreOrder }
 }

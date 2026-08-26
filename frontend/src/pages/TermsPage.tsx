@@ -57,14 +57,23 @@ export function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-heading text-xl text-charcoal md:text-2xl">5. Intellectual property</h2>
+            <h2 className="font-heading text-xl text-charcoal md:text-2xl">5. Refunds &amp; cancellations</h2>
+            <p className="mt-3">
+              If you need a refund for a store order or stay booking, sign in to your account and submit a refund request with a short reason.
+              Omaru Farm reviews each request and processes approved refunds through Stripe. Final refund and cancellation rules (including timing
+              before check-in, shipping, or perishable goods) will be confirmed in lawyer-reviewed terms before live trading.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-heading text-xl text-charcoal md:text-2xl">6. Intellectual property</h2>
             <p className="mt-3">
               Text, images, logos, and design on this site belong to Omaru Farm or our licensors. Do not copy or reuse them without permission.
             </p>
           </section>
 
           <section>
-            <h2 className="font-heading text-xl text-charcoal md:text-2xl">6. Liability</h2>
+            <h2 className="font-heading text-xl text-charcoal md:text-2xl">7. Liability</h2>
             <p className="mt-3">
               To the extent permitted by law, we are not liable for loss arising from use of this site, third-party links, or events beyond our
               reasonable control. Nothing here limits rights you have under the Australian Consumer Law.
@@ -72,7 +81,7 @@ export function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-heading text-xl text-charcoal md:text-2xl">7. Contact</h2>
+            <h2 className="font-heading text-xl text-charcoal md:text-2xl">8. Contact</h2>
             <p className="mt-3">
               Questions about these terms?{' '}
               <Link to="/contact" className="text-gold underline-offset-4 hover:underline">

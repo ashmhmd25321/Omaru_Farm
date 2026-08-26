@@ -56,6 +56,7 @@ export function StayBookingPanel() {
   const [clientSecret, setClientSecret] = useState('')
   const [payTotal, setPayTotal] = useState(0)
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null)
+  const [checkoutEnabled, setCheckoutEnabled] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [blocks, setBlocks] = useState<{ startDate: string; endDate: string; source: string }[]>([])
@@ -72,7 +73,8 @@ export function StayBookingPanel() {
       .catch(() => undefined)
     fetch(apiUrl('/api/commerce/config'))
       .then((r) => r.json())
-      .then((cfg: { publishableKey?: string }) => {
+      .then((cfg: { publishableKey?: string; checkoutEnabled?: boolean }) => {
+        setCheckoutEnabled(cfg.checkoutEnabled !== false)
         if (cfg.publishableKey) setStripePromise(loadStripe(cfg.publishableKey))
       })
       .catch(() => undefined)
@@ -135,8 +137,13 @@ export function StayBookingPanel() {
         <p className="mt-3 text-sm text-stone">
           Live availability respects Airbnb / Booking.com calendars and manual block-outs. Secure payment via Stripe.
         </p>
+        {!checkoutEnabled ? (
+          <p className="mt-6 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Online stay checkout is temporarily unavailable. Please contact Omaru Farm to book.
+          </p>
+        ) : null}
 
-        {!clientSecret ? (
+        {!clientSecret && checkoutEnabled ? (
           <form onSubmit={checkout} className="mt-8 grid gap-3 sm:grid-cols-2">
             <select
               className="field sm:col-span-2"

@@ -226,6 +226,31 @@ export async function ensureCommerceSchema() {
   // Legacy soft holds used status "held"; treat them as pending confirmation.
   await pool.query(`UPDATE table_holds SET status = 'pending' WHERE status = 'held'`)
 
+  await addColumnIfMissing('orders', 'expires_at', 'DATETIME NULL')
+  await addColumnIfMissing('orders', 'stock_reserved', 'TINYINT(1) NOT NULL DEFAULT 0')
+  await addColumnIfMissing('orders', 'refund_requested_at', 'DATETIME NULL')
+  await addColumnIfMissing('orders', 'refund_reason', 'TEXT NULL')
+  await addColumnIfMissing('orders', 'refund_status', 'VARCHAR(40) NULL')
+  await addColumnIfMissing('orders', 'stripe_refund_id', 'VARCHAR(120) NULL')
+  await addColumnIfMissing('orders', 'refunded_amount', 'DECIMAL(10,2) NULL')
+  await addColumnIfMissing('orders', 'refund_note', 'TEXT NULL')
+
+  await addColumnIfMissing('stay_bookings', 'expires_at', 'DATETIME NULL')
+  await addColumnIfMissing('stay_bookings', 'refund_requested_at', 'DATETIME NULL')
+  await addColumnIfMissing('stay_bookings', 'refund_reason', 'TEXT NULL')
+  await addColumnIfMissing('stay_bookings', 'refund_status', 'VARCHAR(40) NULL')
+  await addColumnIfMissing('stay_bookings', 'stripe_refund_id', 'VARCHAR(120) NULL')
+  await addColumnIfMissing('stay_bookings', 'refunded_amount', 'DECIMAL(10,2) NULL')
+  await addColumnIfMissing('stay_bookings', 'refund_note', 'TEXT NULL')
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+      event_id VARCHAR(255) PRIMARY KEY,
+      event_type VARCHAR(120) NOT NULL,
+      processed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
   await seedShippingMatrix(pool)
 
   const [propCount] = await pool.query('SELECT COUNT(*) AS c FROM properties')

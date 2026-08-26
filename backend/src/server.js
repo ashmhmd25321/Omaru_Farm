@@ -49,6 +49,18 @@ if (isProduction && ADMIN_JWT_SECRET.length < 32) {
 if (isProduction && ADMIN_PASSWORD.length < 12) {
   throw new Error('ADMIN_PASSWORD must be at least 12 characters in production')
 }
+const CUSTOMER_JWT_SECRET_CHECK = process.env.CUSTOMER_JWT_SECRET ?? ''
+if (isProduction) {
+  if (!CUSTOMER_JWT_SECRET_CHECK || CUSTOMER_JWT_SECRET_CHECK.length < 32) {
+    throw new Error('CUSTOMER_JWT_SECRET must be set and at least 32 characters in production')
+  }
+  if (CUSTOMER_JWT_SECRET_CHECK === ADMIN_JWT_SECRET) {
+    throw new Error('CUSTOMER_JWT_SECRET must be distinct from ADMIN_JWT_SECRET')
+  }
+  if (!String(process.env.STRIPE_WEBHOOK_SECRET ?? '').trim()) {
+    throw new Error('STRIPE_WEBHOOK_SECRET must be set in production')
+  }
+}
 const UPLOAD_DIR = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
   : path.resolve(process.cwd(), '../frontend/public/images/uploads')
@@ -404,6 +416,12 @@ function requireAdmin(req, res, next) {
 
   try {
     const payload = jwt.verify(token, ADMIN_JWT_SECRET)
+    if (payload.role && payload.role !== 'admin') {
+      return res.status(401).json({ message: 'Unauthorized admin request' })
+    }
+    if (!payload.username) {
+      return res.status(401).json({ message: 'Unauthorized admin request' })
+    }
     req.admin = payload
   } catch {
     return res.status(401).json({ message: 'Unauthorized admin request' })
@@ -796,6 +814,7 @@ app.post('/api/admin/login', async (req, res) => {
       {
         sub: String(user.id),
         username: String(user.username),
+        role: 'admin',
       },
       ADMIN_JWT_SECRET,
       { expiresIn: ADMIN_JWT_EXPIRES },

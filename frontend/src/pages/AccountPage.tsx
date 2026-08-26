@@ -6,8 +6,27 @@ import { Button } from '@/components/ui/button'
 import { useCustomerAuth } from '@/context/CustomerAuthContext'
 import { apiUrl } from '@/utils/api'
 
-type OrderRow = { id: number; orderNumber: string; total: number; status: string; fulfillmentStatus: string; createdAt: string }
-type StayRow = { id: number; bookingNumber: string; propertyName: string; checkIn: string; checkOut: string; total: number; status: string }
+type OrderRow = {
+  id: number
+  orderNumber: string
+  total: number
+  status: string
+  fulfillmentStatus: string
+  refundStatus?: string | null
+  refundNote?: string | null
+  createdAt: string
+}
+type StayRow = {
+  id: number
+  bookingNumber: string
+  propertyName: string
+  checkIn: string
+  checkOut: string
+  total: number
+  status: string
+  refundStatus?: string | null
+  refundNote?: string | null
+}
 type CardRow = { id: number; brand: string; last4: string; expMonth: number; expYear: number }
 
 function SaveCardForm({ onSaved }: { onSaved: () => void }) {
@@ -50,6 +69,69 @@ function SaveCardForm({ onSaved }: { onSaved: () => void }) {
         {busy ? 'Saving…' : 'Save card'}
       </Button>
     </form>
+  )
+}
+
+function RefundRequestButton({
+  kind,
+  id,
+  onDone,
+}: {
+  kind: 'orders' | 'stays'
+  id: number
+  onDone: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const submit = async () => {
+    setBusy(true)
+    setError('')
+    const res = await fetch(apiUrl(`/api/account/${kind}/${id}/refund-request`), {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) {
+      setError(data.message ?? 'Could not submit request')
+      return
+    }
+    setOpen(false)
+    setReason('')
+    onDone()
+  }
+
+  if (!open) {
+    return (
+      <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+        Request refund
+      </Button>
+    )
+  }
+
+  return (
+    <div className="mt-2 w-full space-y-2">
+      <textarea
+        className="field min-h-[72px]"
+        placeholder="Why do you need a refund?"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+      />
+      {error ? <p className="text-xs text-red-600">{error}</p> : null}
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" disabled={busy || reason.trim().length < 5} onClick={() => void submit()}>
+          {busy ? 'Sending…' : 'Submit request'}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -162,7 +244,18 @@ export function AccountPage() {
             <ul className="mt-3 space-y-2">
               {orders.map((o) => (
                 <li key={o.id} className="rounded-lg border border-parchment bg-white px-4 py-3 text-sm">
-                  <span className="font-semibold">{o.orderNumber}</span> — ${Number(o.total).toFixed(2)} — {o.status} / {o.fulfillmentStatus}
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p>
+                        <span className="font-semibold">{o.orderNumber}</span> — ${Number(o.total).toFixed(2)} — {o.status} /{' '}
+                        {o.fulfillmentStatus}
+                      </p>
+                      {o.refundNote ? <p className="mt-1 text-xs text-stone">{o.refundNote}</p> : null}
+                    </div>
+                    {o.status === 'paid' ? (
+                      <RefundRequestButton kind="orders" id={o.id} onDone={() => void loadAccount()} />
+                    ) : null}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -177,7 +270,19 @@ export function AccountPage() {
             <ul className="mt-3 space-y-2">
               {stays.map((s) => (
                 <li key={s.id} className="rounded-lg border border-parchment bg-white px-4 py-3 text-sm">
-                  <span className="font-semibold">{s.bookingNumber}</span> — {s.propertyName} ({String(s.checkIn).slice(0, 10)} → {String(s.checkOut).slice(0, 10)}) — ${Number(s.total).toFixed(2)} — {s.status}
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p>
+                        <span className="font-semibold">{s.bookingNumber}</span> — {s.propertyName} (
+                        {String(s.checkIn).slice(0, 10)} → {String(s.checkOut).slice(0, 10)}) — ${Number(s.total).toFixed(2)} —{' '}
+                        {s.status}
+                      </p>
+                      {s.refundNote ? <p className="mt-1 text-xs text-stone">{s.refundNote}</p> : null}
+                    </div>
+                    {s.status === 'confirmed' ? (
+                      <RefundRequestButton kind="stays" id={s.id} onDone={() => void loadAccount()} />
+                    ) : null}
+                  </div>
                 </li>
               ))}
             </ul>

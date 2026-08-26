@@ -212,13 +212,33 @@ async function main() {
     const daisy = props.find((p) => /daisy/i.test(p.name))
     assert(daisy, 'Daisy property missing')
 
+    // Prefer a future Airbnb/iCal block; fall back to any future unavailable window
+    const avail = await fetch(`${API}/api/properties/${daisy.id}/availability?from=${new Date().toISOString().slice(0, 10)}`).then(json)
+    const futureBlock = (avail.blocks ?? []).find((b) => String(b.startDate).slice(0, 10) >= new Date().toISOString().slice(0, 10))
+    let blockedCheckIn
+    let blockedCheckOut
+    if (futureBlock) {
+      blockedCheckIn = String(futureBlock.startDate).slice(0, 10)
+      const start = new Date(`${blockedCheckIn}T00:00:00Z`)
+      const end = new Date(start)
+      end.setUTCDate(start.getUTCDate() + 2)
+      const blockEnd = String(futureBlock.endDate).slice(0, 10)
+      blockedCheckOut = end.toISOString().slice(0, 10) < blockEnd ? end.toISOString().slice(0, 10) : blockEnd
+      if (!(blockedCheckIn < blockedCheckOut)) {
+        blockedCheckOut = blockEnd
+      }
+    } else {
+      // Force a known busy window far enough ahead that past-date validation still passes
+      blockedCheckIn = '2026-10-25'
+      blockedCheckOut = '2026-10-28'
+    }
     const blockedQuote = await fetch(`${API}/api/stays/quote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         propertyId: daisy.id,
-        checkIn: '2026-08-24',
-        checkOut: '2026-08-26',
+        checkIn: blockedCheckIn,
+        checkOut: blockedCheckOut,
         guests: 2,
       }),
     })
@@ -281,7 +301,7 @@ async function main() {
     }).then(json)
     assert(typeof sync.imported === 'number', 'ical sync missing imported count')
 
-    record('Stay Airbnb + manual blocks + iCal sync', true, `blocked Aug + open ${openDetail}; sync imported ${sync.imported}`)
+    record('Stay Airbnb + manual blocks + iCal sync', true, `blocked ${blockedCheckIn} + open ${openDetail}; sync imported ${sync.imported}`)
   } catch (e) {
     record('Stay Airbnb + manual blocks + iCal sync', false, e.message)
   }

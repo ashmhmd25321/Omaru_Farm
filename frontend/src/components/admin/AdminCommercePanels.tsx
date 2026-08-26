@@ -34,7 +34,27 @@ type Order = {
   status: string
   fulfillmentStatus: string
   shippingPostcode: string
+  refundStatus?: string | null
+  refundReason?: string | null
+  refundNote?: string | null
   createdAt: string
+}
+
+type StayBooking = {
+  id: number
+  bookingNumber: string
+  email: string
+  fullName: string
+  checkIn: string
+  checkOut: string
+  guests: number
+  nights: number
+  total: number
+  status: string
+  propertyName: string
+  refundStatus?: string | null
+  refundReason?: string | null
+  refundNote?: string | null
 }
 
 type ShippingRule = {
@@ -113,6 +133,7 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [orders, setOrders] = useState<Order[]>([])
+  const [stayBookings, setStayBookings] = useState<StayBooking[]>([])
   const [rules, setRules] = useState<ShippingRule[]>([])
   const [properties, setProperties] = useState<Property[]>([])
   const [holds, setHolds] = useState<TableHold[]>([])
@@ -149,7 +170,14 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
     try {
       if (section === 'orders') setOrders(await adminFetch('/api/admin/orders', token))
       if (section === 'shipping') setRules(await adminFetch('/api/admin/shipping-rules', token))
-      if (section === 'stays') setProperties(await adminFetch('/api/admin/properties', token))
+      if (section === 'stays') {
+        const [props, bookings] = await Promise.all([
+          adminFetch<Property[]>('/api/admin/properties', token),
+          adminFetch<StayBooking[]>('/api/admin/stay-bookings', token),
+        ])
+        setProperties(props)
+        setStayBookings(bookings)
+      }
       if (section === 'tables') {
         const [holdRows, capacity] = await Promise.all([
           adminFetch<TableHold[]>('/api/admin/table-holds', token),
@@ -229,25 +257,62 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
                   <p className="text-stone">
                     {o.fullName} · {o.email} · ${Number(o.total).toFixed(2)} · {o.status}
                   </p>
+                  {o.refundReason ? <p className="text-xs text-amber-800">Refund reason: {o.refundReason}</p> : null}
+                  {o.refundNote ? <p className="text-xs text-stone">{o.refundNote}</p> : null}
                 </div>
-                <select
-                  className="field w-auto"
-                  value={o.fulfillmentStatus}
-                  onChange={async (e) => {
-                    await adminFetch(`/api/admin/orders/${o.id}`, token, {
-                      method: 'PUT',
-                      body: JSON.stringify({ fulfillmentStatus: e.target.value }),
-                    })
-                    setMessage('Order updated')
-                    await load()
-                  }}
-                >
-                  <option value="unfulfilled">unfulfilled</option>
-                  <option value="packed">packed</option>
-                  <option value="shipped">shipped</option>
-                  <option value="delivered">delivered</option>
-                  <option value="cancelled">cancelled</option>
-                </select>
+                <div className="flex flex-wrap items-center gap-2">
+                  {o.status === 'refund_requested' || o.status === 'paid' ? (
+                    <>
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          await adminFetch(`/api/admin/orders/${o.id}/refund`, token, {
+                            method: 'POST',
+                            body: JSON.stringify({ note: 'Admin approved refund' }),
+                          })
+                          setMessage(`Refunded ${o.orderNumber}`)
+                          await load()
+                        }}
+                      >
+                        Refund
+                      </Button>
+                      {o.status === 'refund_requested' ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={async () => {
+                            await adminFetch(`/api/admin/orders/${o.id}/refund-reject`, token, {
+                              method: 'POST',
+                              body: JSON.stringify({ note: 'Refund request declined' }),
+                            })
+                            setMessage(`Rejected refund for ${o.orderNumber}`)
+                            await load()
+                          }}
+                        >
+                          Reject
+                        </Button>
+                      ) : null}
+                    </>
+                  ) : null}
+                  <select
+                    className="field w-auto"
+                    value={o.fulfillmentStatus}
+                    onChange={async (e) => {
+                      await adminFetch(`/api/admin/orders/${o.id}`, token, {
+                        method: 'PUT',
+                        body: JSON.stringify({ fulfillmentStatus: e.target.value }),
+                      })
+                      setMessage('Order updated')
+                      await load()
+                    }}
+                  >
+                    <option value="unfulfilled">unfulfilled</option>
+                    <option value="packed">packed</option>
+                    <option value="shipped">shipped</option>
+                    <option value="delivered">delivered</option>
+                    <option value="cancelled">cancelled</option>
+                  </select>
+                </div>
               </div>
             ))}
           </CardContent>
@@ -317,6 +382,62 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
 
       {section === 'stays' ? (
         <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Stay bookings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {stayBookings.length === 0 ? <p className="text-sm text-stone">No stay bookings yet.</p> : null}
+              {stayBookings.map((b) => (
+                <div key={b.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-parchment px-3 py-2 text-sm">
+                  <div>
+                    <p className="font-semibold">
+                      {b.bookingNumber} · {b.propertyName}
+                    </p>
+                    <p className="text-stone">
+                      {b.fullName} · {String(b.checkIn).slice(0, 10)} → {String(b.checkOut).slice(0, 10)} · $
+                      {Number(b.total).toFixed(2)} · {b.status}
+                    </p>
+                    {b.refundReason ? <p className="text-xs text-amber-800">Refund reason: {b.refundReason}</p> : null}
+                    {b.refundNote ? <p className="text-xs text-stone">{b.refundNote}</p> : null}
+                  </div>
+                  {(b.status === 'confirmed' || b.status === 'refund_requested') && (
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          await adminFetch(`/api/admin/stay-bookings/${b.id}/refund`, token, {
+                            method: 'POST',
+                            body: JSON.stringify({ note: 'Admin approved stay refund' }),
+                          })
+                          setMessage(`Refunded ${b.bookingNumber}`)
+                          await load()
+                        }}
+                      >
+                        Refund
+                      </Button>
+                      {b.status === 'refund_requested' ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={async () => {
+                            await adminFetch(`/api/admin/stay-bookings/${b.id}/refund-reject`, token, {
+                              method: 'POST',
+                              body: JSON.stringify({ note: 'Refund request declined' }),
+                            })
+                            setMessage(`Rejected refund for ${b.bookingNumber}`)
+                            await load()
+                          }}
+                        >
+                          Reject
+                        </Button>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Properties</CardTitle>
