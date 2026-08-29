@@ -13,7 +13,17 @@ type Property = {
   cleaningFee: number
 }
 
-function StayPayForm({ total, onPaid }: { total: number; onPaid: () => void }) {
+function StayPayForm({
+  total,
+  bookingId,
+  bookingNumber,
+  onPaid,
+}: {
+  total: number
+  bookingId: number
+  bookingNumber: string
+  onPaid: () => void
+}) {
   const stripe = useStripe()
   const elements = useElements()
   const [busy, setBusy] = useState(false)
@@ -23,13 +33,37 @@ function StayPayForm({ total, onPaid }: { total: number; onPaid: () => void }) {
     e.preventDefault()
     if (!stripe || !elements) return
     setBusy(true)
-    const result = await stripe.confirmPayment({ elements, redirect: 'if_required' })
-    setBusy(false)
+    setError('')
+    const result = await stripe.confirmPayment({
+      elements,
+      redirect: 'if_required',
+      confirmParams: {
+        return_url: `${window.location.origin}/account?paid=1&stay=${encodeURIComponent(bookingNumber)}`,
+      },
+    })
     if (result.error) {
+      setBusy(false)
       setError(result.error.message ?? 'Payment failed')
       return
     }
-    onPaid()
+    try {
+      const piId = typeof result.paymentIntent?.id === 'string' ? result.paymentIntent.id : ''
+      if (piId) {
+        const res = await fetch(apiUrl('/api/stays/confirm-payment-intent'), {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId, paymentIntentId: piId }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.message ?? 'Could not confirm payment status')
+      }
+      onPaid()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not confirm payment status')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -54,6 +88,8 @@ export function StayBookingPanel() {
   const [phone, setPhone] = useState('')
   const [quote, setQuote] = useState<{ total: number; nights: number; nightlyRate: number; cleaningFee: number } | null>(null)
   const [clientSecret, setClientSecret] = useState('')
+  const [bookingId, setBookingId] = useState(0)
+  const [bookingNumber, setBookingNumber] = useState('')
   const [payTotal, setPayTotal] = useState(0)
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null)
   const [checkoutEnabled, setCheckoutEnabled] = useState(true)
@@ -127,6 +163,8 @@ export function StayBookingPanel() {
     }
     setClientSecret(data.clientSecret)
     setPayTotal(Number(data.total))
+    setBookingId(Number(data.bookingId ?? 0))
+    setBookingNumber(String(data.bookingNumber ?? ''))
   }
 
   return (
@@ -193,6 +231,8 @@ export function StayBookingPanel() {
                   setMessage('Stay booked — confirmation will appear in your account.')
                   setClientSecret('')
                 }}
+                bookingId={bookingId}
+                bookingNumber={bookingNumber}
               />
             </Elements>
           </div>

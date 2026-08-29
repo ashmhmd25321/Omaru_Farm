@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Menu, ShoppingBag, UserRound, X } from 'lucide-react'
+import { Menu, ShoppingBag, UserRound, LogOut, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { mainNavItems } from '@/constants/siteNav'
 import { useCart } from '@/context/CartContext'
+import { useCustomerAuth } from '@/context/CustomerAuthContext'
 import { staticUrl } from '@/utils/staticUrl'
 
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [cartBump, setCartBump] = useState(false)
+  const accountRef = useRef<HTMLDivElement>(null)
   const { count } = useCart()
+  const { user, loading, logout } = useCustomerAuth()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -25,6 +30,36 @@ export function SiteHeader() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [mobileOpen])
+
+  useEffect(() => {
+    if (!accountOpen) return
+    const onPointerDown = (e: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountOpen(false)
+      }
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAccountOpen(false)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [accountOpen])
+
+  useEffect(() => {
+    const onAdd = () => {
+      setCartBump(true)
+      window.setTimeout(() => setCartBump(false), 500)
+    }
+    window.addEventListener('omaru:cart:add', onAdd as EventListener)
+    return () => window.removeEventListener('omaru:cart:add', onAdd as EventListener)
+  }, [])
+
+  const accountIconClass =
+    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-parchment text-bark transition hover:border-gold/50 hover:text-gold'
 
   return (
     <header
@@ -69,17 +104,75 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="relative hidden md:block" ref={accountRef}>
+            {!loading && user ? (
+              <>
+                <button
+                  type="button"
+                  aria-label="Account menu"
+                  aria-expanded={accountOpen}
+                  aria-haspopup="menu"
+                  onClick={() => setAccountOpen((open) => !open)}
+                  className={[
+                    accountIconClass,
+                    accountOpen ? 'border-gold/60 text-gold' : '',
+                  ].join(' ')}
+                >
+                  <UserRound className="h-4 w-4" />
+                </button>
+                {accountOpen ? (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-[calc(100%+0.5rem)] z-40 min-w-[12rem] overflow-hidden rounded-lg border border-parchment bg-white py-1 shadow-[0_12px_32px_rgba(26,18,8,0.12)]"
+                  >
+                    <p className="truncate border-b border-parchment/70 px-4 py-2.5 text-xs text-stone">
+                      {user.fullName || user.email}
+                    </p>
+                    <Link
+                      to="/account"
+                      role="menuitem"
+                      onClick={() => setAccountOpen(false)}
+                      className="block px-4 py-2.5 text-sm font-semibold text-bark transition hover:bg-sand hover:text-gold"
+                    >
+                      My account
+                    </Link>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setAccountOpen(false)
+                        void logout()
+                      }}
+                      className="flex w-full items-center gap-2 border-t border-parchment/70 px-4 py-2.5 text-left text-sm font-semibold text-bark transition hover:bg-sand hover:text-gold"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <Link to="/account" aria-label="Sign in" className={accountIconClass}>
+                <UserRound className="h-4 w-4" />
+              </Link>
+            )}
+          </div>
+
           <Link
             to="/account"
-            aria-label="Account"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-parchment text-bark transition hover:border-gold/50 hover:text-gold"
+            aria-label={user ? 'My account' : 'Sign in'}
+            className={`${accountIconClass} md:hidden`}
           >
             <UserRound className="h-4 w-4" />
           </Link>
+
           <Link
             to="/cart"
             aria-label={`Cart${count ? `, ${count} items` : ''}`}
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-parchment text-bark transition hover:border-gold/50 hover:text-gold"
+            className={[
+              'relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-parchment text-bark transition hover:border-gold/50 hover:text-gold',
+              cartBump ? 'scale-[1.06] border-gold shadow-[0_0_0_3px_rgba(205,163,73,0.18)]' : '',
+            ].join(' ')}
           >
             <ShoppingBag className="h-4 w-4" />
             {count > 0 ? (
@@ -138,6 +231,42 @@ export function SiteHeader() {
                   </NavLink>
                 ))}
               </div>
+
+              <div className="mt-4 border-t border-parchment pt-4">
+                <p className="px-4 pb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone">Account</p>
+                {!loading && user ? (
+                  <div className="grid gap-1">
+                    <p className="px-4 pb-1 text-sm text-stone">{user.fullName || user.email}</p>
+                    <Link
+                      to="/account"
+                      onClick={() => setMobileOpen(false)}
+                      className="rounded-xl px-4 py-3.5 text-base font-semibold tracking-wide text-bark transition hover:bg-sand hover:text-gold"
+                    >
+                      My account
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileOpen(false)
+                        void logout()
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-4 py-3.5 text-left text-base font-semibold tracking-wide text-bark transition hover:bg-sand hover:text-gold"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    to="/account"
+                    onClick={() => setMobileOpen(false)}
+                    className="block rounded-xl px-4 py-3.5 text-base font-semibold tracking-wide text-bark transition hover:bg-sand hover:text-gold"
+                  >
+                    Sign in
+                  </Link>
+                )}
+              </div>
+
               <div className="mt-4">
                 <Button
                   asChild

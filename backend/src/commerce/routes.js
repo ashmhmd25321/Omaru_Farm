@@ -21,6 +21,25 @@ import {
   cancelByPaymentIntent,
   cancelPendingOrderById,
 } from './holds.js'
+import { getStoreRefundRequestState, storeRefundRequestErrorMessage } from './refundPolicy.js'
+import {
+  authConfig,
+  changeCustomerPassword,
+  customerVerificationEnabled,
+  hashPassword,
+  issueCustomerToken,
+  loadCustomerById,
+  loginWithAppleCredential,
+  loginWithGoogleCredential,
+  queueVerificationCodes,
+  requestPasswordReset,
+  resetPasswordWithCode,
+  resendEmailVerification,
+  resendPhoneVerification,
+  serializeCustomer,
+  verifyEmailCode,
+  verifyPhoneCode,
+} from './customerAuth.js'
 
 function toNumber(value, fallback = 0) {
   const n = Number(value)
@@ -195,11 +214,11 @@ export function registerCommerceRoutes(app, {
         return res.status(401).json({ message: 'Invalid session' })
       }
       const [rows] = await pool.query(
-        'SELECT id, email, full_name AS fullName, phone, delivery_line1 AS deliveryLine1, delivery_line2 AS deliveryLine2, delivery_city AS deliveryCity, delivery_state AS deliveryState, delivery_postcode AS deliveryPostcode, stripe_customer_id AS stripeCustomerId FROM customers WHERE id = ? LIMIT 1',
+        `SELECT id, email, full_name AS fullName, phone, delivery_line1 AS deliveryLine1, delivery_line2 AS deliveryLine2, delivery_city AS deliveryCity, delivery_state AS deliveryState, delivery_postcode AS deliveryPostcode, stripe_customer_id AS stripeCustomerId, email_verified AS emailVerified, phone_verified AS phoneVerified, auth_provider AS authProvider FROM customers WHERE id = ? LIMIT 1`,
         [payload.sub],
       )
       if (!rows[0]) return res.status(401).json({ message: 'Invalid session' })
-      req.customer = rows[0]
+      req.customer = serializeCustomer(rows[0])
       next()
     } catch {
       return res.status(401).json({ message: 'Invalid session' })
@@ -283,10 +302,29 @@ export function registerCommerceRoutes(app, {
       await expirePendingPayments()
       const body = req.body ?? {}
       const method = String(body.shippingMethod ?? 'delivery')
+      if (customerVerificationEnabled() && req.customer?.id) {
+        const profile = await loadCustomerById(req.customer.id)
+        if (!profile?.emailVerified) {
+          return res.status(403).json({
+            message: 'Verify your email in My account before checkout',
+            code: 'email_verification_required',
+          })
+        }
+        if (method === 'delivery' && !profile?.phoneVerified) {
+          return res.status(403).json({
+            message: 'Verify your mobile number in My account before delivery checkout',
+            code: 'phone_verification_required',
+          })
+        }
+      }
       const email = String(body.email ?? req.customer?.email ?? '').trim()
       const fullName = String(body.fullName ?? req.customer?.fullName ?? '').trim()
+      const phone = String(body.phone ?? '').trim()
       if (!email || !fullName) return res.status(400).json({ message: 'Name and email are required' })
       if (method === 'delivery') {
+        if (!isValidPhone(phone)) {
+          return res.status(400).json({ message: 'A valid phone number is required for delivery' })
+        }
         const line1 = String(body.line1 ?? '').trim()
         const city = String(body.city ?? '').trim()
         const state = String(body.state ?? '').trim()
@@ -340,13 +378,13 @@ export function registerCommerceRoutes(app, {
             shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postcode,
             subtotal, shipping_fee, total, currency, status, fulfillment_status, shipping_breakdown_json,
             expires_at, stock_reserved
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', 'unfulfilled', ?, ?, 1)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', 'pending', ?, ?, 1)`,
           [
             number,
             req.customer?.id ?? null,
             email,
             fullName,
-            String(body.phone ?? ''),
+            phone,
             method,
             String(body.line1 ?? ''),
             String(body.line2 ?? ''),
@@ -377,6 +415,18 @@ export function registerCommerceRoutes(app, {
         conn.release()
       }
 
+      let stripeCustomerId = req.customer?.stripeCustomerId || undefined
+      if (req.customer && !stripeCustomerId) {
+        const c = await stripe.customers.create({
+          email: req.customer.email,
+          name: req.customer.fullName,
+          metadata: { localCustomerId: String(req.customer.id) },
+        })
+        stripeCustomerId = c.id
+        await pool.query('UPDATE customers SET stripe_customer_id = ? WHERE id = ?', [stripeCustomerId, req.customer.id])
+        req.customer.stripeCustomerId = stripeCustomerId
+      }
+
       let pi
       try {
         pi = await stripe.paymentIntents.create({
@@ -385,7 +435,7 @@ export function registerCommerceRoutes(app, {
           automatic_payment_methods: { enabled: true },
           receipt_email: email,
           metadata: { orderId: String(orderId), orderNumber: number, type: 'store_order' },
-          customer: req.customer?.stripeCustomerId || undefined,
+          customer: stripeCustomerId,
         })
       } catch (piError) {
         await cancelPendingOrderById(orderId, { cancelStripe: false })
@@ -406,6 +456,35 @@ export function registerCommerceRoutes(app, {
     } catch (error) {
       if (error.status) return res.status(error.status).json({ message: error.message })
       sendServerError(res, 'Failed to start checkout', error)
+    }
+  })
+
+  // Confirm payment without requiring webhooks (still validates via Stripe API).
+  // This makes the UI show paid orders immediately after Stripe returns success.
+  app.post('/api/checkout/confirm-payment-intent', async (req, res) => {
+    const stripe = getStripe()
+    if (!stripe) return res.status(503).json({ message: 'Stripe is not configured (set STRIPE_SECRET_KEY)' })
+    try {
+      const orderId = toNumber(req.body?.orderId, 0)
+      const paymentIntentId = String(req.body?.paymentIntentId ?? '').trim()
+      if (!orderId || !paymentIntentId) return res.status(400).json({ message: 'orderId and paymentIntentId are required' })
+      const pi = await stripe.paymentIntents.retrieve(paymentIntentId)
+      if (!pi) return res.status(404).json({ message: 'PaymentIntent not found' })
+      if (String(pi.metadata?.orderId ?? '') !== String(orderId)) {
+        return res.status(400).json({ message: 'PaymentIntent does not match order' })
+      }
+      if (pi.status !== 'succeeded') {
+        return res.status(400).json({ message: `Payment not completed (${pi.status})` })
+      }
+      await fulfillStoreOrder(pi)
+      const [rows] = await pool.query(
+        `SELECT id, order_number AS orderNumber, status, fulfillment_status AS fulfillmentStatus, total
+         FROM orders WHERE id = ? LIMIT 1`,
+        [orderId],
+      )
+      res.json({ ok: true, order: rows[0] })
+    } catch (error) {
+      sendServerError(res, 'Failed to confirm payment', error)
     }
   })
 
@@ -478,12 +557,13 @@ export function registerCommerceRoutes(app, {
       `SELECT id, status FROM orders WHERE stripe_payment_intent_id = ? LIMIT 1`,
       [piId],
     )
-    if (orders[0] && orders[0].status === 'paid') {
+    if (orders[0] && ['paid', 'refund_requested', 'partially_refunded'].includes(orders[0].status)) {
       await applyStoreRefund(orders[0].id, {
         amount: refunded,
         note: 'Synced from Stripe charge.refunded',
         stripeRefundId: charge.refunds?.data?.[0]?.id ?? null,
         alreadyRefundedInStripe: true,
+        amountIsCumulative: true,
       })
       return
     }
@@ -502,22 +582,83 @@ export function registerCommerceRoutes(app, {
   }
 
   async function fulfillStoreOrder(pi) {
-    const [orders] = await pool.query(
-      `SELECT id, status, total, currency, stock_reserved AS stockReserved
-       FROM orders WHERE stripe_payment_intent_id = ? LIMIT 1`,
-      [pi.id],
-    )
-    const order = orders[0]
-    if (!order || order.status === 'paid' || order.status === 'refunded') return
-    if (order.status === 'cancelled') {
-      throw new Error(`Payment succeeded for cancelled order ${order.id}`)
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
+      const [orders] = await conn.query(
+        `SELECT id, status, total, currency, stock_reserved AS stockReserved
+         FROM orders WHERE stripe_payment_intent_id = ? LIMIT 1 FOR UPDATE`,
+        [pi.id],
+      )
+      const order = orders[0]
+      if (!order || ['paid', 'refund_requested', 'partially_refunded', 'refunded'].includes(order.status)) {
+        await conn.commit()
+        return
+      }
+      const expectedAmount = toStripeAmount(order.total)
+      const currency = String(order.currency ?? getCurrency()).toLowerCase()
+      if (toNumber(pi.amount, 0) !== expectedAmount || String(pi.currency ?? '').toLowerCase() !== currency) {
+        throw new Error(`PaymentIntent amount/currency mismatch for order ${order.id}`)
+      }
+
+      // A payment can race with hold expiry. If stock was already restored, reserve it again
+      // transactionally; if it is no longer available, record the payment and flag a refund
+      // instead of leaving a charged customer with a silently cancelled order.
+      if (order.status === 'cancelled' && !order.stockReserved) {
+        const [items] = await conn.query(
+          'SELECT product_id AS productId, product_name AS productName, quantity FROM order_items WHERE order_id = ?',
+          [order.id],
+        )
+        const unavailable = []
+        for (const item of items) {
+          const [products] = await conn.query('SELECT stock_qty AS stockQty FROM products WHERE id = ? FOR UPDATE', [
+            item.productId,
+          ])
+          if (!products[0] || toNumber(products[0].stockQty, 0) < toNumber(item.quantity, 0)) {
+            unavailable.push(item.productName)
+          }
+        }
+        if (unavailable.length > 0) {
+          await conn.query(
+            `UPDATE orders SET status = 'refund_requested', refund_status = 'requested',
+             refund_reason = ?, refund_note = ?, refund_requested_at = NOW(),
+             paid_at = COALESCE(paid_at, NOW()), expires_at = NULL, fulfillment_status = 'cancelled'
+             WHERE id = ?`,
+            [
+              `Automatic refund required: stock unavailable after late payment (${unavailable.join(', ')})`,
+              'Payment succeeded after the checkout hold expired; admin refund required.',
+              order.id,
+            ],
+          )
+          await conn.commit()
+          return
+        }
+        for (const item of items) {
+          await conn.query('UPDATE products SET stock_qty = stock_qty - ? WHERE id = ?', [
+            item.quantity,
+            item.productId,
+          ])
+        }
+        await conn.query(
+          `UPDATE orders SET status = 'paid', fulfillment_status = 'pending', stock_reserved = 1,
+           paid_at = COALESCE(paid_at, NOW()), expires_at = NULL WHERE id = ?`,
+          [order.id],
+        )
+        await conn.commit()
+        return
+      }
+
+      await conn.query(
+        `UPDATE orders SET status = 'paid', paid_at = COALESCE(paid_at, NOW()), expires_at = NULL WHERE id = ?`,
+        [order.id],
+      )
+      await conn.commit()
+    } catch (error) {
+      await conn.rollback()
+      throw error
+    } finally {
+      conn.release()
     }
-    const expectedAmount = toStripeAmount(order.total)
-    const currency = String(order.currency ?? getCurrency()).toLowerCase()
-    if (toNumber(pi.amount, 0) !== expectedAmount || String(pi.currency ?? '').toLowerCase() !== currency) {
-      throw new Error(`PaymentIntent amount/currency mismatch for order ${order.id}`)
-    }
-    await pool.query(`UPDATE orders SET status = 'paid', expires_at = NULL WHERE id = ?`, [order.id])
   }
 
   async function fulfillStayBooking(pi) {
@@ -577,24 +718,38 @@ export function registerCommerceRoutes(app, {
     }
   }
 
-  async function applyStoreRefund(orderId, { amount, note, stripeRefundId, alreadyRefundedInStripe = false } = {}) {
+  async function applyStoreRefund(
+    orderId,
+    { amount, note, stripeRefundId, alreadyRefundedInStripe = false, amountIsCumulative = false } = {},
+  ) {
     const stripe = getStripe()
     const [rows] = await pool.query(
       `SELECT id, status, total, stripe_payment_intent_id AS pi, stock_reserved AS stockReserved,
-              stripe_refund_id AS existingRefundId
+              stripe_refund_id AS existingRefundId, refunded_amount AS refundedAmount
        FROM orders WHERE id = ? LIMIT 1`,
       [orderId],
     )
     const order = rows[0]
     if (!order) throw Object.assign(new Error('Order not found'), { status: 404 })
-    if (order.status === 'refunded' || order.existingRefundId) {
+    if (order.status === 'refunded') {
       throw Object.assign(new Error('Order already refunded'), { status: 409 })
     }
-    if (!['paid', 'refund_requested'].includes(order.status)) {
+    if (!['paid', 'refund_requested', 'partially_refunded'].includes(order.status)) {
       throw Object.assign(new Error('Order is not eligible for refund'), { status: 400 })
     }
-    const refundAmount = amount == null || amount === '' ? toNumber(order.total, 0) : toNumber(amount, 0)
-    if (refundAmount <= 0 || refundAmount > toNumber(order.total, 0) + 0.001) {
+    const total = toNumber(order.total, 0)
+    const existingRefunded = toNumber(order.refundedAmount, 0)
+    const refundAmount =
+      amount == null || amount === ''
+        ? Math.max(0, total - existingRefunded)
+        : amountIsCumulative
+          ? Math.max(0, toNumber(amount, 0) - existingRefunded)
+          : toNumber(amount, 0)
+    const targetRefunded = amountIsCumulative ? toNumber(amount, 0) : existingRefunded + refundAmount
+    if (amountIsCumulative && targetRefunded <= existingRefunded + 0.001) {
+      return { refundId: stripeRefundId ?? order.existingRefundId, refundAmount: 0, refundedTotal: existingRefunded, alreadyDone: true }
+    }
+    if (refundAmount <= 0 || targetRefunded > total + 0.001) {
       throw Object.assign(new Error('Invalid refund amount'), { status: 400 })
     }
     let refundId = stripeRefundId
@@ -613,25 +768,55 @@ export function registerCommerceRoutes(app, {
     try {
       await conn.beginTransaction()
       const [locked] = await conn.query(
-        `SELECT id, status, stock_reserved AS stockReserved, stripe_refund_id AS existingRefundId
+        `SELECT id, status, total, stock_reserved AS stockReserved,
+                stripe_refund_id AS existingRefundId, refunded_amount AS refundedAmount
          FROM orders WHERE id = ? FOR UPDATE`,
         [orderId],
       )
-      if (!locked[0] || locked[0].status === 'refunded' || locked[0].existingRefundId) {
+      if (!locked[0]) {
         await conn.rollback()
-        return { refundId, refundAmount, alreadyDone: true }
+        throw Object.assign(new Error('Order not found'), { status: 404 })
       }
-      if (locked[0].stockReserved) {
+      const currentRefunded = toNumber(locked[0].refundedAmount, 0)
+      const refundedTotal = amountIsCumulative
+        ? Math.max(currentRefunded, toNumber(amount, 0))
+        : currentRefunded + refundAmount
+      if (amountIsCumulative && refundedTotal <= currentRefunded + 0.001) {
+        await conn.rollback()
+        return { refundId, refundAmount: 0, refundedTotal: currentRefunded, alreadyDone: true }
+      }
+      const fullyRefunded = refundedTotal >= toNumber(locked[0].total, 0) - 0.001
+      if (fullyRefunded && locked[0].stockReserved) {
         await restoreOrderStock(conn, orderId)
       }
       await conn.query(
-        `UPDATE orders SET status = 'refunded', fulfillment_status = 'cancelled', stock_reserved = 0,
-         refund_status = 'refunded', refunded_amount = ?, stripe_refund_id = ?, refund_note = ?
+        `UPDATE orders SET
+         status = ?,
+         fulfillment_status = CASE WHEN ? THEN 'cancelled' ELSE fulfillment_status END,
+         stock_reserved = CASE WHEN ? THEN 0 ELSE stock_reserved END,
+         refund_status = ?,
+         refunded_amount = ?,
+         stripe_refund_id = COALESCE(?, stripe_refund_id),
+         refund_note = ?
          WHERE id = ?`,
-        [refundAmount, refundId ?? null, note ?? null, orderId],
+        [
+          fullyRefunded ? 'refunded' : 'partially_refunded',
+          fullyRefunded,
+          fullyRefunded,
+          fullyRefunded ? 'refunded' : 'partially_refunded',
+          refundedTotal,
+          refundId ?? null,
+          note ?? null,
+          orderId,
+        ],
       )
       await conn.commit()
-      return { refundId, refundAmount }
+      return {
+        refundId,
+        refundAmount,
+        refundedTotal,
+        status: fullyRefunded ? 'refunded' : 'partially_refunded',
+      }
     } catch (e) {
       await conn.rollback()
       throw e
@@ -778,8 +963,13 @@ export function registerCommerceRoutes(app, {
                 shipping_postcode AS shippingPostcode, subtotal, shipping_fee AS shippingFee, total, status,
                 fulfillment_status AS fulfillmentStatus, shipping_breakdown_json AS shippingBreakdownJson,
                 refund_status AS refundStatus, refund_reason AS refundReason, refund_note AS refundNote,
-                refunded_amount AS refundedAmount, created_at AS createdAt
-         FROM orders ORDER BY id DESC LIMIT 500`,
+                refunded_amount AS refundedAmount, carrier, tracking_number AS trackingNumber,
+                tracking_url AS trackingUrl, paid_at AS paidAt, packed_at AS packedAt, shipped_at AS shippedAt,
+                delivered_at AS deliveredAt, refund_requested_at AS refundRequestedAt,
+                created_at AS createdAt, updated_at AS updatedAt
+         FROM orders
+         WHERE status IN ('paid', 'refund_requested', 'partially_refunded', 'refunded')
+         ORDER BY id DESC LIMIT 500`,
       )
       res.json(
         rows.map((r) => ({
@@ -812,12 +1002,56 @@ export function registerCommerceRoutes(app, {
 
   app.put('/api/admin/orders/:id', requireAdmin, async (req, res) => {
     const id = toNumber(req.params.id, 0)
+    if (!id) return res.status(400).json({ message: 'Invalid id' })
     try {
-      await pool.query(`UPDATE orders SET fulfillment_status = ?, status = COALESCE(?, status) WHERE id = ?`, [
-        String(req.body?.fulfillmentStatus ?? 'unfulfilled'),
-        req.body?.status ? String(req.body.status) : null,
-        id,
-      ])
+      const fulfillmentStatus =
+        req.body?.fulfillmentStatus == null ? null : String(req.body.fulfillmentStatus).trim().toLowerCase()
+      const allowedFulfillment = new Set(['pending', 'packed', 'shipped', 'delivered', 'cancelled'])
+      if (fulfillmentStatus && !allowedFulfillment.has(fulfillmentStatus)) {
+        return res.status(400).json({ message: 'Invalid fulfillment status' })
+      }
+      const carrier = req.body?.carrier == null ? null : String(req.body.carrier).trim().slice(0, 80)
+      const trackingNumber =
+        req.body?.trackingNumber == null ? null : String(req.body.trackingNumber).trim().slice(0, 160)
+      const trackingUrl = req.body?.trackingUrl == null ? null : String(req.body.trackingUrl).trim().slice(0, 500)
+      const adminNote = req.body?.adminNote == null ? null : String(req.body.adminNote).trim().slice(0, 4000)
+      if (trackingUrl && !/^https?:\/\//i.test(trackingUrl)) {
+        return res.status(400).json({ message: 'Tracking link must start with http:// or https://' })
+      }
+      const [orders] = await pool.query('SELECT status FROM orders WHERE id = ? LIMIT 1', [id])
+      if (!orders[0]) return res.status(404).json({ message: 'Order not found' })
+      if (
+        fulfillmentStatus &&
+        ['packed', 'shipped', 'delivered'].includes(fulfillmentStatus) &&
+        !['paid', 'partially_refunded'].includes(orders[0].status)
+      ) {
+        return res.status(400).json({ message: 'Only paid orders can be packed, shipped, or delivered' })
+      }
+
+      const [result] = await pool.query(
+        `UPDATE orders SET
+           fulfillment_status = COALESCE(?, fulfillment_status),
+           carrier = COALESCE(?, carrier),
+           tracking_number = COALESCE(?, tracking_number),
+           tracking_url = COALESCE(?, tracking_url),
+           admin_note = COALESCE(?, admin_note),
+           packed_at = CASE WHEN ? = 'packed' THEN COALESCE(packed_at, NOW()) ELSE packed_at END,
+           shipped_at = CASE WHEN ? = 'shipped' THEN COALESCE(shipped_at, NOW()) ELSE shipped_at END,
+           delivered_at = CASE WHEN ? = 'delivered' THEN COALESCE(delivered_at, NOW()) ELSE delivered_at END
+         WHERE id = ?`,
+        [
+          fulfillmentStatus,
+          carrier,
+          trackingNumber,
+          trackingUrl,
+          adminNote,
+          fulfillmentStatus,
+          fulfillmentStatus,
+          fulfillmentStatus,
+          id,
+        ],
+      )
+      if (result.affectedRows === 0) return res.status(404).json({ message: 'Order not found' })
       res.json({ ok: true })
     } catch (error) {
       sendServerError(res, 'Failed to update order', error)
@@ -861,8 +1095,12 @@ export function registerCommerceRoutes(app, {
   app.get('/api/admin/sales-summary', requireAdmin, async (_req, res) => {
     try {
       const [orderStats] = await pool.query(
-        `SELECT COUNT(*) AS orderCount, COALESCE(SUM(total),0) AS revenue
-         FROM orders WHERE status = 'paid'`,
+        `SELECT COUNT(*) AS orderCount,
+                COALESCE(SUM(total), 0) AS grossRevenue,
+                COALESCE(SUM(refunded_amount), 0) AS refundedRevenue,
+                COALESCE(SUM(total - COALESCE(refunded_amount, 0)), 0) AS netRevenue
+         FROM orders
+         WHERE status IN ('paid', 'refund_requested', 'partially_refunded', 'refunded')`,
       )
       const [stayStats] = await pool.query(
         `SELECT COUNT(*) AS stayCount, COALESCE(SUM(total),0) AS stayRevenue
@@ -870,10 +1108,12 @@ export function registerCommerceRoutes(app, {
       )
       res.json({
         storeOrders: toNumber(orderStats[0]?.orderCount, 0),
-        storeRevenue: toNumber(orderStats[0]?.revenue, 0),
+        storeRevenue: toNumber(orderStats[0]?.netRevenue, 0),
+        storeGrossRevenue: toNumber(orderStats[0]?.grossRevenue, 0),
+        storeRefunds: toNumber(orderStats[0]?.refundedRevenue, 0),
         stayBookings: toNumber(stayStats[0]?.stayCount, 0),
         stayRevenue: toNumber(stayStats[0]?.stayRevenue, 0),
-        onlineRevenue: toNumber(orderStats[0]?.revenue, 0) + toNumber(stayStats[0]?.stayRevenue, 0),
+        onlineRevenue: toNumber(orderStats[0]?.netRevenue, 0) + toNumber(stayStats[0]?.stayRevenue, 0),
       })
     } catch (error) {
       sendServerError(res, 'Failed to load sales summary', error)
@@ -1464,6 +1704,32 @@ export function registerCommerceRoutes(app, {
     }
   })
 
+  app.post('/api/stays/confirm-payment-intent', async (req, res) => {
+    const stripe = getStripe()
+    if (!stripe) return res.status(503).json({ message: 'Stripe is not configured (set STRIPE_SECRET_KEY)' })
+    try {
+      const bookingId = toNumber(req.body?.bookingId, 0)
+      const paymentIntentId = String(req.body?.paymentIntentId ?? '').trim()
+      if (!bookingId || !paymentIntentId) return res.status(400).json({ message: 'bookingId and paymentIntentId are required' })
+      const pi = await stripe.paymentIntents.retrieve(paymentIntentId)
+      if (!pi) return res.status(404).json({ message: 'PaymentIntent not found' })
+      if (String(pi.metadata?.stayBookingId ?? '') !== String(bookingId)) {
+        return res.status(400).json({ message: 'PaymentIntent does not match booking' })
+      }
+      if (pi.status !== 'succeeded') {
+        return res.status(400).json({ message: `Payment not completed (${pi.status})` })
+      }
+      await fulfillStayBooking(pi)
+      const [rows] = await pool.query(
+        `SELECT id, booking_number AS bookingNumber, status, total FROM stay_bookings WHERE id = ? LIMIT 1`,
+        [bookingId],
+      )
+      res.json({ ok: true, booking: rows[0] })
+    } catch (error) {
+      sendServerError(res, 'Failed to confirm stay payment', error)
+    }
+  })
+
   app.get('/api/admin/properties', requireAdmin, async (_req, res) => {
     try {
       const [rows] = await pool.query(
@@ -1648,24 +1914,75 @@ export function registerCommerceRoutes(app, {
   }, 10_000)
 
   // ── Customer auth & dashboard ───────────────────────────
+  app.get('/api/auth/config', (_req, res) => {
+    res.json(authConfig())
+  })
+
   app.post('/api/auth/register', async (req, res) => {
     try {
       const email = String(req.body?.email ?? '').trim().toLowerCase()
       const password = String(req.body?.password ?? '')
       const fullName = String(req.body?.fullName ?? '').trim()
-      if (!email || password.length < 8 || !fullName) {
-        return res.status(400).json({ message: 'Name, email, and password (8+ chars) required' })
+      const phone = String(req.body?.phone ?? '').trim()
+      const deliveryLine1 = String(req.body?.deliveryLine1 ?? '').trim()
+      const deliveryLine2 = String(req.body?.deliveryLine2 ?? '').trim()
+      const deliveryCity = String(req.body?.deliveryCity ?? '').trim()
+      const deliveryState = String(req.body?.deliveryState ?? 'VIC').trim()
+      const deliveryPostcode = String(req.body?.deliveryPostcode ?? '').trim()
+
+      if (!email || !isValidEmail(email)) {
+        return res.status(400).json({ message: 'A valid email is required' })
       }
-      const hash = await bcrypt.hash(password, 12)
+      if (password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters' })
+      }
+      if (!fullName) {
+        return res.status(400).json({ message: 'Full name is required' })
+      }
+      if (!phone || !isValidPhone(phone)) {
+        return res.status(400).json({ message: 'A valid Australian mobile number is required' })
+      }
+
+      const hash = await hashPassword(password)
+      const verificationEnabled = customerVerificationEnabled()
       const [result] = await pool.query(
-        `INSERT INTO customers (email, password_hash, full_name, phone) VALUES (?, ?, ?, ?)`,
-        [email, hash, fullName, String(req.body?.phone ?? '')],
+        `INSERT INTO customers (
+           email, password_hash, full_name, phone, delivery_line1, delivery_line2,
+           delivery_city, delivery_state, delivery_postcode, auth_provider,
+           email_verified, phone_verified
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'local', ?, ?)`,
+        [
+          email,
+          hash,
+          fullName,
+          phone,
+          deliveryLine1,
+          deliveryLine2,
+          deliveryCity,
+          deliveryState,
+          deliveryPostcode,
+          verificationEnabled ? 0 : 1,
+          verificationEnabled ? 0 : 1,
+        ],
       )
-      const token = jwt.sign({ sub: result.insertId, email, role: 'customer' }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' })
+      const customerId = result.insertId
+      const delivery = verificationEnabled
+        ? await queueVerificationCodes(customerId, { email, phone, fullName })
+        : { devCodes: undefined }
+      const token = issueCustomerToken(customerId, email, CUSTOMER_JWT_SECRET)
       res.cookie(CUSTOMER_COOKIE, token, customerCookieOptions())
-      res.status(201).json({ id: result.insertId, email, fullName })
+      const user = await loadCustomerById(customerId)
+      res.status(201).json({
+        user,
+        verificationRequired: verificationEnabled,
+        message: verificationEnabled
+          ? 'Account created. Verify your email and mobile to finish setup.'
+          : 'Account created.',
+        devCodes: delivery.devCodes,
+      })
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'Email already registered' })
+      if (error.status) return res.status(error.status).json({ message: error.message })
       sendServerError(res, 'Registration failed', error)
     }
   })
@@ -1675,20 +1992,113 @@ export function registerCommerceRoutes(app, {
       const email = String(req.body?.email ?? '').trim().toLowerCase()
       const password = String(req.body?.password ?? '')
       const [rows] = await pool.query(
-        `SELECT id, email, full_name AS fullName, password_hash AS passwordHash FROM customers WHERE email = ? LIMIT 1`,
+        `SELECT id, email, password_hash AS passwordHash FROM customers WHERE email = ? LIMIT 1`,
         [email],
       )
       const user = rows[0]
-      if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
         return res.status(401).json({ message: 'Invalid credentials' })
       }
-      const token = jwt.sign({ sub: user.id, email: user.email, role: 'customer' }, CUSTOMER_JWT_SECRET, {
-        expiresIn: '30d',
-      })
+      const token = issueCustomerToken(user.id, user.email, CUSTOMER_JWT_SECRET)
       res.cookie(CUSTOMER_COOKIE, token, customerCookieOptions())
-      res.json({ id: user.id, email: user.email, fullName: user.fullName })
+      const profile = await loadCustomerById(user.id)
+      res.json({ user: profile })
     } catch (error) {
       sendServerError(res, 'Login failed', error)
+    }
+  })
+
+  app.post('/api/auth/google', async (req, res) => {
+    try {
+      const credential = String(req.body?.credential ?? '')
+      if (!credential) return res.status(400).json({ message: 'Missing Google credential' })
+      const user = await loginWithGoogleCredential(credential)
+      const token = issueCustomerToken(user.id, user.email, CUSTOMER_JWT_SECRET)
+      res.cookie(CUSTOMER_COOKIE, token, customerCookieOptions())
+      res.json({
+        user,
+        verificationRequired: customerVerificationEnabled() && (!user.emailVerified || !user.phoneVerified),
+      })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Google sign-in failed', error)
+    }
+  })
+
+  app.post('/api/auth/apple', async (req, res) => {
+    try {
+      const credential = String(req.body?.credential ?? '')
+      const fullName = String(req.body?.fullName ?? '').trim()
+      if (!credential) return res.status(400).json({ message: 'Missing Apple credential' })
+      const user = await loginWithAppleCredential(credential, fullName)
+      const token = issueCustomerToken(user.id, user.email, CUSTOMER_JWT_SECRET)
+      res.cookie(CUSTOMER_COOKIE, token, customerCookieOptions())
+      res.json({
+        user,
+        verificationRequired: customerVerificationEnabled() && (!user.emailVerified || !user.phoneVerified),
+      })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Apple sign-in failed', error)
+    }
+  })
+
+  app.post('/api/auth/verify-email', requireCustomer, async (req, res) => {
+    try {
+      if (req.customer.emailVerified) return res.json({ ok: true, user: req.customer })
+      await verifyEmailCode(req.customer.id, String(req.body?.code ?? ''))
+      const user = await loadCustomerById(req.customer.id)
+      res.json({ ok: true, user })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Email verification failed', error)
+    }
+  })
+
+  app.post('/api/auth/verify-phone', requireCustomer, async (req, res) => {
+    try {
+      if (req.customer.phoneVerified) return res.json({ ok: true, user: req.customer })
+      await verifyPhoneCode(req.customer.id, String(req.body?.code ?? ''))
+      const user = await loadCustomerById(req.customer.id)
+      res.json({ ok: true, user })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Phone verification failed', error)
+    }
+  })
+
+  app.post('/api/auth/resend-email', requireCustomer, async (req, res) => {
+    try {
+      if (req.customer.emailVerified) return res.json({ ok: true, message: 'Email already verified' })
+      const delivery = await resendEmailVerification(req.customer.id, {
+        email: req.customer.email,
+        fullName: req.customer.fullName,
+      })
+      res.json({ ok: true, message: 'Verification codes sent', devCodes: delivery.devCodes })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Could not resend email verification', error)
+    }
+  })
+
+  app.post('/api/auth/resend-phone', requireCustomer, async (req, res) => {
+    try {
+      const phone = String(req.body?.phone ?? req.customer.phone ?? '').trim()
+      if (!phone || !isValidPhone(phone)) {
+        return res.status(400).json({ message: 'A valid mobile number is required' })
+      }
+      if (phone !== req.customer.phone) {
+        await pool.query(`UPDATE customers SET phone = ?, phone_verified = 0 WHERE id = ?`, [phone, req.customer.id])
+      }
+      if (req.customer.phoneVerified && phone === req.customer.phone) {
+        return res.json({ ok: true, message: 'Phone already verified' })
+      }
+      const delivery = await resendPhoneVerification(req.customer.id, { phone })
+      const user = await loadCustomerById(req.customer.id)
+      res.json({ ok: true, message: 'Verification codes sent', user, devCodes: delivery.devCodes })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Could not resend phone verification', error)
     }
   })
 
@@ -1697,27 +2107,95 @@ export function registerCommerceRoutes(app, {
     res.json({ ok: true })
   })
 
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const email = String(req.body?.email ?? '').trim().toLowerCase()
+      if (!email || !isValidEmail(email)) {
+        return res.status(400).json({ message: 'A valid email is required' })
+      }
+      const result = await requestPasswordReset(email)
+      res.json({
+        ok: true,
+        message: 'If an account exists with that email, we sent a reset code.',
+        devCode: result.devCode,
+      })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Could not start password reset', error)
+    }
+  })
+
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const email = String(req.body?.email ?? '').trim().toLowerCase()
+      const code = String(req.body?.code ?? '').trim()
+      const newPassword = String(req.body?.newPassword ?? '')
+      await resetPasswordWithCode(email, code, newPassword)
+      res.json({ ok: true, message: 'Password updated. You can sign in now.' })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Could not reset password', error)
+    }
+  })
+
+  app.post('/api/auth/change-password', requireCustomer, async (req, res) => {
+    try {
+      await changeCustomerPassword(
+        req.customer.id,
+        String(req.body?.currentPassword ?? ''),
+        String(req.body?.newPassword ?? ''),
+      )
+      res.json({ ok: true, message: 'Password updated' })
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message })
+      sendServerError(res, 'Could not change password', error)
+    }
+  })
+
   app.get('/api/auth/me', requireCustomer, (req, res) => {
     res.json({ user: req.customer })
   })
 
   app.put('/api/auth/me', requireCustomer, async (req, res) => {
     try {
+      const fullName = String(req.body?.fullName ?? req.customer.fullName).trim()
+      const phone = String(req.body?.phone ?? req.customer.phone ?? '').trim()
+      const deliveryLine1 = String(req.body?.deliveryLine1 ?? req.customer.deliveryLine1 ?? '').trim()
+      const deliveryLine2 = String(req.body?.deliveryLine2 ?? req.customer.deliveryLine2 ?? '').trim()
+      const deliveryCity = String(req.body?.deliveryCity ?? req.customer.deliveryCity ?? '').trim()
+      const deliveryState = String(req.body?.deliveryState ?? req.customer.deliveryState ?? 'VIC').trim()
+      const deliveryPostcode = String(req.body?.deliveryPostcode ?? req.customer.deliveryPostcode ?? '').trim()
+
+      if (!fullName) return res.status(400).json({ message: 'Full name is required' })
+      if (phone && !isValidPhone(phone)) {
+        return res.status(400).json({ message: 'Enter a valid Australian mobile number' })
+      }
+
+      const phoneChanged = phone !== String(req.customer.phone ?? '').trim()
       await pool.query(
-        `UPDATE customers SET full_name=?, phone=?, delivery_line1=?, delivery_line2=?, delivery_city=?, delivery_state=?, delivery_postcode=?
-         WHERE id=?`,
+        `UPDATE customers SET
+           full_name = ?, phone = ?, delivery_line1 = ?, delivery_line2 = ?,
+           delivery_city = ?, delivery_state = ?, delivery_postcode = ?,
+           phone_verified = CASE WHEN ? THEN 0 ELSE phone_verified END,
+           phone_verify_code = CASE WHEN ? THEN NULL ELSE phone_verify_code END,
+           phone_verify_expires = CASE WHEN ? THEN NULL ELSE phone_verify_expires END
+         WHERE id = ?`,
         [
-          String(req.body?.fullName ?? req.customer.fullName),
-          String(req.body?.phone ?? ''),
-          String(req.body?.deliveryLine1 ?? ''),
-          String(req.body?.deliveryLine2 ?? ''),
-          String(req.body?.deliveryCity ?? ''),
-          String(req.body?.deliveryState ?? ''),
-          String(req.body?.deliveryPostcode ?? ''),
+          fullName,
+          phone,
+          deliveryLine1,
+          deliveryLine2,
+          deliveryCity,
+          deliveryState,
+          deliveryPostcode,
+          phoneChanged,
+          phoneChanged,
+          phoneChanged,
           req.customer.id,
         ],
       )
-      res.json({ ok: true })
+      const user = await loadCustomerById(req.customer.id)
+      res.json({ ok: true, user })
     } catch (error) {
       sendServerError(res, 'Failed to update profile', error)
     }
@@ -1725,16 +2203,62 @@ export function registerCommerceRoutes(app, {
 
   app.get('/api/account/orders', requireCustomer, async (req, res) => {
     try {
+      // Hide unfinished checkouts (pending_payment) — those are created when payment starts,
+      // not when payment succeeds. Customers should only see completed / refunded activity.
       const [rows] = await pool.query(
         `SELECT id, order_number AS orderNumber, total, status, fulfillment_status AS fulfillmentStatus,
                 refund_status AS refundStatus, refund_reason AS refundReason, refund_note AS refundNote,
-                refunded_amount AS refundedAmount, created_at AS createdAt
-         FROM orders WHERE customer_id = ? OR email = ? ORDER BY id DESC LIMIT 100`,
+                refunded_amount AS refundedAmount, paid_at AS paidAt, packed_at AS packedAt, shipped_at AS shippedAt,
+                delivered_at AS deliveredAt, refund_requested_at AS refundRequestedAt,
+                created_at AS createdAt
+         FROM orders
+         WHERE (customer_id = ? OR email = ?)
+           AND status IN ('paid', 'refund_requested', 'partially_refunded', 'refunded')
+         ORDER BY id DESC LIMIT 100`,
         [req.customer.id, req.customer.email],
       )
       res.json(rows)
     } catch (error) {
       sendServerError(res, 'Failed to load orders', error)
+    }
+  })
+
+  app.get('/api/account/orders/:id', requireCustomer, async (req, res) => {
+    const id = toNumber(req.params.id, 0)
+    if (!id) return res.status(400).json({ message: 'Invalid id' })
+    try {
+      const [orders] = await pool.query(
+        `SELECT id, order_number AS orderNumber, email, full_name AS fullName, phone,
+                shipping_method AS shippingMethod, shipping_line1 AS shippingLine1,
+                shipping_line2 AS shippingLine2, shipping_city AS shippingCity,
+                shipping_state AS shippingState, shipping_postcode AS shippingPostcode,
+                subtotal, shipping_fee AS shippingFee, total, currency, status,
+                fulfillment_status AS fulfillmentStatus, refund_status AS refundStatus,
+                refund_reason AS refundReason, refund_note AS refundNote,
+                refunded_amount AS refundedAmount, carrier, tracking_number AS trackingNumber,
+                tracking_url AS trackingUrl, paid_at AS paidAt, packed_at AS packedAt, shipped_at AS shippedAt,
+                delivered_at AS deliveredAt, refund_requested_at AS refundRequestedAt,
+                created_at AS createdAt, updated_at AS updatedAt,
+                customer_id AS customerId
+         FROM orders WHERE id = ? LIMIT 1`,
+        [id],
+      )
+      const order = orders[0]
+      if (!order) return res.status(404).json({ message: 'Order not found' })
+      const owns =
+        toNumber(order.customerId, 0) === req.customer.id ||
+        String(order.email).toLowerCase() === String(req.customer.email).toLowerCase()
+      if (!owns) return res.status(403).json({ message: 'Not your order' })
+      const [items] = await pool.query(
+        `SELECT id, product_id AS productId, product_name AS productName, product_size AS productSize,
+                unit_price AS unitPrice, quantity, line_total AS lineTotal
+         FROM order_items WHERE order_id = ?`,
+        [id],
+      )
+      const { customerId: _customerId, ...safeOrder } = order
+      res.json({ order: safeOrder, items })
+    } catch (error) {
+      sendServerError(res, 'Failed to load order', error)
     }
   })
 
@@ -1745,7 +2269,10 @@ export function registerCommerceRoutes(app, {
     if (reason.length < 5) return res.status(400).json({ message: 'Please provide a short reason (5+ characters)' })
     try {
       const [rows] = await pool.query(
-        `SELECT id, status, customer_id AS customerId, email FROM orders WHERE id = ? LIMIT 1`,
+        `SELECT id, status, total, fulfillment_status AS fulfillmentStatus,
+                refunded_amount AS refundedAmount, delivered_at AS deliveredAt,
+                customer_id AS customerId, email
+         FROM orders WHERE id = ? LIMIT 1`,
         [id],
       )
       const order = rows[0]
@@ -1754,8 +2281,9 @@ export function registerCommerceRoutes(app, {
         toNumber(order.customerId, 0) === req.customer.id ||
         String(order.email).toLowerCase() === String(req.customer.email).toLowerCase()
       if (!owns) return res.status(403).json({ message: 'Not your order' })
-      if (order.status !== 'paid') {
-        return res.status(400).json({ message: 'Only paid orders can request a refund' })
+      const refundState = getStoreRefundRequestState(order)
+      if (!refundState.allowed) {
+        return res.status(400).json({ message: storeRefundRequestErrorMessage(refundState.code) })
       }
       await pool.query(
         `UPDATE orders SET status = 'refund_requested', refund_status = 'requested',
@@ -1859,7 +2387,20 @@ export function registerCommerceRoutes(app, {
     try {
       const pmId = String(req.body?.paymentMethodId ?? '')
       if (!pmId) return res.status(400).json({ message: 'paymentMethodId required' })
+      let customerId = req.customer.stripeCustomerId
+      if (!customerId) {
+        const c = await stripe.customers.create({
+          email: req.customer.email,
+          name: req.customer.fullName,
+          metadata: { localCustomerId: String(req.customer.id) },
+        })
+        customerId = c.id
+        await pool.query('UPDATE customers SET stripe_customer_id = ? WHERE id = ?', [customerId, req.customer.id])
+      }
       const pm = await stripe.paymentMethods.retrieve(pmId)
+      if (!pm.customer) {
+        await stripe.paymentMethods.attach(pmId, { customer: customerId })
+      }
       await pool.query(
         `INSERT INTO stripe_payment_methods (customer_id, stripe_payment_method_id, brand, last4, exp_month, exp_year)
          VALUES (?, ?, ?, ?, ?, ?)

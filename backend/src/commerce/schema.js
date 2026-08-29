@@ -87,9 +87,17 @@ export async function ensureCommerceSchema() {
       total DECIMAL(10,2) NOT NULL DEFAULT 0,
       currency VARCHAR(10) NOT NULL DEFAULT 'aud',
       status VARCHAR(40) NOT NULL DEFAULT 'pending_payment',
-      fulfillment_status VARCHAR(40) NOT NULL DEFAULT 'unfulfilled',
+      fulfillment_status VARCHAR(40) NOT NULL DEFAULT 'pending',
       stripe_payment_intent_id VARCHAR(120) DEFAULT NULL,
       shipping_breakdown_json TEXT NULL,
+      carrier VARCHAR(80) DEFAULT '',
+      tracking_number VARCHAR(160) DEFAULT '',
+      tracking_url VARCHAR(500) DEFAULT '',
+      admin_note TEXT NULL,
+      paid_at DATETIME NULL,
+      packed_at DATETIME NULL,
+      shipped_at DATETIME NULL,
+      delivered_at DATETIME NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_orders_status (status),
@@ -234,6 +242,21 @@ export async function ensureCommerceSchema() {
   await addColumnIfMissing('orders', 'stripe_refund_id', 'VARCHAR(120) NULL')
   await addColumnIfMissing('orders', 'refunded_amount', 'DECIMAL(10,2) NULL')
   await addColumnIfMissing('orders', 'refund_note', 'TEXT NULL')
+  await addColumnIfMissing('orders', 'carrier', "VARCHAR(80) NOT NULL DEFAULT ''")
+  await addColumnIfMissing('orders', 'tracking_number', "VARCHAR(160) NOT NULL DEFAULT ''")
+  await addColumnIfMissing('orders', 'tracking_url', "VARCHAR(500) NOT NULL DEFAULT ''")
+  await addColumnIfMissing('orders', 'admin_note', 'TEXT NULL')
+  await addColumnIfMissing('orders', 'paid_at', 'DATETIME NULL')
+  await addColumnIfMissing('orders', 'packed_at', 'DATETIME NULL')
+  await addColumnIfMissing('orders', 'shipped_at', 'DATETIME NULL')
+  await addColumnIfMissing('orders', 'delivered_at', 'DATETIME NULL')
+  await pool.query(
+    `UPDATE orders SET paid_at = created_at
+     WHERE paid_at IS NULL AND status IN ('paid', 'refund_requested', 'refunded')`,
+  )
+
+  // Prefer customer-facing "pending" over legacy "unfulfilled"
+  await pool.query(`UPDATE orders SET fulfillment_status = 'pending' WHERE fulfillment_status = 'unfulfilled'`)
 
   await addColumnIfMissing('stay_bookings', 'expires_at', 'DATETIME NULL')
   await addColumnIfMissing('stay_bookings', 'refund_requested_at', 'DATETIME NULL')
@@ -242,6 +265,29 @@ export async function ensureCommerceSchema() {
   await addColumnIfMissing('stay_bookings', 'stripe_refund_id', 'VARCHAR(120) NULL')
   await addColumnIfMissing('stay_bookings', 'refunded_amount', 'DECIMAL(10,2) NULL')
   await addColumnIfMissing('stay_bookings', 'refund_note', 'TEXT NULL')
+
+  await addColumnIfMissing('customers', 'email_verified', 'TINYINT(1) NOT NULL DEFAULT 0')
+  await addColumnIfMissing('customers', 'email_verify_code', 'VARCHAR(10) NULL')
+  await addColumnIfMissing('customers', 'email_verify_expires', 'DATETIME NULL')
+  await addColumnIfMissing('customers', 'phone_verified', 'TINYINT(1) NOT NULL DEFAULT 0')
+  await addColumnIfMissing('customers', 'phone_verify_code', 'VARCHAR(10) NULL')
+  await addColumnIfMissing('customers', 'phone_verify_expires', 'DATETIME NULL')
+  await addColumnIfMissing('customers', 'auth_provider', "VARCHAR(20) NOT NULL DEFAULT 'local'")
+  await addColumnIfMissing('customers', 'google_id', 'VARCHAR(120) NULL')
+  await addColumnIfMissing('customers', 'apple_id', 'VARCHAR(120) NULL')
+  await addColumnIfMissing('customers', 'password_reset_code', 'VARCHAR(10) NULL')
+  await addColumnIfMissing('customers', 'password_reset_expires', 'DATETIME NULL')
+  await pool.query('ALTER TABLE customers MODIFY COLUMN password_hash VARCHAR(255) NULL')
+  await pool.query(`
+    UPDATE customers
+    SET email_verified = 1,
+        phone_verified = CASE WHEN phone IS NOT NULL AND phone <> '' THEN 1 ELSE phone_verified END
+    WHERE email_verify_code IS NULL
+      AND phone_verify_code IS NULL
+      AND email_verified = 0
+      AND google_id IS NULL
+      AND apple_id IS NULL
+  `)
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS stripe_webhook_events (

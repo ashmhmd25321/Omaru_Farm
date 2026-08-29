@@ -34,7 +34,37 @@ type Quote = {
   }
 }
 
-function PayForm({ orderTotal, onPaid }: { orderTotal: number; onPaid: () => void }) {
+type SavedCard = {
+  id: number
+  stripePaymentMethodId: string
+  brand: string
+  last4: string
+  expMonth: number
+  expYear: number
+}
+
+async function confirmOrderPaid(orderId: number, paymentIntentId: string) {
+  const res = await fetch(apiUrl('/api/checkout/confirm-payment-intent'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderId, paymentIntentId }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.message ?? 'Could not confirm payment status')
+}
+
+function NewCardPayForm({
+  orderTotal,
+  orderId,
+  orderNumber,
+  onPaid,
+}: {
+  orderTotal: number
+  orderId: number
+  orderNumber: string
+  onPaid: () => void
+}) {
   const stripe = useStripe()
   const elements = useElements()
   const [busy, setBusy] = useState(false)
@@ -48,23 +78,91 @@ function PayForm({ orderTotal, onPaid }: { orderTotal: number; onPaid: () => voi
     const result = await stripe.confirmPayment({
       elements,
       redirect: 'if_required',
-      confirmParams: { return_url: `${window.location.origin}/account?paid=1` },
+      confirmParams: { return_url: `${window.location.origin}/account?paid=1&order=${encodeURIComponent(orderNumber)}` },
     })
-    setBusy(false)
     if (result.error) {
+      setBusy(false)
       setError(result.error.message ?? 'Payment failed')
       return
     }
-    onPaid()
+    try {
+      const piId = typeof result.paymentIntent?.id === 'string' ? result.paymentIntent.id : ''
+      if (piId) await confirmOrderPaid(orderId, piId)
+      onPaid()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not confirm payment status')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <PaymentElement />
+      <PaymentElement options={{ layout: 'tabs' }} />
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <Button type="submit" disabled={!stripe || busy} className="w-full">
         {busy ? 'Processing…' : `Pay $${orderTotal.toFixed(2)} AUD`}
       </Button>
+      <p className="text-center text-xs text-stone">
+        Secured by Stripe. Your bank may ask for a one-time code (3D Secure) when required.
+      </p>
+    </form>
+  )
+}
+
+function SavedCardPayForm({
+  stripePromise,
+  clientSecret,
+  paymentMethodId,
+  cardLabel,
+  orderTotal,
+  orderId,
+  onPaid,
+}: {
+  stripePromise: Promise<Stripe | null>
+  clientSecret: string
+  paymentMethodId: string
+  cardLabel: string
+  orderTotal: number
+  orderId: number
+  onPaid: () => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setError('')
+    try {
+      const stripe = await stripePromise
+      if (!stripe) throw new Error('Stripe is not ready')
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: paymentMethodId,
+      })
+      if (result.error) throw new Error(result.error.message ?? 'Payment failed')
+      const piId = result.paymentIntent?.id
+      if (piId) await confirmOrderPaid(orderId, piId)
+      onPaid()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Payment failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <div className="rounded-lg border border-gold/25 bg-gold/5 px-4 py-3 text-sm text-charcoal">
+        Paying with <span className="font-semibold capitalize">{cardLabel}</span>
+      </div>
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      <Button type="submit" disabled={busy} className="w-full">
+        {busy ? 'Processing…' : `Pay $${orderTotal.toFixed(2)} AUD`}
+      </Button>
+      <p className="text-center text-xs text-stone">
+        Secured by Stripe. Your bank may ask for a one-time code (3D Secure) when required.
+      </p>
     </form>
   )
 }
@@ -76,11 +174,15 @@ export function CheckoutPage() {
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null)
   const [checkoutEnabled, setCheckoutEnabled] = useState(true)
   const [clientSecret, setClientSecret] = useState('')
+  const [orderId, setOrderId] = useState(0)
+  const [orderNumber, setOrderNumber] = useState('')
   const [orderTotal, setOrderTotal] = useState(0)
   const [quote, setQuote] = useState<Quote | null>(null)
   const [quoteError, setQuoteError] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([])
+  const [payWith, setPayWith] = useState<'new' | number>('new')
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -106,6 +208,17 @@ export function CheckoutPage() {
         state: user.deliveryState || f.state,
         postcode: user.deliveryPostcode || f.postcode,
       }))
+      fetch(apiUrl('/api/account/payment-methods'), { credentials: 'include' })
+        .then((r) => r.json())
+        .then((rows) => {
+          const list = Array.isArray(rows) ? (rows as SavedCard[]) : []
+          setSavedCards(list)
+          if (list[0]?.id) setPayWith(list[0].id)
+        })
+        .catch(() => setSavedCards([]))
+    } else {
+      setSavedCards([])
+      setPayWith('new')
     }
   }, [user])
 
@@ -175,11 +288,19 @@ export function CheckoutPage() {
       if (!res.ok) throw new Error(data.message ?? 'Checkout failed')
       setClientSecret(data.clientSecret)
       setOrderTotal(Number(data.total))
+      setOrderId(Number(data.orderId ?? 0))
+      setOrderNumber(String(data.orderNumber ?? ''))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Checkout failed')
     } finally {
       setBusy(false)
     }
+  }
+
+  const selectedCard = savedCards.find((c) => c.id === payWith)
+  const onPaid = () => {
+    clear()
+    navigate(`/account?paid=1${orderNumber ? `&order=${encodeURIComponent(orderNumber)}` : ''}`)
   }
 
   if (lines.length === 0 && !clientSecret) {
@@ -208,7 +329,14 @@ export function CheckoutPage() {
             <form onSubmit={startPayment} className="mt-6 space-y-3">
               <input className="field" placeholder="Full name" required value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
               <input className="field" type="email" placeholder="Email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              <input className="field" placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <input
+                className="field"
+                type="tel"
+                placeholder={form.shippingMethod === 'delivery' ? 'Phone (required for delivery)' : 'Phone'}
+                required={form.shippingMethod === 'delivery'}
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
               <div className="flex gap-3">
                 <label className="flex items-center gap-2 text-sm">
                   <input type="radio" checked={form.shippingMethod === 'delivery'} onChange={() => setForm({ ...form, shippingMethod: 'delivery' })} />
@@ -241,7 +369,7 @@ export function CheckoutPage() {
                       onChange={(e) => setForm({ ...form, postcode: e.target.value.replace(/\D/g, '').slice(0, 4) })}
                     />
                     <p className="col-span-3 text-xs text-stone">
-                    Shipping zone is chosen from your postcode. Live Australia Post Parcel Post rates are used when configured (from 3922).
+                      Shipping zone is chosen from your postcode. Live Australia Post Parcel Post rates are used when configured (from 3922).
                     </p>
                   </div>
                 </>
@@ -263,20 +391,67 @@ export function CheckoutPage() {
               ) : null}
             </form>
           ) : stripePromise ? (
-            <div className="mt-6">
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <PayForm
+            <div className="mt-6 space-y-4">
+              {savedCards.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-bark">Payment method</p>
+                  <div className="space-y-2">
+                    {savedCards.map((card) => (
+                      <label
+                        key={card.id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 text-sm transition ${
+                          payWith === card.id ? 'border-gold bg-gold/5' : 'border-parchment bg-white hover:border-gold/40'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="payWith"
+                          checked={payWith === card.id}
+                          onChange={() => setPayWith(card.id)}
+                        />
+                        <span className="font-semibold capitalize text-charcoal">{card.brand}</span>
+                        <span className="text-stone">•••• {card.last4}</span>
+                        <span className="ml-auto text-xs text-stone">
+                          {card.expMonth}/{card.expYear}
+                        </span>
+                      </label>
+                    ))}
+                    <label
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 text-sm transition ${
+                        payWith === 'new' ? 'border-gold bg-gold/5' : 'border-parchment bg-white hover:border-gold/40'
+                      }`}
+                    >
+                      <input type="radio" name="payWith" checked={payWith === 'new'} onChange={() => setPayWith('new')} />
+                      <span className="font-semibold text-charcoal">Use a new card</span>
+                    </label>
+                  </div>
+                </div>
+              ) : null}
+
+              {selectedCard ? (
+                <SavedCardPayForm
+                  stripePromise={stripePromise}
+                  clientSecret={clientSecret}
+                  paymentMethodId={selectedCard.stripePaymentMethodId}
+                  cardLabel={`${selectedCard.brand} •••• ${selectedCard.last4}`}
                   orderTotal={orderTotal}
-                  onPaid={() => {
-                    clear()
-                    navigate('/account?paid=1')
-                  }}
+                  orderId={orderId}
+                  onPaid={onPaid}
                 />
-              </Elements>
+              ) : (
+                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                  <NewCardPayForm
+                    orderTotal={orderTotal}
+                    orderId={orderId}
+                    orderNumber={orderNumber}
+                    onPaid={onPaid}
+                  />
+                </Elements>
+              )}
             </div>
           ) : null}
         </div>
-        <aside className="rounded-lg border border-parchment bg-white p-6 h-fit">
+        <aside className="h-fit rounded-lg border border-parchment bg-white p-6">
           <h2 className="font-heading text-2xl text-charcoal">Order summary</h2>
           <ul className="mt-4 space-y-2 text-sm text-stone">
             {lines.map((l) => (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { apiUrl } from '@/utils/api'
@@ -30,6 +30,7 @@ type Order = {
   orderNumber: string
   email: string
   fullName: string
+  phone: string
   total: number
   status: string
   fulfillmentStatus: string
@@ -37,7 +38,308 @@ type Order = {
   refundStatus?: string | null
   refundReason?: string | null
   refundNote?: string | null
+  paidAt?: string | null
+  packedAt?: string | null
+  shippedAt?: string | null
+  deliveredAt?: string | null
   createdAt: string
+}
+
+function formatOrderDate(value: unknown) {
+  if (!value) return '—'
+  const date = new Date(String(value))
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'Australia/Melbourne',
+    timeZoneName: 'short',
+  })
+}
+
+type OrderItem = {
+  id: number
+  productId: number
+  productName: string
+  productSize: string
+  unitPrice: number
+  quantity: number
+  lineTotal: number
+}
+
+function AdminOrderDetails({
+  orderId,
+  token,
+  onClose,
+  onUpdated,
+}: {
+  orderId: number
+  token: string
+  onClose: () => void
+  onUpdated: () => void
+}) {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [raw, setRaw] = useState<Record<string, unknown> | null>(null)
+  const [items, setItems] = useState<OrderItem[]>([])
+  const [operations, setOperations] = useState({
+    fulfillmentStatus: 'pending',
+    carrier: '',
+    trackingNumber: '',
+    trackingUrl: '',
+    adminNote: '',
+  })
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    adminFetch<{ order: Record<string, unknown>; items: OrderItem[] }>(`/api/admin/orders/${orderId}`, token)
+      .then((data) => {
+        if (cancelled) return
+        setRaw(data.order)
+        setItems(Array.isArray(data.items) ? data.items : [])
+        setOperations({
+          fulfillmentStatus:
+            String(data.order.fulfillment_status ?? 'pending') === 'unfulfilled'
+              ? 'pending'
+              : String(data.order.fulfillment_status ?? 'pending'),
+          carrier: String(data.order.carrier ?? ''),
+          trackingNumber: String(data.order.tracking_number ?? ''),
+          trackingUrl: String(data.order.tracking_url ?? ''),
+          adminNote: String(data.order.admin_note ?? ''),
+        })
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load order')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [orderId, token])
+
+  const shipTo = raw
+    ? [
+        raw.shipping_line1,
+        raw.shipping_line2,
+        raw.shipping_city,
+        raw.shipping_state,
+        raw.shipping_postcode,
+      ]
+        .map((p) => String(p ?? '').trim())
+        .filter(Boolean)
+        .join(', ')
+    : ''
+
+  const saveOperations = async () => {
+    setSaving(true)
+    setError('')
+    setMessage('')
+    try {
+      await adminFetch(`/api/admin/orders/${orderId}`, token, {
+        method: 'PUT',
+        body: JSON.stringify(operations),
+      })
+      setRaw((current) =>
+        current
+          ? {
+              ...current,
+              fulfillment_status: operations.fulfillmentStatus,
+              carrier: operations.carrier,
+              tracking_number: operations.trackingNumber,
+              tracking_url: operations.trackingUrl,
+              admin_note: operations.adminNote,
+            }
+          : current,
+      )
+      setMessage('Order management details saved')
+      onUpdated()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save order')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-charcoal/40 p-4 sm:items-center" role="dialog" aria-modal="true">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-parchment bg-white p-5 shadow-xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gold">Order details</p>
+            <h3 className="mt-1 font-heading text-2xl text-charcoal">
+              {String(raw?.order_number ?? (loading ? 'Loading…' : 'Order'))}
+            </h3>
+          </div>
+          <button type="button" className="rounded-sm px-2 py-1 text-sm text-stone hover:text-charcoal" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        {loading ? <p className="mt-6 text-sm text-stone">Loading…</p> : null}
+        {error ? <p className="mt-6 text-sm text-red-600">{error}</p> : null}
+
+        {raw && !loading ? (
+          <div className="mt-5 space-y-5">
+            <div className="grid gap-1 text-sm text-stone">
+              <p>
+                <span className="text-charcoal">Ordered:</span> {formatOrderDate(raw.created_at)}
+              </p>
+              {raw.paid_at ? (
+                <p>
+                  <span className="text-charcoal">Paid:</span> {formatOrderDate(raw.paid_at)}
+                </p>
+              ) : null}
+              {raw.packed_at ? (
+                <p>
+                  <span className="text-charcoal">Packed:</span> {formatOrderDate(raw.packed_at)}
+                </p>
+              ) : null}
+              {raw.shipped_at ? (
+                <p>
+                  <span className="text-charcoal">Shipped:</span> {formatOrderDate(raw.shipped_at)}
+                </p>
+              ) : null}
+              {raw.delivered_at ? (
+                <p>
+                  <span className="text-charcoal">Delivered:</span> {formatOrderDate(raw.delivered_at)}
+                </p>
+              ) : null}
+              <p>
+                <span className="text-charcoal">Customer:</span> {String(raw.full_name ?? '')} · {String(raw.email ?? '')}
+              </p>
+              {raw.phone ? (
+                <p>
+                  <span className="text-charcoal">Phone:</span> {String(raw.phone)}
+                </p>
+              ) : null}
+              <p>
+                <span className="text-charcoal">Status:</span> {String(raw.status ?? '')} /{' '}
+                {String(raw.fulfillment_status) === 'unfulfilled' ? 'pending' : String(raw.fulfillment_status ?? 'pending')}
+              </p>
+              {shipTo ? (
+                <p>
+                  <span className="text-charcoal">Ship to:</span> {shipTo}
+                </p>
+              ) : null}
+              <p>
+                <span className="text-charcoal">Method:</span> {String(raw.shipping_method ?? '—')}
+              </p>
+              {raw.stripe_payment_intent_id ? (
+                <p className="break-all text-xs">
+                  <span className="text-charcoal">Payment reference:</span> {String(raw.stripe_payment_intent_id)}
+                </p>
+              ) : null}
+            </div>
+
+            <ul className="divide-y divide-parchment/70 border-y border-parchment/70">
+              {items.map((item) => (
+                <li key={item.id} className="flex items-start justify-between gap-3 py-3 text-sm">
+                  <div>
+                    <p className="font-semibold text-charcoal">{item.productName}</p>
+                    <p className="text-stone">
+                      {item.productSize ? `${item.productSize} · ` : ''}
+                      Qty {item.quantity} · ${Number(item.unitPrice).toFixed(2)} each
+                    </p>
+                  </div>
+                  <p className="shrink-0 font-semibold text-charcoal">${Number(item.lineTotal).toFixed(2)}</p>
+                </li>
+              ))}
+              {items.length === 0 ? <li className="py-3 text-sm text-stone">No line items.</li> : null}
+            </ul>
+
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between text-stone">
+                <span>Subtotal</span>
+                <span>${Number(raw.subtotal ?? 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-stone">
+                <span>Shipping</span>
+                <span>${Number(raw.shipping_fee ?? 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-charcoal">
+                <span>Total</span>
+                <span>${Number(raw.total ?? 0).toFixed(2)} AUD</span>
+              </div>
+            </div>
+
+            <div className="space-y-3 border-t border-parchment/70 pt-4">
+              <div>
+                <h4 className="font-semibold text-charcoal">Fulfillment &amp; delivery</h4>
+                <p className="mt-1 text-xs text-stone">
+                  Add tracking before marking the order shipped. Customers can see these details in their account.
+                </p>
+              </div>
+              <label className="block text-xs font-semibold text-bark">
+                Fulfillment status
+                <select
+                  className="field mt-1"
+                  value={operations.fulfillmentStatus}
+                  onChange={(e) => setOperations((value) => ({ ...value, fulfillmentStatus: e.target.value }))}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="packed">Packed</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-xs font-semibold text-bark">
+                  Carrier
+                  <input
+                    className="field mt-1"
+                    placeholder="Australia Post"
+                    value={operations.carrier}
+                    onChange={(e) => setOperations((value) => ({ ...value, carrier: e.target.value }))}
+                  />
+                </label>
+                <label className="block text-xs font-semibold text-bark">
+                  Tracking number
+                  <input
+                    className="field mt-1"
+                    placeholder="Tracking number"
+                    value={operations.trackingNumber}
+                    onChange={(e) => setOperations((value) => ({ ...value, trackingNumber: e.target.value }))}
+                  />
+                </label>
+              </div>
+              <label className="block text-xs font-semibold text-bark">
+                Tracking link
+                <input
+                  className="field mt-1"
+                  type="url"
+                  placeholder="https://..."
+                  value={operations.trackingUrl}
+                  onChange={(e) => setOperations((value) => ({ ...value, trackingUrl: e.target.value }))}
+                />
+              </label>
+              <label className="block text-xs font-semibold text-bark">
+                Private staff note
+                <textarea
+                  className="field mt-1 min-h-20"
+                  placeholder="Packing instructions, customer contact, or internal notes"
+                  value={operations.adminNote}
+                  onChange={(e) => setOperations((value) => ({ ...value, adminNote: e.target.value }))}
+                />
+              </label>
+              {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
+              <Button type="button" disabled={saving} onClick={() => void saveOperations()}>
+                {saving ? 'Saving…' : 'Save order details'}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
 }
 
 type StayBooking = {
@@ -105,6 +407,8 @@ type CafeCapacity = {
 type Sales = {
   storeOrders: number
   storeRevenue: number
+  storeGrossRevenue: number
+  storeRefunds: number
   stayBookings: number
   stayRevenue: number
   onlineRevenue: number
@@ -155,6 +459,9 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
     status: 'pending',
   })
   const [sales, setSales] = useState<Sales | null>(null)
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null)
+  const [orderQuery, setOrderQuery] = useState('')
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all')
   const [newRule, setNewRule] = useState({
     name: '',
     postcodePrefixes: '*',
@@ -196,6 +503,21 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
     void load()
   }, [load])
 
+  const filteredOrders = useMemo(() => {
+    const query = orderQuery.trim().toLowerCase()
+    return orders.filter((order) => {
+      const fulfillment =
+        order.fulfillmentStatus === 'unfulfilled' ? 'pending' : String(order.fulfillmentStatus || 'pending')
+      if (orderStatusFilter !== 'all' && fulfillment !== orderStatusFilter && order.status !== orderStatusFilter) {
+        return false
+      }
+      if (!query) return true
+      return [order.orderNumber, order.fullName, order.email, order.phone, order.shippingPostcode]
+        .map((value) => String(value ?? '').toLowerCase())
+        .some((value) => value.includes(query))
+    })
+  }, [orderQuery, orderStatusFilter, orders])
+
   const updateHoldStatus = async (holdId: number, status: string) => {
     setError('')
     setMessage('')
@@ -226,10 +548,12 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
       ) : null}
 
       {section === 'sales' && sales ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {[
             ['Store orders', sales.storeOrders],
-            ['Store revenue', `$${Number(sales.storeRevenue).toFixed(2)}`],
+            ['Store gross', `$${Number(sales.storeGrossRevenue).toFixed(2)}`],
+            ['Store refunds', `$${Number(sales.storeRefunds).toFixed(2)}`],
+            ['Store net', `$${Number(sales.storeRevenue).toFixed(2)}`],
             ['Stay bookings', sales.stayBookings],
             ['Online total', `$${Number(sales.onlineRevenue).toFixed(2)}`],
           ].map(([label, value]) => (
@@ -249,23 +573,65 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
             <CardTitle>Orders</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
+            <div className="grid gap-2 pb-2 sm:grid-cols-[minmax(0,1fr)_180px]">
+              <input
+                className="field"
+                type="search"
+                placeholder="Search order, customer, email or postcode"
+                value={orderQuery}
+                onChange={(e) => setOrderQuery(e.target.value)}
+              />
+              <select
+                className="field"
+                value={orderStatusFilter}
+                onChange={(e) => setOrderStatusFilter(e.target.value)}
+              >
+                <option value="all">All statuses</option>
+                <option value="paid">Paid</option>
+                <option value="partially_refunded">Partially refunded</option>
+                <option value="refund_requested">Refund requested</option>
+                <option value="refunded">Refunded</option>
+                <option value="pending">Pending fulfillment</option>
+                <option value="packed">Packed</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
             {orders.length === 0 ? <p className="text-sm text-stone">No orders yet.</p> : null}
-            {orders.map((o) => (
+            {orders.length > 0 && filteredOrders.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-parchment p-4 text-sm text-stone">
+                No orders match this search or filter.
+              </p>
+            ) : null}
+            {filteredOrders.map((o) => (
               <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-parchment px-3 py-2 text-sm">
                 <div>
                   <p className="font-semibold">{o.orderNumber}</p>
                   <p className="text-stone">
-                    {o.fullName} · {o.email} · ${Number(o.total).toFixed(2)} · {o.status}
+                    {o.fullName} · {o.email} · ${Number(o.total).toFixed(2)} · {o.status} /{' '}
+                    {o.fulfillmentStatus === 'unfulfilled' ? 'pending' : o.fulfillmentStatus}
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-stone">
+                    Ordered {formatOrderDate(o.createdAt)}
+                    {o.paidAt ? ` · Paid ${formatOrderDate(o.paidAt)}` : ''}
                   </p>
                   {o.refundReason ? <p className="text-xs text-amber-800">Refund reason: {o.refundReason}</p> : null}
                   {o.refundNote ? <p className="text-xs text-stone">{o.refundNote}</p> : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {o.status === 'refund_requested' || o.status === 'paid' ? (
+                  <Button type="button" variant="outline" onClick={() => setSelectedOrderId(o.id)}>
+                    Order details
+                  </Button>
+                  {o.status === 'refund_requested' ? (
                     <>
                       <Button
                         type="button"
                         onClick={async () => {
+                          const confirmed = window.confirm(
+                            `Refund the remaining amount for ${o.orderNumber}? This sends money through Stripe and cannot be undone.`,
+                          )
+                          if (!confirmed) return
                           await adminFetch(`/api/admin/orders/${o.id}/refund`, token, {
                             method: 'POST',
                             body: JSON.stringify({ note: 'Admin approved refund' }),
@@ -276,27 +642,25 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
                       >
                         Refund
                       </Button>
-                      {o.status === 'refund_requested' ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={async () => {
-                            await adminFetch(`/api/admin/orders/${o.id}/refund-reject`, token, {
-                              method: 'POST',
-                              body: JSON.stringify({ note: 'Refund request declined' }),
-                            })
-                            setMessage(`Rejected refund for ${o.orderNumber}`)
-                            await load()
-                          }}
-                        >
-                          Reject
-                        </Button>
-                      ) : null}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={async () => {
+                          await adminFetch(`/api/admin/orders/${o.id}/refund-reject`, token, {
+                            method: 'POST',
+                            body: JSON.stringify({ note: 'Refund request declined' }),
+                          })
+                          setMessage(`Rejected refund for ${o.orderNumber}`)
+                          await load()
+                        }}
+                      >
+                        Reject
+                      </Button>
                     </>
                   ) : null}
                   <select
                     className="field w-auto"
-                    value={o.fulfillmentStatus}
+                    value={o.fulfillmentStatus === 'unfulfilled' ? 'pending' : o.fulfillmentStatus}
                     onChange={async (e) => {
                       await adminFetch(`/api/admin/orders/${o.id}`, token, {
                         method: 'PUT',
@@ -306,7 +670,7 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
                       await load()
                     }}
                   >
-                    <option value="unfulfilled">unfulfilled</option>
+                    <option value="pending">pending</option>
                     <option value="packed">packed</option>
                     <option value="shipped">shipped</option>
                     <option value="delivered">delivered</option>
@@ -317,6 +681,15 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
             ))}
           </CardContent>
         </Card>
+      ) : null}
+
+      {selectedOrderId != null ? (
+        <AdminOrderDetails
+          orderId={selectedOrderId}
+          token={token}
+          onClose={() => setSelectedOrderId(null)}
+          onUpdated={() => void load()}
+        />
       ) : null}
 
       {section === 'shipping' ? (
@@ -401,7 +774,7 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
                     {b.refundReason ? <p className="text-xs text-amber-800">Refund reason: {b.refundReason}</p> : null}
                     {b.refundNote ? <p className="text-xs text-stone">{b.refundNote}</p> : null}
                   </div>
-                  {(b.status === 'confirmed' || b.status === 'refund_requested') && (
+                  {b.status === 'refund_requested' ? (
                     <div className="flex flex-wrap gap-2">
                       <Button
                         type="button"
@@ -416,24 +789,22 @@ export function AdminCommercePanels({ section, token }: { section: 'orders' | 's
                       >
                         Refund
                       </Button>
-                      {b.status === 'refund_requested' ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={async () => {
-                            await adminFetch(`/api/admin/stay-bookings/${b.id}/refund-reject`, token, {
-                              method: 'POST',
-                              body: JSON.stringify({ note: 'Refund request declined' }),
-                            })
-                            setMessage(`Rejected refund for ${b.bookingNumber}`)
-                            await load()
-                          }}
-                        >
-                          Reject
-                        </Button>
-                      ) : null}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={async () => {
+                          await adminFetch(`/api/admin/stay-bookings/${b.id}/refund-reject`, token, {
+                            method: 'POST',
+                            body: JSON.stringify({ note: 'Refund request declined' }),
+                          })
+                          setMessage(`Rejected refund for ${b.bookingNumber}`)
+                          await load()
+                        }}
+                      >
+                        Reject
+                      </Button>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               ))}
             </CardContent>

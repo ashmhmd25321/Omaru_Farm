@@ -1021,9 +1021,9 @@ export function AdminDashboardPage() {
         noindex
       />
 
-      <main className="admin-shell flex min-h-screen bg-surface">
+      <main className="admin-shell flex h-screen overflow-hidden bg-surface">
         {/* Desktop sidebar */}
-        <aside className="hidden w-64 flex-none flex-col border-r border-parchment/60 bg-white md:flex">
+        <aside className="hidden h-full w-64 shrink-0 flex-col border-r border-parchment/60 bg-white md:flex">
           <div className="flex items-center gap-3 border-b border-parchment/60 px-5 py-5">
             <img
               src={staticUrl('/images/farm/omaru-logo.png')}
@@ -1156,8 +1156,8 @@ export function AdminDashboardPage() {
           </div>
         ) : null}
 
-        {/* Main content column */}
-        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        {/* Main content column — only this area scrolls */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
           <header className="sticky top-0 z-30 border-b border-parchment/60 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">

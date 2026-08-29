@@ -10,7 +10,14 @@ import { staticUrl } from '@/utils/staticUrl'
 import { apiUrl } from '@/utils/api'
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #775a19 0%, #c5a059 100%)'
-const LOW_STOCK_THRESHOLD = 5
+/** Cart CTAs — black mixed with gold */
+const CART_BTN_BG = 'linear-gradient(135deg, #1a1510 0%, #3d2f18 48%, #775a19 100%)'
+const CART_BTN_CLASS =
+  'rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-[0_2px_10px_rgba(26,21,16,0.18)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40'
+const CART_BTN_CLASS_LG =
+  'w-full rounded-sm px-4 py-3 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(26,21,16,0.2)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40'
+// Show exact remaining quantity when low (customer-facing).
+const LOW_STOCK_THRESHOLD = 9
 
 const fadeUp = {
   hidden: { opacity: 0, y: 26 },
@@ -209,6 +216,11 @@ export function StorePage() {
   useEffect(() => {
     setModalImageIndex(0)
   }, [selectedProduct?.id])
+
+  const bumpCart = () => {
+    // Used by header animation; also helps QA notice successful add.
+    window.dispatchEvent(new CustomEvent('omaru:cart:add'))
+  }
 
   /* ── Filtered + sorted products ── */
   const filteredProducts = useMemo(() => {
@@ -485,11 +497,8 @@ export function StorePage() {
                         <p className="mt-2 max-w-xs font-body text-xs leading-relaxed text-white/65">
                           Cold-pressed from our own Omaru grove. Single-origin, unfiltered and exceptionally fresh.
                         </p>
-                        <div className="mt-4 flex flex-wrap items-center gap-4">
-                          <span
-                            className="rounded-sm px-3 py-1 font-body text-[0.65rem] font-semibold text-white"
-                            style={{ background: GOLD_GRADIENT }}
-                          >
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
+                          <span className="font-heading text-xl font-semibold text-white">
                             ${featLarge.price.toFixed(2)}
                           </span>
                           {stockStatusText(featLarge.stockQty) ? (
@@ -501,8 +510,28 @@ export function StorePage() {
                               {stockStatusText(featLarge.stockQty)}
                             </span>
                           ) : null}
+                          <button
+                            type="button"
+                            className={CART_BTN_CLASS}
+                            style={{ background: CART_BTN_BG }}
+                            disabled={!featLarge.id || (featLarge.stockQty !== undefined && featLarge.stockQty <= 0)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (!featLarge.id) return
+                              addItem({
+                                productId: featLarge.id,
+                                name: featLarge.name,
+                                size: featLarge.size,
+                                price: featLarge.price,
+                                image: featLarge.image,
+                              })
+                              bumpCart()
+                            }}
+                          >
+                            Add to cart
+                          </button>
                           <span className="inline-flex items-center gap-1 font-body text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/60 transition group-hover:text-gold">
-                            View Details <ArrowRight className="h-3 w-3" aria-hidden />
+                            Details <ArrowRight className="h-3 w-3" aria-hidden />
                           </span>
                         </div>
                       </div>
@@ -542,6 +571,26 @@ export function StorePage() {
                           ${featMed.price.toFixed(2)}
                         </p>
                         <StockHint stockQty={featMed.stockQty} className="mt-1.5" />
+                        <button
+                          type="button"
+                          className={`mt-3 w-full ${CART_BTN_CLASS}`}
+                          style={{ background: CART_BTN_BG }}
+                          disabled={!featMed.id || (featMed.stockQty !== undefined && featMed.stockQty <= 0)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (!featMed.id) return
+                            addItem({
+                              productId: featMed.id,
+                              name: featMed.name,
+                              size: featMed.size,
+                              price: featMed.price,
+                              image: featMed.image,
+                            })
+                            bumpCart()
+                          }}
+                        >
+                          Add to cart
+                        </button>
                       </div>
                     </motion.div>
                   )}
@@ -578,6 +627,26 @@ export function StorePage() {
                           </h3>
                           <p className="mt-1 font-body text-sm text-stone">${p.price.toFixed(2)}</p>
                           <StockHint stockQty={p.stockQty} className="mt-1" />
+                          <button
+                            type="button"
+                            className={`mt-3 w-full ${CART_BTN_CLASS}`}
+                            style={{ background: CART_BTN_BG }}
+                            disabled={!p.id || (p.stockQty !== undefined && p.stockQty <= 0)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (!p.id) return
+                              addItem({
+                                productId: p.id,
+                                name: p.name,
+                                size: p.size,
+                                price: p.price,
+                                image: p.image,
+                              })
+                              bumpCart()
+                            }}
+                          >
+                            Add to cart
+                          </button>
                         </div>
                       </motion.div>
                     ) : null,
@@ -641,13 +710,18 @@ export function StorePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: (index % 12) * 0.03 }}
                 >
-                  <div className="overflow-hidden">
+                  <div className="relative overflow-hidden">
                     <img
                       src={imgFor(product.image, index)}
                       alt={product.name}
                       className="h-44 w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                       loading="lazy"
                     />
+                    {(product.images?.length ?? 0) > 1 ? (
+                      <div className="absolute left-3 top-3 rounded-sm bg-white/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone shadow-sm">
+                        {product.images!.length} photos
+                      </div>
+                    ) : null}
                   </div>
                   <div className="p-5">
                     <p className="font-body text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-gold">
@@ -661,6 +735,39 @@ export function StorePage() {
                       ${product.price.toFixed(2)}
                     </p>
                     <StockHint stockQty={product.stockQty} className="mt-1" />
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        className={`flex-1 ${CART_BTN_CLASS}`}
+                        style={{ background: CART_BTN_BG }}
+                        disabled={!product.id || (product.stockQty !== undefined && product.stockQty <= 0)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (!product.id) return
+                          if (product.stockQty !== undefined && product.stockQty <= 0) return
+                          addItem({
+                            productId: product.id,
+                            name: product.name,
+                            size: product.size,
+                            price: product.price,
+                            image: product.image,
+                          })
+                          bumpCart()
+                        }}
+                      >
+                        Add to cart
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-sm border border-parchment bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone transition hover:border-gold hover:text-gold"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedProduct(product)
+                        }}
+                      >
+                        Details
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -805,62 +912,70 @@ export function StorePage() {
                   <div className="inline-flex items-center gap-2">
                     <PackageSearch className="h-3.5 w-3.5 text-gold" aria-hidden />
                     <span className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.26em] text-gold">
-                      Product Details
+                      Product details
                     </span>
                   </div>
-                  <h3 className="mt-3 font-heading text-2xl font-semibold leading-tight text-charcoal">
+                  <h3 className="mt-3 font-heading text-3xl font-semibold leading-tight text-charcoal">
                     {selectedProduct.name}
                   </h3>
-                  <p className="mt-1 font-body text-xs uppercase tracking-[0.2em] text-stone">
-                    {selectedProduct.category}
+
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-sm bg-sand px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone">
+                      {selectedProduct.category}
+                    </span>
+                    <span className="rounded-sm bg-sand px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone">
+                      {selectedProduct.size}
+                    </span>
+                    <StockHint stockQty={selectedProduct.stockQty} className="ml-1 text-[11px]" />
+                  </div>
+
+                  <p className="mt-5 font-body text-sm leading-relaxed text-stone">
+                    {selectedProduct.description?.trim()
+                      ? selectedProduct.description
+                      : 'Handcrafted with farm-inspired quality, rich natural flavour and premium ingredients.'}
                   </p>
-                  <div className="mt-5 space-y-2 font-body text-sm text-stone">
-                    <p><span className="font-semibold text-charcoal">Pack Size:</span> {selectedProduct.size}</p>
-                    <p>
-                      <span className="font-semibold text-charcoal">Description:</span>{' '}
-                      {selectedProduct.description?.trim()
-                        ? selectedProduct.description
-                        : 'Handcrafted with farm-inspired quality, rich natural flavour and premium ingredients.'}
-                    </p>
+
+                  <div className="mt-6 flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-stone/70">
+                        Price
+                      </p>
+                      <p className="font-heading text-3xl font-semibold text-charcoal">
+                        ${selectedProduct.price.toFixed(2)} <span className="text-sm text-stone">AUD</span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="mt-6 flex flex-wrap items-center gap-3">
-                    <p
-                      className="inline-flex rounded-sm px-4 py-2 font-heading text-2xl font-semibold text-white"
-                      style={{ background: GOLD_GRADIENT }}
+
+                  <div className="mt-6 space-y-3">
+                    <button
+                      type="button"
+                      className={CART_BTN_CLASS_LG}
+                      style={{ background: CART_BTN_BG }}
+                      disabled={!selectedProduct.id || (selectedProduct.stockQty !== undefined && selectedProduct.stockQty <= 0)}
+                      onClick={() => {
+                        if (!selectedProduct.id) return
+                        if (selectedProduct.stockQty !== undefined && selectedProduct.stockQty <= 0) return
+                        addItem({
+                          productId: selectedProduct.id,
+                          name: selectedProduct.name,
+                          size: selectedProduct.size,
+                          price: selectedProduct.price,
+                          image: selectedProduct.image,
+                        })
+                        bumpCart()
+                        closeModal()
+                      }}
                     >
-                      ${selectedProduct.price.toFixed(2)}
-                    </p>
-                    {selectedProduct.stockQty !== undefined && selectedProduct.stockQty <= 0 ? (
-                      <StockHint stockQty={selectedProduct.stockQty} className="text-sm" />
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          className="rounded-sm px-4 py-2 text-sm font-semibold text-white"
-                          style={{ background: GOLD_GRADIENT }}
-                          onClick={() => {
-                            if (!selectedProduct.id) return
-                            addItem({
-                              productId: selectedProduct.id,
-                              name: selectedProduct.name,
-                              size: selectedProduct.size,
-                              price: selectedProduct.price,
-                              image: selectedProduct.image,
-                            })
-                          }}
-                        >
-                          Add to cart
-                        </button>
-                        <StockHint stockQty={selectedProduct.stockQty} className="text-sm" />
-                      </>
-                    )}
+                      Add to cart
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="w-full rounded-sm border border-parchment bg-white px-4 py-3 text-sm font-semibold text-stone transition hover:border-gold hover:text-gold"
+                    >
+                      Continue shopping
+                    </button>
                   </div>
-                  <button
-                    onClick={closeModal}
-                    className="mt-4 font-body text-xs font-semibold uppercase tracking-[0.18em] text-stone/50 transition hover:text-stone"
-                  >
-                    Close
-                  </button>
                 </div>
               </div>
             </motion.div>
